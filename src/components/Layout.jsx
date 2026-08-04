@@ -1,13 +1,26 @@
+import { useState, useEffect } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { FileText, Search, Bookmark, Bell } from "lucide-react";
+import { FileText, Search, Bookmark, Bell, Users } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 const navItems = [
   { to: "/", label: "Minhas Licitações", icon: FileText, end: true },
   { to: "/explorar", label: "Explorar API", icon: Search },
   { to: "/buscas", label: "Buscas Salvas", icon: Bookmark },
 ];
+const adminItems = [{ to: "/usuarios", label: "Usuários", icon: Users }];
 
 export default function Layout() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me()
+      .then((u) => setIsAdmin(u?.role === "admin"))
+      .catch(() => setIsAdmin(false));
+  }, []);
+
+  const items = isAdmin ? [...navItems, ...adminItems] : navItems;
+
   return (
     <div className="min-h-screen flex bg-muted/30">
       <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar">
@@ -21,7 +34,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {navItems.map((item) => (
+          {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -51,7 +64,7 @@ export default function Layout() {
           </div>
           <span className="font-heading font-semibold">Alerta Licitação</span>
           <nav className="ml-auto flex gap-1">
-            {navItems.map((item) => (
+            {items.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

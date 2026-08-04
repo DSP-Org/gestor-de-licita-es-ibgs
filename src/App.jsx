@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import Explorar from "@/pages/Explorar";
 import BuscasSalvas from "@/pages/BuscasSalvas";
+import Usuarios from "@/pages/Usuarios";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<MinhasLicitacoes />} />
         <Route path="/explorar" element={<Explorar />} />
         <Route path="/buscas" element={<BuscasSalvas />} />
+        <Route path="/usuarios" element={<Usuarios />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
