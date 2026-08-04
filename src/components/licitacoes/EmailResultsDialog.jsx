@@ -57,7 +57,8 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
         </td></tr>
         ${cards}
         <tr><td style="padding:16px 24px 24px;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Gestor de Licitações IBGS</p>
+          <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Gestor de Licitações IBGS</p>
+          <p style="margin:0;font-size:11px;color:#9ca3af;">Desenvolvido por Data5 Tecnologia — Todos os direitos reservados</p>
         </td></tr>
       </table>
     </td></tr>

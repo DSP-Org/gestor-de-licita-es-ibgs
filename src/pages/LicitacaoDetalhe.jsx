@@ -137,6 +137,16 @@ export default function LicitacaoDetalhe() {
     const linhasObj = doc.splitTextToSize(licitacao.objeto || "—", maxW);
     doc.text(linhasObj, margin, y);
 
+    // Rodapé com crédito
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.3);
+    doc.line(margin, pageH - 14, pageW - margin, pageH - 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Desenvolvido por Data5 Tecnologia — Todos os direitos reservados", margin, pageH - 9);
+
     doc.save(`licitacao-${licitacao.id_licitacao || "detalhes"}.pdf`);
   };
 

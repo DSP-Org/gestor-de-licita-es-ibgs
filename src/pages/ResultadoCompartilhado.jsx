@@ -193,9 +193,12 @@ export default function ResultadoCompartilhado() {
           })
         )}
 
-        <footer className="pt-4 text-center">
+        <footer className="pt-4 text-center space-y-0.5">
           <p className="text-xs text-muted-foreground">
             Resultado compartilhado via Gestor de Licitações IBGS
+          </p>
+          <p className="text-xs font-medium text-foreground/70">
+            Desenvolvido por Data5 Tecnologia — Todos os direitos reservados © {new Date().getFullYear()}
           </p>
         </footer>
       </main>

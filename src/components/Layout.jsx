@@ -53,8 +53,10 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t text-xs text-muted-foreground">
-          Fonte: alertalicitacao.com.br
+        <div className="p-4 border-t text-xs text-muted-foreground space-y-0.5">
+          <p>Fonte: alertalicitacao.com.br</p>
+          <p className="font-medium text-foreground/70">Desenvolvido por Data5 Tecnologia</p>
+          <p>Todos os direitos reservados © {new Date().getFullYear()}</p>
         </div>
       </aside>
 
