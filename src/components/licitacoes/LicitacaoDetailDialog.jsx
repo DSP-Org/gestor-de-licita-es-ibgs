@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, ExternalLink, Star, Save } from "lucide-react";
+import { X, ExternalLink, Star, Save, FileDown } from "lucide-react";
+import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 
@@ -28,6 +29,76 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
       notas,
       valor_proposta: valorProposta === "" ? null : Number(valorProposta),
     });
+  };
+
+  const gerarPDF = () => {
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    const maxW = pageW - margin * 2;
+    let y = 20;
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Detalhes da Licitação", margin, y);
+    y += 8;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120);
+    doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, y);
+    y += 10;
+
+    const statusLabel = STATUS_OPTIONS.find((s) => s.value === status)?.label || status;
+    const linhas = [
+      ["ID", licitacao.id_licitacao],
+      ["Título", licitacao.titulo],
+      ["Status", statusLabel],
+      ["Órgão", licitacao.orgao],
+      ["Modalidade", licitacao.tipo],
+      ["Município", `${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`],
+      ["Código IBGE", licitacao.municipio_ibge],
+      ["Abertura", licitacao.aberturaComHora || licitacao.abertura],
+      ["Valor estimado", formatValor(licitacao.valor)],
+      ["Valor da proposta", valorProposta ? `R$ ${Number(valorProposta).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"],
+      ["Link", licitacao.link || "—"],
+      ["Portal oficial", licitacao.link_externo || "—"],
+    ];
+
+    doc.setTextColor(30);
+    for (const [label, value] of linhas) {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(label + ":", margin, y);
+      doc.setFont("helvetica", "normal");
+      const linhasValor = doc.splitTextToSize(String(value || "—"), maxW - 30);
+      doc.text(linhasValor, margin + 30, y);
+      y += 5 * linhasValor.length + 3;
+    }
+
+    if (y > 250) { doc.addPage(); y = 20; }
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("Objeto:", margin, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    const linhasObj = doc.splitTextToSize(licitacao.objeto || "—", maxW);
+    doc.text(linhasObj, margin, y);
+    y += 5 * linhasObj.length + 6;
+
+    if (notas) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "bold");
+      doc.text("Anotações:", margin, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      const linhasNotas = doc.splitTextToSize(notas, maxW);
+      doc.text(linhasNotas, margin, y);
+    }
+
+    doc.save(`licitacao-${licitacao.id_licitacao || "detalhes"}.pdf`);
   };
 
   return (
@@ -117,6 +188,12 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
                 <ExternalLink className="w-4 h-4" /> Portal oficial
               </a>
             )}
+            <button
+              onClick={gerarPDF}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+            >
+              <FileDown className="w-4 h-4" /> Gerar PDF
+            </button>
             <button
               onClick={handleSave}
               className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
