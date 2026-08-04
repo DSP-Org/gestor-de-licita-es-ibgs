@@ -7,7 +7,7 @@ import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 
-const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", data_insercao: "" };
+const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: "" };
 
 export default function Explorar() {
   const [filtros, setFiltros] = useState(filtrosIniciais);
@@ -34,6 +34,11 @@ export default function Explorar() {
   }, []);
 
   const buscar = async () => {
+    const temFiltro = !!(filtros.uf || filtros.palavra_chave || filtros.modalidade || filtros.municipio_ibge);
+    if (!temFiltro) {
+      setErro("Informe ao menos um filtro (UF, município, palavra-chave ou modalidade) para buscar.");
+      return;
+    }
     setLoading(true);
     setErro("");
     setResultados([]);
