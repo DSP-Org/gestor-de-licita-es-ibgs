@@ -1,6 +1,7 @@
+import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 
-export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, onToggleSelecao }) {
+export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, onToggleSelecao, onDelete }) {
   const comSelecao = !!onToggleSelecao;
   return (
     <div className="bg-card border rounded-lg overflow-hidden">
@@ -25,6 +26,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
             <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Modalidade</th>
             <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Abertura</th>
             <th className="text-right font-medium px-3 py-2.5 w-24">Valor</th>
+            {onDelete && <th className="px-3 py-2.5 w-10" />}
           </tr>
         </thead>
         <tbody>
@@ -55,6 +57,17 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
               <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.tipo || "—"}</td>
               <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground whitespace-nowrap">{l.aberturaComHora || l.abertura || "—"}</td>
               <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{formatValor(l.valor)}</td>
+              {onDelete && (
+                <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => onDelete(l)}
+                    title="Excluir da lista"
+                    className="p-1.5 rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

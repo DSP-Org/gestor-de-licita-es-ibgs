@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2 } from "lucide-react";
+import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Trash2 } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
@@ -68,6 +68,12 @@ export default function MinhasLicitacoes() {
     }
     setSelecionada(null);
     carregar();
+  };
+
+  const handleDelete = async (licitacao) => {
+    if (!window.confirm(`Excluir "${licitacao.titulo}" da sua lista?`)) return;
+    await base44.entities.Licitacao.delete(licitacao.id);
+    setLicitacoes((prev) => prev.filter((l) => l.id !== licitacao.id));
   };
 
   return (
@@ -157,11 +163,23 @@ export default function MinhasLicitacoes() {
         modo === "cards" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtradas.map((l) => (
-              <LicitacaoCard key={l.id} licitacao={l} onClick={() => setSelecionada(l)} />
+              <LicitacaoCard
+                key={l.id}
+                licitacao={l}
+                onClick={() => setSelecionada(l)}
+                action={
+                  <button
+                    onClick={() => handleDelete(l)}
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-600"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Excluir da lista
+                  </button>
+                }
+              />
             ))}
           </div>
         ) : (
-          <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} />
+          <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} onDelete={handleDelete} />
         )
       )}
 
