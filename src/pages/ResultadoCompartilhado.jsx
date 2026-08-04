@@ -146,7 +146,7 @@ export default function ResultadoCompartilhado() {
         ) : (
           licitacoes.map((l, i) => {
             const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
-            const link = l.link_externo || l.link || "";
+            const link = l.link_externo || "";
             return (
               <div key={i} className="bg-card border rounded-lg p-4 space-y-2">
                 <div className="flex items-start justify-between gap-3">

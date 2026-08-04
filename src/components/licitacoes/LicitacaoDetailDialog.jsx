@@ -215,11 +215,6 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
           </div>
 
           <div className="flex flex-wrap gap-2 border-t pt-4">
-            {licitacao.link && (
-              <a href={licitacao.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted">
-                <ExternalLink className="w-4 h-4" /> Ver no Alerta Licitação
-              </a>
-            )}
             {licitacao.link_externo && (
               <a href={licitacao.link_externo} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted">
                 <ExternalLink className="w-4 h-4" /> Portal oficial

@@ -111,7 +111,6 @@ export default function LicitacaoDetalhe() {
       ["Abertura", licitacao.abertura],
       ["Valor estimado", formatValor(licitacao.valor)],
       ["Valor da proposta", valorProposta ? `R$ ${Number(valorProposta).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"],
-      ["Link", licitacao.link || "—"],
       ["Portal oficial", licitacao.link_externo || "—"],
     ];
 
