@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { UFS, MODALIDADES } from "@/shared/alertaApi";
 import { Mail, Send, Users, Loader2 } from "lucide-react";
+import PalavrasChaveInput from "./PalavrasChaveInput";
 
 export default function BuscaForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -130,13 +131,11 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
             className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <label className="text-xs font-medium text-muted-foreground">Palavras-chave</label>
-          <input
+          <PalavrasChaveInput
             value={form.palavra_chave || ""}
-            onChange={(e) => set("palavra_chave", e.target.value)}
-            placeholder="Ex: engenharia, -limpeza"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            onChange={(v) => set("palavra_chave", v)}
           />
         </div>
         <div>
