@@ -11,26 +11,34 @@ export default function BuscaMultiSelect({ options: buscas, value: selecionadas,
       : [...selecionadas, id]);
   };
 
+  const resumo = todasSelecionadas
+    ? "Todas as sincronizações"
+    : `${selecionadas.length} sincronização(ões)`;
+
   return (
-    <div className="min-w-[13rem] rounded-lg border bg-background p-2 text-sm">
-      <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">Buscas para sincronizar</p>
-      <div className="max-h-32 space-y-1 overflow-y-auto">
-        <label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-muted">
-          <input type="checkbox" checked={todasSelecionadas} onChange={alternarTodas} disabled={disabled} />
-          <span className="font-medium">Todas as buscas ativas</span>
-        </label>
-        {buscas.map((busca) => (
-          <label key={busca.id} className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-muted">
-            <input
-              type="checkbox"
-              checked={selecionadas.includes(busca.id)}
-              onChange={() => alternarBusca(busca.id)}
-              disabled={disabled}
-            />
-            <span>{busca.nome}</span>
+    <details className={`relative min-w-[13rem] text-sm ${disabled ? "pointer-events-none opacity-50" : ""}`}>
+      <summary className="cursor-pointer list-none rounded-lg border bg-background px-3 py-2 font-medium">
+        {resumo}
+      </summary>
+      <div className="absolute right-0 z-30 mt-2 w-full min-w-[16rem] rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg">
+        <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">Escolha o que sincronizar</p>
+        <div className="max-h-48 space-y-1 overflow-y-auto">
+          <label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1.5 hover:bg-muted">
+            <input type="checkbox" checked={todasSelecionadas} onChange={alternarTodas} />
+            <span className="font-medium">Todas as buscas ativas</span>
           </label>
-        ))}
+          {buscas.map((busca) => (
+            <label key={busca.id} className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1.5 hover:bg-muted">
+              <input
+                type="checkbox"
+                checked={selecionadas.includes(busca.id)}
+                onChange={() => alternarBusca(busca.id)}
+              />
+              <span>{busca.nome}</span>
+            </label>
+          ))}
+        </div>
       </div>
-    </div>
+    </details>
   );
 }
