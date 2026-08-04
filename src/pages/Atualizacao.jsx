@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, LayoutGrid, Table, Trash2, Zap, Loader2, Check, AlertCircle } from "lucide-react";
+import { Search, LayoutGrid, Table, Zap, Loader2, Check, AlertCircle } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
+import ShareDialog from "@/components/licitacoes/ShareDialog";
+import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 
 export default function Atualizacao() {
@@ -18,6 +20,7 @@ export default function Atualizacao() {
   const [resultadoSync, setResultadoSync] = useState(null);
   const [buscasSalvas, setBuscasSalvas] = useState([]);
   const [buscasSelecionadas, setBuscasSelecionadas] = useState([]);
+  const [compartilhar, setCompartilhar] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -72,11 +75,24 @@ export default function Atualizacao() {
     carregar();
   };
 
+  const handleSaveManual = async (licitacao) => {
+    await base44.entities.Licitacao.update(licitacao.id, { salva_manualmente: true });
+    setLicitacoes((prev) => prev.filter((item) => item.id !== licitacao.id));
+  };
+
   const handleDelete = async (licitacao) => {
     if (!window.confirm(`Excluir "${licitacao.titulo}" da lista?`)) return;
     await base44.entities.Licitacao.delete(licitacao.id);
     setLicitacoes((prev) => prev.filter((l) => l.id !== licitacao.id));
   };
+
+  const renderActions = (licitacao) => (
+    <AtualizacaoActions
+      onSend={() => setCompartilhar(licitacao)}
+      onSave={() => handleSaveManual(licitacao)}
+      onDelete={() => handleDelete(licitacao)}
+    />
+  );
 
   const porBuscaOrigem = useMemo(() => {
     const grupos = {};
@@ -212,24 +228,20 @@ export default function Atualizacao() {
                 key={l.id}
                 licitacao={l}
                 onClick={() => setSelecionada(l)}
-                action={
-                  <button
-                    onClick={() => handleDelete(l)}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Excluir
-                  </button>
-                }
+                action={renderActions(l)}
               />
             ))}
           </div>
         ) : (
-          <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} onDelete={handleDelete} />
+          <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} renderActions={renderActions} />
         )
       )}
 
       {selecionada && (
         <LicitacaoDetailDialog licitacao={selecionada} onClose={() => setSelecionada(null)} onSave={handleSave} />
+      )}
+      {compartilhar && (
+        <ShareDialog licitacoes={[compartilhar]} origem={compartilhar.busca_origem} onClose={() => setCompartilhar(null)} />
       )}
     </div>
   );

@@ -63,7 +63,7 @@ export default async function(req) {
           ? filtrarPorTodasPalavras(lics, busca.palavra_chave)
           : lics;
 
-        const existentes = await base44.asServiceRole.entities.Licitacao.filter({ created_by_id: busca.created_by_id });
+        const existentes = await base44.asServiceRole.entities.Licitacao.filter({ usuario_id: busca.created_by_id });
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
         const novas = resultados
