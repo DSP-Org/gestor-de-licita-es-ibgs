@@ -5,8 +5,8 @@ import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 
 const navItems = [
-  { to: "/", label: "Início", icon: FileText, end: true },
   { to: "/atualizacao", label: "Atualização", icon: RefreshCw },
+  { to: "/", label: "Minhas Licitações", icon: FileText, end: true },
   { to: "/explorar", label: "Explorar", icon: Search },
   { to: "/buscas", label: "Configuração", icon: Settings },
 ];
