@@ -2,6 +2,8 @@
 // O token da API agora fica no backend (segredo) — o frontend apenas
 // invoca a função de backend que consulta a API com segurança.
 
+import { base44 } from "@/api/base44Client";
+
 export const MODALIDADES = [
   { id: "1", nome: "Convite" },
   { id: "2", nome: "Concorrência" },
@@ -28,8 +30,6 @@ export const STATUS_OPTIONS = [
   { value: "perdida", label: "Perdida", color: "bg-red-100 text-red-700" },
   { value: "descartada", label: "Descartada", color: "bg-gray-200 text-gray-600" },
 ];
-
-import { base44 } from "@/api/base44Client";
 
 export async function buscarLicitacoes(filtros = {}) {
   const response = await base44.functions.invoke("buscarLicitacoesApi", filtros);
