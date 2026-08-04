@@ -19,6 +19,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
               </th>
             )}
             <th className="text-left font-medium px-3 py-2.5 w-20 hidden sm:table-cell">ID</th>
+            <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Busca</th>
             <th className="text-left font-medium px-3 py-2.5">Título</th>
             <th className="text-left font-medium px-3 py-2.5 w-20">Status</th>
             <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Órgão</th>
@@ -48,6 +49,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                 </td>
               )}
               <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground truncate hidden sm:table-cell">{l.id_licitacao}</td>
+              <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.busca_origem || "—"}</td>
               <td className="px-3 py-2.5">
                 <p className="font-medium line-clamp-1">{l.titulo}</p>
                 <p className="text-xs text-muted-foreground line-clamp-1">{l.objeto}</p>
