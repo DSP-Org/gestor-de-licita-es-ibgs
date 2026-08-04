@@ -55,7 +55,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    doc.text("Alerta Licitação", margin + 16, y + 5);
+    doc.text("LicitaAlerta", margin + 16, y + 5);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);

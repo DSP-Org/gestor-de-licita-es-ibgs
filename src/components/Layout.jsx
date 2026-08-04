@@ -33,7 +33,7 @@ export default function Layout() {
             <Bell className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="min-w-0">
-            <p className="font-heading font-semibold leading-tight truncate">Alerta Licitação</p>
+            <p className="font-heading font-semibold leading-tight truncate">LicitaAlerta</p>
             <p className="text-xs text-muted-foreground">Gestão de licitações</p>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function Layout() {
           <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
             <Bell className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-heading font-semibold text-sm truncate">Alerta Licitação</span>
+          <span className="font-heading font-semibold text-sm truncate">LicitaAlerta</span>
           {permissao !== "granted" && permissao !== "unsupported" && (
             <button
               onClick={solicitarPermissao}
