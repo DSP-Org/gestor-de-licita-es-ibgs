@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { UFS, MODALIDADES } from "@/shared/alertaApi";
-import { Mail, Send, Users, Loader2 } from "lucide-react";
+import { Mail, Users, Loader2 } from "lucide-react";
 import PalavrasChaveInput from "./PalavrasChaveInput";
 
 export default function BuscaForm({ initial, onSave, onCancel }) {
@@ -183,9 +183,21 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
 
         {form.notificar_email && (
           <div>
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Users className="w-3 h-3" /> Destinatários do e-mail (usuários cadastrados)
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Users className="w-3 h-3" /> Destinatários do e-mail (selecione um ou mais)
+              </label>
+              {usuarios.length > 0 && (
+                <div className="flex gap-2 text-xs">
+                  <button type="button" onClick={() => set("destinatarios_email", usuarios.map((u) => u.id))} className="text-primary hover:underline">
+                    Selecionar todos
+                  </button>
+                  <button type="button" onClick={() => set("destinatarios_email", [])} className="text-muted-foreground hover:underline">
+                    Limpar
+                  </button>
+                </div>
+              )}
+            </div>
             {carregandoUsers ? (
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Carregando usuários...</p>
             ) : usuarios.length === 0 ? (
@@ -212,20 +224,6 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           </div>
         )}
 
-        <div>
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Send className="w-3 h-3" /> Telegram — IDs de chat (separados por vírgula)
-          </label>
-          <input
-            value={form.telegram_chats || ""}
-            onChange={(e) => set("telegram_chats", e.target.value)}
-            placeholder="Ex: 123456789, -1009876543"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Para descobrir seu chat ID, envie uma mensagem ao bot e acesse <code>api.telegram.org/bot&lt;token&gt;/getUpdates</code>.
-          </p>
-        </div>
       </div>
 
       <div className="flex gap-2 pt-2">
