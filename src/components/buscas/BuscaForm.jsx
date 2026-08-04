@@ -7,16 +7,45 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     uf: "",
     palavra_chave: "",
     modalidade: "",
+    municipio_nome: "",
     municipio_ibge: "",
     licitacoes_por_pagina: 50,
     ativa: true,
   });
+  const [municipios, setMunicipios] = useState([]);
+  const [carregandoMun, setCarregandoMun] = useState(false);
 
   useEffect(() => {
-    if (initial) setForm({ ...form, ...initial });
+    if (initial) setForm((f) => ({ ...f, ...initial }));
   }, [initial]);
 
+  // Busca municípios do IBGE quando a UF muda
+  useEffect(() => {
+    const uf = (form.uf || "").trim();
+    if (!uf || uf.includes(",")) {
+      setMunicipios([]);
+      return;
+    }
+    let cancelado = false;
+    setCarregandoMun(true);
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
+      .then((r) => r.json())
+      .then((lista) => !cancelado && setMunicipios(Array.isArray(lista) ? lista : []))
+      .catch(() => !cancelado && setMunicipios([]))
+      .finally(() => !cancelado && setCarregandoMun(false));
+    return () => { cancelado = true; };
+  }, [form.uf]);
+
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
+
+  const selecionarMunicipio = (nome) => {
+    const mun = municipios.find((m) => m.nome === nome);
+    if (mun) {
+      setForm((f) => ({ ...f, municipio_nome: nome, municipio_ibge: String(mun.id) }));
+    } else {
+      set("municipio_nome", nome);
+    }
+  };
 
   const submit = () => {
     if (!form.nome.trim()) return;
@@ -51,6 +80,33 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           </datalist>
         </div>
         <div>
+          <label className="text-xs font-medium text-muted-foreground">
+            Município (por nome) {form.uf && !form.uf.includes(",") && !carregandoMun && `(${municipios.length})`}
+          </label>
+          <input
+            list="mun-list"
+            value={form.municipio_nome || ""}
+            onChange={(e) => selecionarMunicipio(e.target.value)}
+            disabled={!form.uf || form.uf.includes(",")}
+            placeholder={form.uf && !form.uf.includes(",") ? "Selecione a cidade" : "Informe uma UF primeiro"}
+            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
+          <datalist id="mun-list">
+            {municipios.map((m) => (
+              <option key={m.id} value={m.nome} />
+            ))}
+          </datalist>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">Código IBGE</label>
+          <input
+            value={form.municipio_ibge || ""}
+            onChange={(e) => set("municipio_ibge", e.target.value)}
+            placeholder="7 dígitos"
+            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div>
           <label className="text-xs font-medium text-muted-foreground">Palavras-chave</label>
           <input
             value={form.palavra_chave || ""}
@@ -71,15 +127,6 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
               <option key={m.id} value={m.id}>{m.nome}</option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Código IBGE</label>
-          <input
-            value={form.municipio_ibge || ""}
-            onChange={(e) => set("municipio_ibge", e.target.value)}
-            placeholder="7 dígitos"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">

@@ -18,6 +18,10 @@
       "type": "string",
       "description": "C\u00f3digos de modalidade separados por v\u00edrgula (ex: 5,13)"
     },
+    "municipio_nome": {
+      "type": "string",
+      "description": "Nome do munic\u00edpio selecionado"
+    },
     "municipio_ibge": {
       "type": "string",
       "description": "C\u00f3digo IBGE do munic\u00edpio (7 d\u00edgitos)"

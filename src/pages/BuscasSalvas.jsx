@@ -171,6 +171,7 @@ export default function BuscasSalvas() {
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
                       {b.uf && <span>UF: <b className="text-foreground">{b.uf}</b></span>}
+                      {b.municipio_nome && <span>Município: <b className="text-foreground">{b.municipio_nome}</b></span>}
                       {b.palavra_chave && <span>Palavras: <b className="text-foreground">{b.palavra_chave}</b></span>}
                       {b.modalidade && <span>Modalidade: <b className="text-foreground">{b.modalidade}</b></span>}
                       {b.municipio_ibge && <span>IBGE: <b className="text-foreground">{b.municipio_ibge}</b></span>}
