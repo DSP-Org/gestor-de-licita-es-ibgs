@@ -7,15 +7,15 @@ function Toggle({ label, icon: Icon, checked, onChange, loading, description }) 
     <button
       onClick={() => onChange(!checked)}
       disabled={loading}
-      className="flex items-center gap-2 text-sm disabled:opacity-50"
+      className="flex items-center gap-2.5 text-sm disabled:opacity-50 group"
     >
-      <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? "bg-primary" : "bg-muted-foreground/30"}`}>
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`} />
+      <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${checked ? "bg-primary" : "bg-muted-foreground/25 group-hover:bg-muted-foreground/40"}`}>
+        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`} />
       </span>
-      <Icon className={`w-4 h-4 ${checked ? "text-primary" : "text-muted-foreground"}`} />
+      <Icon className={`w-4 h-4 shrink-0 transition-colors ${checked ? "text-primary" : "text-muted-foreground/60"}`} />
       <span className="text-left">
         <span className="font-medium block leading-tight">{label}</span>
-        {description && <span className="text-xs text-muted-foreground">{description}</span>}
+        {description && <span className="text-[11px] text-muted-foreground leading-tight">{description}</span>}
       </span>
     </button>
   );
@@ -35,7 +35,7 @@ export default function BuscaToggles({ busca, onUpdated }) {
   };
 
   return (
-    <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border/60">
       <Toggle
         label="Sincronização automática"
         icon={RefreshCw}
