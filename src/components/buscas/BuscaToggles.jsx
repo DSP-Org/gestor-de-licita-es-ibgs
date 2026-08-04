@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, Mail } from "lucide-react";
+import { RefreshCw, Mail, Clock } from "lucide-react";
 
 function Toggle({ label, icon: Icon, checked, onChange, loading, description }) {
   return (
@@ -23,8 +23,13 @@ function Toggle({ label, icon: Icon, checked, onChange, loading, description }) 
 
 export default function BuscaToggles({ busca, onUpdated }) {
   const [atualizando, setAtualizando] = useState(null);
+  const [horario, setHorario] = useState(busca.horario_sincronizacao || "09:00");
 
-  const toggleCampo = async (campo, valor) => {
+  useEffect(() => {
+    setHorario(busca.horario_sincronizacao || "09:00");
+  }, [busca.horario_sincronizacao]);
+
+  const atualizarCampo = async (campo, valor) => {
     setAtualizando(campo);
     try {
       await base44.entities.BuscaSalva.update(busca.id, { [campo]: valor });
@@ -35,12 +40,12 @@ export default function BuscaToggles({ busca, onUpdated }) {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border/60">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border/60">
       <Toggle
         label="Sincronização automática"
         icon={RefreshCw}
         checked={!!busca.ativa}
-        onChange={(v) => toggleCampo("ativa", v)}
+        onChange={(v) => atualizarCampo("ativa", v)}
         loading={atualizando === "ativa"}
         description="Participa da sync diária"
       />
@@ -48,10 +53,25 @@ export default function BuscaToggles({ busca, onUpdated }) {
         label="Notificar por e-mail"
         icon={Mail}
         checked={busca.notificar_email !== false}
-        onChange={(v) => toggleCampo("notificar_email", v)}
+        onChange={(v) => atualizarCampo("notificar_email", v)}
         loading={atualizando === "notificar_email"}
         description="Envia e-mail ao achar novas"
       />
+      <label className="flex items-center gap-2.5 text-sm">
+        <Clock className="w-4 h-4 shrink-0 text-primary" />
+        <span className="min-w-0">
+          <span className="font-medium block leading-tight">Horário da busca</span>
+          <span className="text-[11px] text-muted-foreground">Execução diária</span>
+        </span>
+        <input
+          type="time"
+          value={horario}
+          disabled={atualizando === "horario_sincronizacao"}
+          onChange={(e) => setHorario(e.target.value)}
+          onBlur={() => atualizarCampo("horario_sincronizacao", horario)}
+          className="ml-auto w-24 px-2 py-1.5 text-xs border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+        />
+      </label>
     </div>
   );
 }

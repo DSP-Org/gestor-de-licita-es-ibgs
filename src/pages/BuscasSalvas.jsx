@@ -159,21 +159,13 @@ export default function BuscasSalvas() {
           Nenhuma busca salva. Crie uma para automatizar a captação de licitações.
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {buscas.map((b) => {
             const res = resultadoSync[b.id];
             return (
               <div key={b.id} className="bg-card border border-border/70 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                {/* Toggles no topo */}
-                <BuscaToggles
-                  busca={b}
-                  onUpdated={(id, campo, valor) =>
-                    setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                  }
-                />
-
                 {/* Título + badge + ações */}
-                <div className="flex items-start justify-between gap-3 mt-4">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-heading font-semibold text-lg leading-tight truncate">{b.nome}</h3>
@@ -259,6 +251,13 @@ export default function BuscasSalvas() {
                     ) : null}
                   </div>
                 </div>
+
+                <BuscaToggles
+                  busca={b}
+                  onUpdated={(id, campo, valor) =>
+                    setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                  }
+                />
 
                 {/* Resultado da sync */}
                 {res && (
