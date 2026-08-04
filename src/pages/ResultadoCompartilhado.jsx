@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Bell, ExternalLink, Loader2, MapPin, Building2, Calendar, AlertCircle } from "lucide-react";
+import { Bell, ExternalLink, Loader2, MapPin, Building2, Calendar, AlertCircle, Download, Check } from "lucide-react";
 import { formatValor } from "@/components/licitacoes/LicitacaoCard";
 
 export default function ResultadoCompartilhado() {
   const { codigo } = useParams();
+  const navigate = useNavigate();
   const [resultado, setResultado] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
+  const [importando, setImportando] = useState(false);
+  const [importado, setImportado] = useState(false);
+  const [msgImport, setMsgImport] = useState("");
 
   useEffect(() => {
     let cancelado = false;
@@ -51,6 +55,52 @@ export default function ResultadoCompartilhado() {
 
   const licitacoes = resultado?.licitacoes || [];
 
+  const importarParaMinhas = async () => {
+    setImportando(true);
+    setMsgImport("");
+    try {
+      const autenticado = await base44.auth.isAuthenticated().catch(() => false);
+      if (!autenticado) {
+        navigate(`/login?returnTo=${encodeURIComponent(`/compartilhar/${codigo}`)}`);
+        return;
+      }
+      // Evita duplicar licitações já salvas pelo usuário
+      const minhas = await base44.entities.Licitacao.list("-updated_date", 500);
+      const existIds = new Set(minhas.map((l) => l.id_licitacao));
+      const novas = licitacoes
+        .filter((l) => !existIds.has(l.id_licitacao))
+        .map((l) => ({
+          id_licitacao: l.id_licitacao,
+          titulo: l.titulo,
+          objeto: l.objeto,
+          uf: l.uf,
+          municipio: l.municipio,
+          municipio_ibge: l.municipio_ibge,
+          orgao: l.orgao,
+          abertura: l.abertura,
+          tipo: l.tipo,
+          valor: l.valor,
+          link: l.link,
+          link_externo: l.link_externo,
+          status: "interessado",
+          favorito: false,
+          busca_origem: resultado?.busca_nome || "compartilhado",
+        }));
+      if (novas.length === 0) {
+        setImportado(true);
+        setMsgImport("Todas as licitações já estão na sua lista.");
+        return;
+      }
+      await base44.entities.Licitacao.bulkCreate(novas);
+      setImportado(true);
+      setMsgImport(`${novas.length} licitação(ões) importada(s) para "Minhas licitações".`);
+    } catch (e) {
+      setMsgImport(e.message || "Erro ao importar. Faça login para usar esta função.");
+    } finally {
+      setImportando(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Cabeçalho */}
@@ -67,6 +117,23 @@ export default function ResultadoCompartilhado() {
           <p className="text-sm opacity-80 mt-2">
             {licitacoes.length} licitação(ões) encontrada(s)
           </p>
+          <button
+            onClick={importarParaMinhas}
+            disabled={importando || importado || licitacoes.length === 0}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white text-primary text-sm font-semibold rounded-md hover:bg-white/90 disabled:opacity-60"
+          >
+            {importando ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : importado ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {importado ? "Importado" : "Importar para minhas licitações"}
+          </button>
+          {msgImport && (
+            <p className="mt-2 text-xs bg-white/10 rounded px-2 py-1 inline-block">{msgImport}</p>
+          )}
         </div>
       </header>
 
