@@ -10,8 +10,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Layout from "@/components/Layout";
 import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import Explorar from "@/pages/Explorar";
-import BuscasSalvas from "@/pages/BuscasSalvas";
-import Configuracoes from "@/pages/Configuracoes";
+import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
 import Usuarios from "@/pages/Usuarios";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
@@ -74,8 +73,7 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<MinhasLicitacoes />} />
         <Route path="/explorar" element={<Explorar />} />
-        <Route path="/buscas" element={<BuscasSalvas />} />
-        <Route path="/configuracoes" element={<Configuracoes />} />
+        <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/usuarios" element={<Usuarios />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
       </Route>
