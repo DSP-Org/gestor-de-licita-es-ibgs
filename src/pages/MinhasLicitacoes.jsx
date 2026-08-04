@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Trash2 } from "lucide-react";
+import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Trash2, Wallet } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
@@ -50,7 +50,9 @@ export default function MinhasLicitacoes() {
     licitacoes.forEach((l) => {
       if (porStatus[l.status] !== undefined) porStatus[l.status]++;
     });
+    const valorTotal = licitacoes.reduce((soma, l) => soma + (Number(l.valor) || 0), 0);
     return {
+      valorTotal,
       total: licitacoes.length,
       favoritas: licitacoes.filter((l) => l.favorito).length,
       ganhas: porStatus.ganha,
@@ -80,6 +82,18 @@ export default function MinhasLicitacoes() {
       <div>
         <h1 className="font-heading text-xl sm:text-3xl font-bold tracking-tight">Minhas Licitações</h1>
         <p className="text-sm text-muted-foreground mt-1">Gerencie as licitações que você está acompanhando.</p>
+      </div>
+
+      <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm flex items-center gap-4">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <Wallet className="w-6 h-6" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">Valor total das licitações</p>
+          <p className="text-2xl sm:text-3xl font-bold leading-tight truncate">
+            {stats.valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
