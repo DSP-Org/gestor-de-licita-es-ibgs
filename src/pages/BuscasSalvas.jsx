@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
+import BuscaToggles from "@/components/buscas/BuscaToggles";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 
 export default function BuscasSalvas() {
@@ -216,6 +217,12 @@ export default function BuscasSalvas() {
                     </button>
                   </div>
                 </div>
+                <BuscaToggles
+                  busca={b}
+                  onUpdated={(id, campo, valor) =>
+                    setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                  }
+                />
                 {res && (
                   <div className={`mt-2 text-xs flex items-center gap-1.5 ${res.erro ? "text-red-600" : "text-green-600"}`}>
                     {res.erro ? `Erro: ${res.erro}` : <><Check className="w-3.5 h-3.5" /> {res.novas} novas importadas de {res.total} encontradas</>}
