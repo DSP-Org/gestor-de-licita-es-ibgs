@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Star, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
+import { Search, Star, FileText, Clock, CheckCircle2 } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
@@ -73,7 +73,7 @@ export default function MinhasLicitacoes() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={FileTextIcon} label="Total" value={stats.total} color="text-blue-600 bg-blue-50" />
+        <StatCard icon={FileText} label="Total" value={stats.total} color="text-blue-600 bg-blue-50" />
         <StatCard icon={Star} label="Favoritas" value={stats.favoritas} color="text-amber-600 bg-amber-50" />
         <StatCard icon={Clock} label="Acompanhando" value={stats.acompanhando} color="text-purple-600 bg-purple-50" />
         <StatCard icon={CheckCircle2} label="Ganhas" value={stats.ganhas} color="text-green-600 bg-green-50" />
@@ -140,14 +140,5 @@ function StatCard({ icon: Icon, label, value, color }) {
         <p className="text-xs text-muted-foreground mt-1">{label}</p>
       </div>
     </div>
-  );
-}
-
-function FileTextIcon(props) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
   );
 }
