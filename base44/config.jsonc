@@ -1,0 +1,9 @@
+{
+  "name": "Gestor de Licita\u00e7\u00f5es IBGS",
+  "site": {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "serveCommand": "npm run dev",
+    "outputDirectory": "./dist"
+  }
+}
