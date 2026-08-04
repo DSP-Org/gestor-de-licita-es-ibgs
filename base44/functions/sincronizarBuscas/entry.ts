@@ -17,8 +17,11 @@ export default async function(req) {
 
     const payload = await req.json().catch(() => ({}));
     const buscasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter({ ativa: true });
-    const buscas = payload.buscaId
-      ? buscasAtivas.filter((busca) => busca.id === payload.buscaId)
+    const idsSelecionados = Array.isArray(payload.buscaIds)
+      ? payload.buscaIds
+      : payload.buscaId ? [payload.buscaId] : null;
+    const buscas = idsSelecionados
+      ? buscasAtivas.filter((busca) => idsSelecionados.includes(busca.id))
       : buscasAtivas;
     let buscasProcessadas = 0;
     let totalNovas = 0;
