@@ -15,6 +15,12 @@ import Configuracoes from "@/pages/Configuracoes";
 import Usuarios from "@/pages/Usuarios";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
+
+const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -25,6 +31,18 @@ const AuthenticatedApp = () => {
     return (
       <Routes>
         <Route path="/compartilhar/:codigo" element={<ResultadoCompartilhado />} />
+      </Routes>
+    );
+  }
+
+  // Páginas de autenticação — não exigem login
+  if (AUTH_PATHS.includes(location.pathname)) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     );
   }
