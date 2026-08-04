@@ -136,7 +136,7 @@ export default function Explorar() {
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
                 </span>
-                <div className="inline-flex items-center border rounded-md overflow-hidden shrink-0">
+                <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden shrink-0">
                   <button
                     onClick={() => setModo("cards")}
                     title="Visualização em cards"

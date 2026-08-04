@@ -227,7 +227,7 @@ export default function Atualizacao() {
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
-        <div className="hidden sm:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
+        <div className="hidden md:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
           <button
             onClick={() => setModo("cards")}
             title="Visualização em cards"

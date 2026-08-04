@@ -164,7 +164,7 @@ export default function MinhasLicitacoes() {
             <Star className={`w-4 h-4 ${soFavoritos ? "fill-amber-400 text-amber-400" : ""}`} />
             <span className="hidden sm:inline">Favoritas</span>
           </button>
-          <div className="hidden sm:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
+          <div className="hidden md:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
             <button
               onClick={() => setModo("cards")}
               title="Visualização em cards"
