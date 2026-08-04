@@ -8,7 +8,7 @@ import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 
-const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: "" };
+const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: "", data_inicio: "", data_fim: "" };
 
 export default function Explorar() {
   const [filtros, setFiltros] = useState(filtrosIniciais);

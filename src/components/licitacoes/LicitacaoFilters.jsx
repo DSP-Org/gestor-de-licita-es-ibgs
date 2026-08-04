@@ -34,7 +34,7 @@ export default function LicitacaoFilters({ filtros, onChange, onBuscar, onLimpar
     }
   };
 
-  const temFiltro = !!(filtros.uf || filtros.palavra_chave || filtros.modalidade || filtros.municipio_ibge);
+  const temFiltro = !!(filtros.uf || filtros.palavra_chave || filtros.modalidade || filtros.municipio_ibge || filtros.data_inicio || filtros.data_fim);
 
   return (
     <div className="bg-card border rounded-lg p-4 space-y-4">
@@ -102,6 +102,25 @@ export default function LicitacaoFilters({ filtros, onChange, onBuscar, onLimpar
               <option key={m.id} value={m.id}>{m.nome}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">Data inicial (inserção)</label>
+          <input
+            type="date"
+            value={filtros.data_inicio || ""}
+            onChange={(e) => set("data_inicio", e.target.value)}
+            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">Data final (inserção)</label>
+          <input
+            type="date"
+            value={filtros.data_fim || ""}
+            onChange={(e) => set("data_fim", e.target.value)}
+            min={filtros.data_inicio || undefined}
+            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
