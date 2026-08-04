@@ -15,6 +15,8 @@ export default function Atualizacao() {
   const [modo, setModo] = useState("cards");
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState(null);
+  const [buscasSalvas, setBuscasSalvas] = useState([]);
+  const [buscaSelecionada, setBuscaSelecionada] = useState("");
 
   const carregar = async () => {
     setLoading(true);
@@ -28,6 +30,7 @@ export default function Atualizacao() {
 
   useEffect(() => {
     carregar();
+    base44.entities.BuscaSalva.filter({ ativa: true }, "nome", 100).then(setBuscasSalvas);
   }, []);
 
   const filtradas = useMemo(() => {
@@ -46,7 +49,7 @@ export default function Atualizacao() {
     setSincronizando(true);
     setResultadoSync(null);
     try {
-      const res = await base44.functions.invoke("sincronizarBuscas", {});
+      const res = await base44.functions.invoke("sincronizarBuscas", buscaSelecionada ? { buscaId: buscaSelecionada } : {});
       setResultadoSync(res.data || res);
       carregar();
     } catch (e) {
@@ -99,14 +102,28 @@ export default function Atualizacao() {
               {licitacoes.length} licitação(ões) encontradas pela última sincronização.
             </p>
           </div>
-          <button
-            onClick={sincronizarAgora}
-            disabled={sincronizando}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 shrink-0"
-          >
-            {sincronizando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-            {sincronizando ? "Sincronizando..." : "Sincronizar agora"}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            <select
+              value={buscaSelecionada}
+              onChange={(e) => setBuscaSelecionada(e.target.value)}
+              disabled={sincronizando || buscasSalvas.length === 0}
+              aria-label="Escolher busca para sincronizar"
+              className="min-w-[12rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            >
+              <option value="">Todas as buscas ativas</option>
+              {buscasSalvas.map((item) => (
+                <option key={item.id} value={item.id}>{item.nome}</option>
+              ))}
+            </select>
+            <button
+              onClick={sincronizarAgora}
+              disabled={sincronizando || buscasSalvas.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 shrink-0"
+            >
+              {sincronizando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              {sincronizando ? "Sincronizando..." : "Sincronizar agora"}
+            </button>
+          </div>
         </div>
 
         {resultadoSync && (

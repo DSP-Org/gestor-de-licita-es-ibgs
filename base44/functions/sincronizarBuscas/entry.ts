@@ -15,7 +15,11 @@ export default async function(req) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const buscas = await base44.asServiceRole.entities.BuscaSalva.filter({ ativa: true });
+    const payload = await req.json().catch(() => ({}));
+    const buscasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter({ ativa: true });
+    const buscas = payload.buscaId
+      ? buscasAtivas.filter((busca) => busca.id === payload.buscaId)
+      : buscasAtivas;
     let buscasProcessadas = 0;
     let totalNovas = 0;
     const resumo = [];
