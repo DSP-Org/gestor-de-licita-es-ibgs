@@ -6,6 +6,7 @@ import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import ShareDialog from "@/components/licitacoes/ShareDialog";
+import PainelStatus from "@/components/licitacoes/PainelStatus";
 
 export default function MinhasLicitacoes() {
   const [licitacoes, setLicitacoes] = useState([]);
@@ -82,6 +83,14 @@ export default function MinhasLicitacoes() {
         <StatCard icon={Clock} label="Acompanhando" value={stats.acompanhando} color="text-purple-600 bg-purple-50" />
         <StatCard icon={CheckCircle2} label="Ganhas" value={stats.ganhas} color="text-green-600 bg-green-50" />
       </div>
+
+      {!loading && licitacoes.length > 0 && (
+        <PainelStatus
+          licitacoes={licitacoes}
+          onFiltrarStatus={setFiltroStatus}
+          filtroStatus={filtroStatus}
+        />
+      )}
 
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
         <div className="relative flex-1 min-w-0">
