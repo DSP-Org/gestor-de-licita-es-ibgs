@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import Explorar from "@/pages/Explorar";
 import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
+import Atualizacao from "@/pages/Atualizacao";
 import Usuarios from "@/pages/Usuarios";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route element={<Layout />}>
         <Route path="/" element={<MinhasLicitacoes />} />
+        <Route path="/atualizacao" element={<Atualizacao />} />
         <Route path="/explorar" element={<Explorar />} />
         <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/usuarios" element={<Usuarios />} />

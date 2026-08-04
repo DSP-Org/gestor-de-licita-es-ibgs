@@ -95,6 +95,7 @@ export default function Explorar() {
         link_externo: lic.linkExterno,
         status: "interessado",
         favorito: false,
+        salva_manualmente: true,
       });
       setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
     } finally {

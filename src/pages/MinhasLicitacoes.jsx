@@ -20,7 +20,7 @@ export default function MinhasLicitacoes() {
   const carregar = async () => {
     setLoading(true);
     try {
-      const lista = await base44.entities.Licitacao.list("-updated_date", 500);
+      const lista = await base44.entities.Licitacao.filter({ salva_manualmente: true }, "-updated_date", 500);
       setLicitacoes(lista);
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ export default function MinhasLicitacoes() {
     if (selecionada?.id) {
       await base44.entities.Licitacao.update(selecionada.id, rest);
     } else {
-      await base44.entities.Licitacao.create(rest);
+      await base44.entities.Licitacao.create({ ...rest, salva_manualmente: true });
     }
     setSelecionada(null);
     carregar();
@@ -81,7 +81,7 @@ export default function MinhasLicitacoes() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="font-heading text-xl sm:text-3xl font-bold tracking-tight">Minhas Licitações</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gerencie as licitações que você está acompanhando.</p>
+        <p className="text-sm text-muted-foreground mt-1">Licitações que você salvou manualmente.</p>
       </div>
 
       <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm flex items-center gap-4">
@@ -163,7 +163,7 @@ export default function MinhasLicitacoes() {
         <div className="text-center py-16 text-muted-foreground">Carregando licitações...</div>
       ) : filtradas.length === 0 ? (
         <div className="text-center py-16 space-y-2">
-          <p className="text-muted-foreground">Nenhuma licitação encontrada.</p>
+          <p className="text-muted-foreground">Nenhuma licitação salva.</p>
           <a href="/explorar" className="inline-block text-sm text-primary underline">Explorar a API para salvar licitações →</a>
         </div>
       ) : (
