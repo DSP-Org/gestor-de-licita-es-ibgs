@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table } from "lucide-react";
+import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2 } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
+import ShareDialog from "@/components/licitacoes/ShareDialog";
 
 export default function MinhasLicitacoes() {
   const [licitacoes, setLicitacoes] = useState([]);
@@ -14,6 +15,7 @@ export default function MinhasLicitacoes() {
   const [soFavoritos, setSoFavoritos] = useState(false);
   const [selecionada, setSelecionada] = useState(null);
   const [modo, setModo] = useState("cards");
+  const [compartilhar, setCompartilhar] = useState(false);
 
   const carregar = async () => {
     setLoading(true);
@@ -124,6 +126,14 @@ export default function MinhasLicitacoes() {
               <Table className="w-4 h-4" />
             </button>
           </div>
+          <button
+            onClick={() => setCompartilhar(true)}
+            disabled={filtradas.length === 0}
+            title="Compartilhar licitações"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md shrink-0 hover:bg-muted disabled:opacity-50"
+          >
+            <Share2 className="w-4 h-4" /> Compartilhar
+          </button>
         </div>
       </div>
 
@@ -148,6 +158,14 @@ export default function MinhasLicitacoes() {
 
       {selecionada && (
         <LicitacaoDetailDialog licitacao={selecionada} onClose={() => setSelecionada(null)} onSave={handleSave} />
+      )}
+
+      {compartilhar && (
+        <ShareDialog
+          licitacoes={filtradas}
+          origem={`Minhas licitações${filtroStatus !== "todos" ? ` — ${filtroStatus}` : ""}`}
+          onClose={() => setCompartilhar(false)}
+        />
       )}
     </div>
   );

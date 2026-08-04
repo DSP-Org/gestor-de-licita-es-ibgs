@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { X, ExternalLink, Star, Save, FileDown } from "lucide-react";
+import { X, ExternalLink, Star, Save, FileDown, Share2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
+import ShareDialog from "./ShareDialog";
 
 export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
   const [status, setStatus] = useState(licitacao?.status || "interessado");
   const [favorito, setFavorito] = useState(!!licitacao?.favorito);
   const [notas, setNotas] = useState(licitacao?.notas || "");
   const [valorProposta, setValorProposta] = useState(licitacao?.valor_proposta || "");
+  const [compartilhar, setCompartilhar] = useState(false);
 
   useEffect(() => {
     if (licitacao) {
@@ -221,6 +223,12 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
               </a>
             )}
             <button
+              onClick={() => setCompartilhar(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+            >
+              <Share2 className="w-4 h-4" /> Compartilhar
+            </button>
+            <button
               onClick={gerarPDF}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
             >
@@ -235,6 +243,14 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
           </div>
         </div>
       </div>
+
+      {compartilhar && (
+        <ShareDialog
+          licitacoes={[licitacao]}
+          origem={licitacao.titulo}
+          onClose={() => setCompartilhar(false)}
+        />
+      )}
     </div>
   );
 }

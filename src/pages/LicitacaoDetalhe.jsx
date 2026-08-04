@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, ExternalLink, Star, Save, FileDown, Loader2, Search } from "lucide-react";
+import { ArrowLeft, ExternalLink, Star, Save, FileDown, Loader2, Search, Share2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { StatusBadge, formatValor } from "@/components/licitacoes/LicitacaoCard";
+import ShareDialog from "@/components/licitacoes/ShareDialog";
 
 export default function LicitacaoDetalhe() {
   const { idLicitacao } = useParams();
@@ -16,6 +17,7 @@ export default function LicitacaoDetalhe() {
   const [favorito, setFavorito] = useState(false);
   const [notas, setNotas] = useState("");
   const [valorProposta, setValorProposta] = useState("");
+  const [compartilhar, setCompartilhar] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -255,6 +257,12 @@ export default function LicitacaoDetalhe() {
               </a>
             )}
             <button
+              onClick={() => setCompartilhar(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+            >
+              <Share2 className="w-4 h-4" /> Compartilhar
+            </button>
+            <button
               onClick={gerarPDF}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
             >
@@ -270,6 +278,14 @@ export default function LicitacaoDetalhe() {
           </div>
         </div>
       </div>
+
+      {compartilhar && (
+        <ShareDialog
+          licitacoes={[licitacao]}
+          origem={licitacao.titulo}
+          onClose={() => setCompartilhar(false)}
+        />
+      )}
     </div>
   );
 }
