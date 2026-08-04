@@ -25,6 +25,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
             <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Local</th>
             <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Modalidade</th>
             <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Abertura</th>
+            <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Busca</th>
             <th className="text-right font-medium px-3 py-2.5 w-24">Valor</th>
             {(onDelete || renderActions) && <th className="px-3 py-2.5 w-40">Ações</th>}
           </tr>
@@ -56,6 +57,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
               <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground whitespace-nowrap">{l.uf}{l.municipio ? ` · ${l.municipio}` : ""}</td>
               <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.tipo || "—"}</td>
               <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground whitespace-nowrap">{l.aberturaComHora || l.abertura || "—"}</td>
+              <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.busca_origem || "—"}</td>
               <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{formatValor(l.valor)}</td>
               {(onDelete || renderActions) && (
                 <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
