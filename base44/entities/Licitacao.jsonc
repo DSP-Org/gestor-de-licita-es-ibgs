@@ -1,0 +1,98 @@
+{
+  "name": "Licitacao",
+  "type": "object",
+  "properties": {
+    "id_licitacao": {
+      "type": "string",
+      "description": "Identificador \u00fanico da licita\u00e7\u00e3o no Alerta Licita\u00e7\u00e3o"
+    },
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo da licita\u00e7\u00e3o"
+    },
+    "objeto": {
+      "type": "string",
+      "description": "Objeto da licita\u00e7\u00e3o"
+    },
+    "uf": {
+      "type": "string",
+      "description": "Sigla do Estado"
+    },
+    "municipio": {
+      "type": "string",
+      "description": "Nome do munic\u00edpio"
+    },
+    "municipio_ibge": {
+      "type": "string",
+      "description": "C\u00f3digo IBGE do munic\u00edpio"
+    },
+    "orgao": {
+      "type": "string",
+      "description": "\u00d3rg\u00e3o respons\u00e1vel pela licita\u00e7\u00e3o"
+    },
+    "abertura_datetime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora de abertura (sem timezone definida)"
+    },
+    "abertura": {
+      "type": "string",
+      "description": "Data de abertura formatada (dd/mm/aaaa)"
+    },
+    "tipo": {
+      "type": "string",
+      "description": "Modalidade da licita\u00e7\u00e3o (ex: Preg\u00e3o eletr\u00f4nico)"
+    },
+    "id_tipo": {
+      "type": "string",
+      "description": "C\u00f3digo da modalidade"
+    },
+    "valor": {
+      "type": "string",
+      "description": "Valor estimado da licita\u00e7\u00e3o"
+    },
+    "link": {
+      "type": "string",
+      "description": "Link da licita\u00e7\u00e3o no Alerta Licita\u00e7\u00e3o"
+    },
+    "link_externo": {
+      "type": "string",
+      "description": "Link externo (portal oficial)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "interessado",
+        "acompanhando",
+        "participando",
+        "vencida",
+        "ganha",
+        "perdida",
+        "descartada"
+      ],
+      "default": "interessado",
+      "description": "Status de gest\u00e3o da licita\u00e7\u00e3o"
+    },
+    "favorito": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marcada como favorita"
+    },
+    "notas": {
+      "type": "string",
+      "description": "Anota\u00e7\u00f5es internas sobre a licita\u00e7\u00e3o"
+    },
+    "valor_proposta": {
+      "type": "number",
+      "description": "Valor da proposta apresentada"
+    },
+    "busca_origem": {
+      "type": "string",
+      "description": "Nome da busca salva que originou este registro"
+    }
+  },
+  "required": [
+    "id_licitacao",
+    "titulo"
+  ]
+}

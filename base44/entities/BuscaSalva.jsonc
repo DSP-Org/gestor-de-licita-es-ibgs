@@ -1,0 +1,48 @@
+{
+  "name": "BuscaSalva",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome identificador da busca salva"
+    },
+    "uf": {
+      "type": "string",
+      "description": "Sigla(s) do(s) Estado(s), separadas por v\u00edrgula (ex: PR,SC)"
+    },
+    "palavra_chave": {
+      "type": "string",
+      "description": "Palavras-chave separadas por v\u00edrgula. Use aspas para sequ\u00eancias e - para excluir."
+    },
+    "modalidade": {
+      "type": "string",
+      "description": "C\u00f3digos de modalidade separados por v\u00edrgula (ex: 5,13)"
+    },
+    "municipio_ibge": {
+      "type": "string",
+      "description": "C\u00f3digo IBGE do munic\u00edpio (7 d\u00edgitos)"
+    },
+    "licitacoes_por_pagina": {
+      "type": "number",
+      "default": 50,
+      "description": "Licita\u00e7\u00f5es por p\u00e1gina (1 a 100)"
+    },
+    "ativa": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se a busca est\u00e1 ativa para sincroniza\u00e7\u00e3o"
+    },
+    "ultima_sincronizacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data da \u00faltima sincroniza\u00e7\u00e3o"
+    },
+    "total_encontrado": {
+      "type": "number",
+      "description": "Total de licita\u00e7\u00f5es encontrado na \u00faltima sincroniza\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}
