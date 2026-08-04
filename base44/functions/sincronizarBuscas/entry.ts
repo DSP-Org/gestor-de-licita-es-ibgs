@@ -65,13 +65,40 @@ export default async function(req) {
           await base44.asServiceRole.entities.Licitacao.bulkCreate(novas);
           totalNovas += novas.length;
 
-          // Monta o corpo da notificação
-          const linhas = novas.slice(0, 10).map((l, i) =>
-            `${i + 1}. ${l.titulo}\n   ${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n   ${l.link || ""}`
-          ).join("\n\n");
-          const corpo = `Foram encontradas ${novas.length} nova(s) licitação(ões) para a busca "${busca.nome}":\n\n${linhas}` +
-            (novas.length > 10 ? `\n\n... e mais ${novas.length - 10} licitação(ões).` : "") +
-            `\n\nAcesse o painel para visualizar e gerenciar.`;
+          // Monta o corpo da notificação em HTML
+          const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const cards = novas.slice(0, 10).map((l, i) => {
+            const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
+            return `<tr><td style="padding:0 24px 12px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+                <tr><td style="padding:16px;">
+                  <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${esc(l.titulo)}</p>
+                  <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">${esc(local) || "—"} · Abertura: ${esc(l.abertura) || "—"}</p>
+                  ${l.link ? `<a href="${esc(l.link)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação →</a>` : ""}
+                </td></tr>
+              </table>
+            </td></tr>`;
+          }).join("");
+          const corpo = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
+              <tr><td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
+                  <tr><td style="background:#111827;padding:24px;">
+                    <h1 style="margin:0;color:#ffffff;font-size:18px;">🔔 Novas licitações encontradas</h1>
+                    <p style="margin:4px 0 0;color:#9ca3af;font-size:13px;">Busca: ${esc(busca.nome)}</p>
+                  </td></tr>
+                  <tr><td style="padding:20px 24px 8px;">
+                    <p style="margin:0;font-size:14px;color:#374151;">Foram encontradas <b>${novas.length} nova(s) licitação(ões)</b> para a sua busca:</p>
+                  </td></tr>
+                  ${cards}
+                  ${novas.length > 10 ? `<tr><td style="padding:0 24px 8px;font-size:13px;color:#6b7280;">... e mais ${novas.length - 10} licitação(ões). Acesse o painel para visualizar todas.</td></tr>` : ""}
+                  <tr><td style="padding:16px 24px 24px;">
+                    <p style="margin:0;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Gestor de Licitações IBGS</p>
+                  </td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </body></html>`;
 
           // E-mail aos destinatários selecionados (ou ao dono da busca)
           if (busca.notificar_email !== false) {

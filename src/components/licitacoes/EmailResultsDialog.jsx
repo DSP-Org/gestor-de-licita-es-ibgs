@@ -22,17 +22,43 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
       .finally(() => setLoading(false));
   }, []);
 
+  const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   const montarCorpo = () => {
-    const linhas = licitacoes.map((l, i) => {
+    const cards = licitacoes.map((l, i) => {
       const valor = formatValor(l.valor);
       const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
-      return `${i + 1}. ${l.titulo}\n   Órgão: ${l.orgao || "—"} | ${local || "—"} | ${l.tipo || "—"}\n   Abertura: ${l.abertura || "—"} | Valor: ${valor}\n   Link: ${l.link || l.link_externo || "—"}`;
-    });
-    return `Foram encontradas ${licitacoes.length} licitação(ões) em "${origem}".
-
-${linhas.join("\n\n")}
-
-— Enviado pelo Gestor de Licitações IBGS`;
+      const link = l.link || l.link_externo || "";
+      return `<tr><td style="padding:0 24px 12px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+          <tr><td style="padding:16px;">
+            <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${esc(l.titulo)}</p>
+            <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">Órgão: ${esc(l.orgao) || "—"} · ${esc(local) || "—"} · ${esc(l.tipo) || "—"}</p>
+            <p style="margin:0 0 8px;font-size:13px;color:#4b5563;">Abertura: ${esc(l.abertura) || "—"} · Valor: ${valor}</p>
+            ${link ? `<a href="${esc(link)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação →</a>` : ""}
+          </td></tr>
+        </table>
+      </td></tr>`;
+    }).join("");
+    return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:#111827;padding:24px;">
+          <h1 style="margin:0;color:#ffffff;font-size:18px;">🔔 Resultados de licitações</h1>
+          <p style="margin:4px 0 0;color:#9ca3af;font-size:13px;">Busca: ${esc(origem) || "—"}</p>
+        </td></tr>
+        <tr><td style="padding:20px 24px 8px;">
+          <p style="margin:0;font-size:14px;color:#374151;">Foram encontradas <b>${licitacoes.length} licitação(ões)</b> para a sua busca:</p>
+        </td></tr>
+        ${cards}
+        <tr><td style="padding:16px 24px 24px;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Gestor de Licitações IBGS</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
   };
 
   const enviar = async () => {
@@ -97,9 +123,10 @@ ${linhas.join("\n\n")}
 
           <div>
             <label className="text-xs font-medium text-muted-foreground">Prévia do conteúdo</label>
-            <pre className="mt-1 w-full px-3 py-2 text-xs border rounded-md bg-muted/30 max-h-40 overflow-auto whitespace-pre-wrap font-mono">
-{montarCorpo().slice(0, 600)}{licitacoes.length > 3 ? "\n..." : ""}
-            </pre>
+            <div
+              className="mt-1 w-full border rounded-md bg-white max-h-40 overflow-auto"
+              dangerouslySetInnerHTML={{ __html: montarCorpo() }}
+            />
           </div>
 
           {msg && <p className="text-sm text-green-600">{msg}</p>}
