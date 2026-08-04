@@ -25,17 +25,18 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const montarCorpo = () => {
+    const base = window.location.origin;
     const cards = licitacoes.map((l, i) => {
       const valor = formatValor(l.valor);
       const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
-      const link = l.link || l.link_externo || "";
+      const linkInterno = `${base}/licitacao/${encodeURIComponent(l.id_licitacao)}`;
       return `<tr><td style="padding:0 24px 12px;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
           <tr><td style="padding:16px;">
             <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${esc(l.titulo)}</p>
             <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">Órgão: ${esc(l.orgao) || "—"} · ${esc(local) || "—"} · ${esc(l.tipo) || "—"}</p>
             <p style="margin:0 0 8px;font-size:13px;color:#4b5563;">Abertura: ${esc(l.abertura) || "—"} · Valor: ${valor}</p>
-            ${link ? `<a href="${esc(link)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação →</a>` : ""}
+            <a href="${esc(linkInterno)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação no painel →</a>
           </td></tr>
         </table>
       </td></tr>`;

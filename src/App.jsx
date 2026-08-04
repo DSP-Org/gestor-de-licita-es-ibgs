@@ -13,6 +13,7 @@ import Explorar from "@/pages/Explorar";
 import BuscasSalvas from "@/pages/BuscasSalvas";
 import Configuracoes from "@/pages/Configuracoes";
 import Usuarios from "@/pages/Usuarios";
+import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
         <Route path="/buscas" element={<BuscasSalvas />} />
         <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="/usuarios" element={<Usuarios />} />
+        <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -1,10 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { secrets } from "base44:runtime";
 import { consultarAlertaLicitacao } from "../../shared/alertaApi.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
 
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
+    const appUrl = (secrets.get("APP_URL") || "").replace(/\/$/, "");
 
     // Se houver usuário autenticado, exige admin (invocação manual);
     // se não houver (chamada via workflow agendado), prossegue com service role.
@@ -69,12 +71,13 @@ export default async function(req) {
           const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
           const cards = novas.slice(0, 10).map((l, i) => {
             const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
+            const linkInterno = appUrl ? `${appUrl}/licitacao/${encodeURIComponent(l.id_licitacao)}` : "";
             return `<tr><td style="padding:0 24px 12px;">
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
                 <tr><td style="padding:16px;">
                   <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${esc(l.titulo)}</p>
                   <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">${esc(local) || "—"} · Abertura: ${esc(l.abertura) || "—"}</p>
-                  ${l.link ? `<a href="${esc(l.link)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação →</a>` : ""}
+                  ${linkInterno ? `<a href="${esc(linkInterno)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação no painel →</a>` : ""}
                 </td></tr>
               </table>
             </td></tr>`;
@@ -124,10 +127,11 @@ export default async function(req) {
           // Telegram
           if (busca.telegram_chats) {
             try {
-              const corpoTg = `<b>🔔 ${novas.length} nova(s) licitação(ões) — ${busca.nome}</b>\n\n` +
-                novas.slice(0, 5).map((l, i) =>
-                  `${i + 1}. <b>${l.titulo}</b>\n${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n${l.link || ""}`
-                ).join("\n\n") +
+              const corpoTg = `<b>🔔 ${novas.length} nova(s) licitação(oes) — ${busca.nome}</b>\n\n` +
+                novas.slice(0, 5).map((l, i) => {
+                  const linkInterno = appUrl ? `${appUrl}/licitacao/${encodeURIComponent(l.id_licitacao)}` : "";
+                  return `${i + 1}. <b>${l.titulo}</b>\n${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n${linkInterno || l.link || ""}`;
+                }).join("\n\n") +
                 (novas.length > 5 ? `\n\n... e mais ${novas.length - 5}.` : "");
               await enviarTelegram(busca.telegram_chats, corpoTg);
             } catch {}
