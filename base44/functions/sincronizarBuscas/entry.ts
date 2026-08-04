@@ -64,10 +64,11 @@ export default async function(req) {
           await base44.asServiceRole.entities.Licitacao.bulkCreate(novas);
           totalNovas += novas.length;
 
-          // Envia notificação por e-mail ao dono da busca
-          try {
-            const usuario = await base44.asServiceRole.entities.User.get(busca.created_by_id);
-            if (usuario && usuario.email) {
+          // Envia notificação por e-mail ao dono da busca (se habilitado)
+          if (busca.notificar_email !== false) {
+            try {
+              const usuario = await base44.asServiceRole.entities.User.get(busca.created_by_id);
+              if (usuario && usuario.email) {
               const linhas = novas.slice(0, 10).map((l, i) =>
                 `${i + 1}. ${l.titulo}\n   ${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n   ${l.link || ""}`
               ).join("\n\n");
@@ -75,14 +76,15 @@ export default async function(req) {
                 (novas.length > 10 ? `\n\n... e mais ${novas.length - 10} licitação(ões).` : "") +
                 `\n\nAcesse o painel para visualizar e gerenciar.`;
 
-              await base44.asServiceRole.integrations.Core.SendEmail({
-                to: usuario.email,
-                subject: `Novas licitações encontradas — ${busca.nome}`,
-                body: corpo,
-              });
+                await base44.asServiceRole.integrations.Core.SendEmail({
+                  to: usuario.email,
+                  subject: `Novas licitações encontradas — ${busca.nome}`,
+                  body: corpo,
+                });
+              }
+            } catch (e) {
+              // e-mail falha não interrompe a sincronização
             }
-          } catch (e) {
-            // e-mail falha não interrompe a sincronização
           }
         }
 

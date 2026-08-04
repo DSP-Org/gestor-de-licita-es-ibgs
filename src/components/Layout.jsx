@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { FileText, Search, Bookmark, Bell, Users } from "lucide-react";
+import { FileText, Search, Bookmark, Bell, Users, Settings } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const navItems = [
   { to: "/", label: "Minhas Licitações", icon: FileText, end: true },
   { to: "/explorar", label: "Explorar API", icon: Search },
   { to: "/buscas", label: "Buscas Salvas", icon: Bookmark },
+  { to: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 const adminItems = [{ to: "/usuarios", label: "Usuários", icon: Users }];
 

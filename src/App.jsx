@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import Explorar from "@/pages/Explorar";
 import BuscasSalvas from "@/pages/BuscasSalvas";
+import Configuracoes from "@/pages/Configuracoes";
 import Usuarios from "@/pages/Usuarios";
 
 const AuthenticatedApp = () => {
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<MinhasLicitacoes />} />
         <Route path="/explorar" element={<Explorar />} />
         <Route path="/buscas" element={<BuscasSalvas />} />
+        <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="/usuarios" element={<Usuarios />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
