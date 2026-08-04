@@ -1,9 +1,6 @@
-// Token da API do Alerta Licitação (conta ibgs.saude@outlook.com).
-// Como o plano atual não permite funções de backend, a consulta é feita
-// pelo frontend. O token tem CIDR liberado (*) e o app exige login.
-export const ALERTA_TOKEN = "f7164dfc71fe0cd2a9601c40f09675aa";
-
-const API_BASE = "https://alertalicitacao.com.br/api/v1/licitacoesAbertas/";
+// Constantes e configurações da integração com Alerta Licitação.
+// O token da API agora fica no backend (segredo) — o frontend apenas
+// invoca a função de backend que consulta a API com segurança.
 
 export const MODALIDADES = [
   { id: "1", nome: "Convite" },
@@ -32,22 +29,9 @@ export const STATUS_OPTIONS = [
   { value: "descartada", label: "Descartada", color: "bg-gray-200 text-gray-600" },
 ];
 
-export async function buscarLicitacoes(filtros = {}) {
-  const params = new URLSearchParams();
-  params.set("token", ALERTA_TOKEN);
-  if (filtros.uf) params.set("uf", filtros.uf);
-  if (filtros.palavra_chave) params.set("palavra_chave", filtros.palavra_chave);
-  if (filtros.modalidade) params.set("modalidade", filtros.modalidade);
-  if (filtros.municipio_ibge) params.set("municipio_ibge", filtros.municipio_ibge);
-  if (filtros.data_insercao) params.set("data_insercao", filtros.data_insercao);
-  params.set("pagina", String(filtros.pagina || 1));
-  params.set("licitacoesPorPagina", String(Math.min(Math.max(filtros.licitacoesPorPagina || 50, 1), 100)));
+import { base44 } from "@/api/base44Client";
 
-  const resp = await fetch(`${API_BASE}?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!resp.ok) {
-    throw new Error(`Erro na API (${resp.status})`);
-  }
-  return resp.json();
+export async function buscarLicitacoes(filtros = {}) {
+  const response = await base44.functions.invoke("buscarLicitacoesApi", filtros);
+  return response.data;
 }
