@@ -1,11 +1,22 @@
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 
-export default function LicitacaoTable({ licitacoes, onRowClick }) {
+export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, onToggleSelecao }) {
+  const comSelecao = !!onToggleSelecao;
   return (
     <div className="bg-card border rounded-lg overflow-hidden">
       <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+            {comSelecao && (
+              <th className="text-left font-medium px-3 py-2.5 w-10">
+                <input
+                  type="checkbox"
+                  checked={selecionados?.size === licitacoes.length && licitacoes.length > 0}
+                  onChange={(e) => licitacoes.forEach((l) => onToggleSelecao(l.id_licitacao, e.target.checked))}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+              </th>
+            )}
             <th className="text-left font-medium px-3 py-2.5 w-20 hidden sm:table-cell">ID</th>
             <th className="text-left font-medium px-3 py-2.5">Título</th>
             <th className="text-left font-medium px-3 py-2.5 w-20">Status</th>
@@ -19,10 +30,20 @@ export default function LicitacaoTable({ licitacoes, onRowClick }) {
         <tbody>
           {licitacoes.map((l) => (
             <tr
-              key={l.id}
+              key={l.id || l.id_licitacao}
               onClick={() => onRowClick?.(l)}
               className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
             >
+              {comSelecao && (
+                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selecionados?.has(l.id_licitacao) || false}
+                    onChange={(e) => onToggleSelecao(l.id_licitacao, e.target.checked)}
+                    className="w-4 h-4 rounded cursor-pointer"
+                  />
+                </td>
+              )}
               <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground truncate hidden sm:table-cell">{l.id_licitacao}</td>
               <td className="px-3 py-2.5">
                 <p className="font-medium line-clamp-1">{l.titulo}</p>

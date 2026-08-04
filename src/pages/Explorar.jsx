@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
-import { Plus, Check, Loader2, AlertCircle, Mail } from "lucide-react";
+import { Plus, Check, Loader2, AlertCircle, Mail, LayoutGrid, Table } from "lucide-react";
 import LicitacaoFilters from "@/components/licitacoes/LicitacaoFilters";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
+import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 
@@ -19,6 +20,17 @@ export default function Explorar() {
   const [salvandoId, setSalvandoId] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
   const [enviarEmail, setEnviarEmail] = useState(false);
+  const [modo, setModo] = useState("cards");
+  const [selecionados, setSelecionados] = useState(new Set());
+
+  const toggleSelecao = (id, checked) => {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   const carregarSalvas = async () => {
     try {
@@ -43,6 +55,7 @@ export default function Explorar() {
     setErro("");
     setResultados([]);
     setMeta(null);
+    setSelecionados(new Set());
     try {
       const data = await buscarLicitacoes({ ...filtros, pagina: 1, licitacoesPorPagina: 50 });
       if (data.totalErros > 0) {
@@ -116,14 +129,38 @@ export default function Explorar() {
             <span className="font-medium text-foreground">{meta.total}</span> licitações encontradas ·
             mostrando {meta.nestaPagina} (página 1 de {meta.paginas})
           </div>
-          {resultados.length > 0 && (
-            <button
-              onClick={() => setEnviarEmail(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted"
-            >
-              <Mail className="w-4 h-4" /> Enviar por e-mail
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {resultados.length > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
+                </span>
+                <div className="inline-flex items-center border rounded-md overflow-hidden shrink-0">
+                  <button
+                    onClick={() => setModo("cards")}
+                    title="Visualização em cards"
+                    className={`p-1.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setModo("tabela")}
+                    title="Visualização em tabela"
+                    className={`p-1.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >
+                    <Table className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => setEnviarEmail(true)}
+                  disabled={selecionados.size === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted disabled:opacity-50"
+                >
+                  <Mail className="w-4 h-4" /> Enviar por e-mail
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -131,35 +168,53 @@ export default function Explorar() {
         <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" /> Consultando a API...
         </div>
-      ) : (
+      ) : modo === "cards" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {resultados.map((lic) => {
             const jaSalva = salvasIds.has(lic.id_licitacao);
+            const sel = selecionados.has(lic.id_licitacao);
             return (
-              <LicitacaoCard
-                key={lic.id_licitacao}
-                licitacao={lic}
-                onClick={() => setSelecionada(lic)}
-                action={
-                  jaSalva ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                      <Check className="w-4 h-4" /> Salva
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => salvar(lic)}
-                      disabled={salvandoId === lic.id_licitacao}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
-                    </button>
-                  )
-                }
-              />
+              <div key={lic.id_licitacao} className="relative">
+                <label className="absolute top-2 left-2 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur px-2 py-1 rounded-md border text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sel}
+                    onChange={(e) => toggleSelecao(lic.id_licitacao, e.target.checked)}
+                    className="w-3.5 h-3.5 rounded cursor-pointer"
+                  />
+                  <span className="text-muted-foreground">Enviar</span>
+                </label>
+                <LicitacaoCard
+                  licitacao={lic}
+                  onClick={() => setSelecionada(lic)}
+                  action={
+                    jaSalva ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                        <Check className="w-4 h-4" /> Salva
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => salvar(lic)}
+                        disabled={salvandoId === lic.id_licitacao}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
+                      </button>
+                    )
+                  }
+                />
+              </div>
             );
           })}
         </div>
+      ) : (
+        <LicitacaoTable
+          licitacoes={resultados}
+          onRowClick={setSelecionada}
+          selecionados={selecionados}
+          onToggleSelecao={toggleSelecao}
+        />
       )}
 
       {selecionada && (
@@ -175,7 +230,7 @@ export default function Explorar() {
 
       {enviarEmail && (
         <EmailResultsDialog
-          licitacoes={resultados}
+          licitacoes={resultados.filter((l) => selecionados.has(l.id_licitacao))}
           origem="Explorar API"
           onClose={() => setEnviarEmail(false)}
         />
