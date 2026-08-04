@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { secrets } from "base44:runtime";
 import { consultarAlertaLicitacao, datasParaSincronizar, filtrarPorTodasPalavras } from "../../shared/alertaApi.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
+import { enviarEmailExterno } from "../../shared/email.ts";
 
 export default async function(req) {
   try {
@@ -177,6 +178,14 @@ export default async function(req) {
                   }
                 } catch {}
               }
+            } catch {}
+          }
+
+          // Destinatários externos (e-mails fora do sistema)
+          const externos = Array.isArray(busca.destinatarios_extras) ? busca.destinatarios_extras : [];
+          if (externos.length > 0) {
+            try {
+              await enviarEmailExterno(externos, `Novas licitações encontradas — ${busca.nome}`, corpo);
             } catch {}
           }
 

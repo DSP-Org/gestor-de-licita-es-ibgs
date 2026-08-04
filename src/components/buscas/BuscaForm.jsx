@@ -17,15 +17,17 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     ativa: true,
     notificar_email: true,
     destinatarios_email: [],
+    destinatarios_extras: [],
     telegram_chats: "",
   });
   const [municipios, setMunicipios] = useState([]);
   const [carregandoMun, setCarregandoMun] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [carregandoUsers, setCarregandoUsers] = useState(false);
+  const [novoEmail, setNovoEmail] = useState("");
 
   useEffect(() => {
-    if (initial) setForm((f) => ({ ...f, ...initial, destinatarios_email: initial.destinatarios_email || [], telegram_chats: initial.telegram_chats || "" }));
+    if (initial) setForm((f) => ({ ...f, ...initial, destinatarios_email: initial.destinatarios_email || [], destinatarios_extras: initial.destinatarios_extras || [], telegram_chats: initial.telegram_chats || "" }));
   }, [initial]);
 
   useEffect(() => {
@@ -71,6 +73,17 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
       const existe = atual.includes(userId);
       return { ...f, destinatarios_email: existe ? atual.filter((id) => id !== userId) : [...atual, userId] };
     });
+  };
+
+  const adicionarEmail = () => {
+    const email = novoEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    setForm((f) => ({ ...f, destinatarios_extras: [...(f.destinatarios_extras || []), email] }));
+    setNovoEmail("");
+  };
+
+  const removerEmail = (index) => {
+    setForm((f) => ({ ...f, destinatarios_extras: (f.destinatarios_extras || []).filter((_, i) => i !== index) }));
   };
 
   const submit = () => {
@@ -221,6 +234,37 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
             <p className="text-xs text-muted-foreground mt-1">
               {(form.destinatarios_email || []).length} selecionado(s). Se nenhum for escolhido, avisa o dono da busca.
             </p>
+          </div>
+        )}
+
+        {form.notificar_email && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Outros destinatários (e-mails externos)</label>
+            <div className="mt-1 flex gap-2">
+              <input
+                type="email"
+                value={novoEmail}
+                onChange={(e) => setNovoEmail(e.target.value)}
+                placeholder="email@exemplo.com"
+                className="flex-1 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); adicionarEmail(); } }}
+              />
+              <button type="button" onClick={adicionarEmail} className="px-3 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90">
+                Adicionar
+              </button>
+            </div>
+            {(form.destinatarios_extras || []).length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(form.destinatarios_extras || []).map((email, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-full text-xs">
+                    {email}
+                    <button type="button" onClick={() => removerEmail(i)} className="text-muted-foreground hover:text-red-600">
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

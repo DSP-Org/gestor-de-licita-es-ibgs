@@ -62,6 +62,13 @@
       },
       "description": "IDs de usu\u00e1rios cadastrados que receber\u00e3o a notifica\u00e7\u00e3o por e-mail"
     },
+    "destinatarios_extras": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Endere\u00e7os de e-mail externos (n\u00e3o cadastrados no sistema) que receber\u00e3o a notifica\u00e7\u00e3o"
+    },
     "telegram_chats": {
       "type": "string",
       "description": "IDs de chat do Telegram separados por v\u00edrgula para envio de notifica\u00e7\u00f5es"
