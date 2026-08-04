@@ -69,19 +69,46 @@ export default async function(req) {
 
           // Monta o corpo da notificação em HTML
           const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+          // Cria resultado compartilhado com código único
+          const codigo = crypto.randomUUID();
+          const linkCompartilhamento = appUrl ? `${appUrl}/compartilhar/${codigo}` : "";
+          try {
+            await base44.asServiceRole.entities.ResultadoCompartilhado.create({
+              codigo,
+              busca_nome: busca.nome,
+              licitacoes: novas.map((l) => ({
+                id_licitacao: l.id_licitacao,
+                titulo: l.titulo,
+                objeto: l.objeto,
+                orgao: l.orgao,
+                uf: l.uf,
+                municipio: l.municipio,
+                abertura: l.abertura,
+                tipo: l.tipo,
+                valor: l.valor,
+                link: l.link,
+                link_externo: l.link_externo,
+              })),
+            });
+          } catch {}
+
           const cards = novas.slice(0, 10).map((l, i) => {
             const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
-            const linkInterno = appUrl ? `${appUrl}/licitacao/${encodeURIComponent(l.id_licitacao)}` : "";
             return `<tr><td style="padding:0 24px 12px;">
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
                 <tr><td style="padding:16px;">
                   <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${esc(l.titulo)}</p>
                   <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">${esc(local) || "—"} · Abertura: ${esc(l.abertura) || "—"}</p>
-                  ${linkInterno ? `<a href="${esc(linkInterno)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação no painel →</a>` : ""}
                 </td></tr>
               </table>
             </td></tr>`;
           }).join("");
+          const botaoCompartilhar = linkCompartilhamento
+            ? `<tr><td style="padding:8px 24px 20px;">
+                <a href="${esc(linkCompartilhamento)}" style="display:inline-block;padding:10px 20px;background:#111827;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Ver todas as licitações no painel →</a>
+              </td></tr>`
+            : "";
           const corpo = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
               <tr><td align="center">
@@ -91,10 +118,11 @@ export default async function(req) {
                     <p style="margin:4px 0 0;color:#9ca3af;font-size:13px;">Busca: ${esc(busca.nome)}</p>
                   </td></tr>
                   <tr><td style="padding:20px 24px 8px;">
-                    <p style="margin:0;font-size:14px;color:#374151;">Foram encontradas <b>${novas.length} nova(s) licitação(ões)</b> para a sua busca:</p>
+                    <p style="margin:0;font-size:14px;color:#374151;">Foram encontradas <b>${novas.length} nova(s) licitação(oes)</b> para a sua busca:</p>
                   </td></tr>
                   ${cards}
-                  ${novas.length > 10 ? `<tr><td style="padding:0 24px 8px;font-size:13px;color:#6b7280;">... e mais ${novas.length - 10} licitação(ões). Acesse o painel para visualizar todas.</td></tr>` : ""}
+                  ${novas.length > 10 ? `<tr><td style="padding:0 24px 8px;font-size:13px;color:#6b7280;">... e mais ${novas.length - 10} licitação(oes). Acesse o painel para visualizar todas.</td></tr>` : ""}
+                  ${botaoCompartilhar}
                   <tr><td style="padding:16px 24px 24px;">
                     <p style="margin:0;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Gestor de Licitações IBGS</p>
                   </td></tr>
@@ -128,11 +156,11 @@ export default async function(req) {
           if (busca.telegram_chats) {
             try {
               const corpoTg = `<b>🔔 ${novas.length} nova(s) licitação(oes) — ${busca.nome}</b>\n\n` +
-                novas.slice(0, 5).map((l, i) => {
-                  const linkInterno = appUrl ? `${appUrl}/licitacao/${encodeURIComponent(l.id_licitacao)}` : "";
-                  return `${i + 1}. <b>${l.titulo}</b>\n${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n${linkInterno || l.link || ""}`;
-                }).join("\n\n") +
-                (novas.length > 5 ? `\n\n... e mais ${novas.length - 5}.` : "");
+                novas.slice(0, 5).map((l, i) =>
+                  `${i + 1}. <b>${l.titulo}</b>\n${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}`
+                ).join("\n\n") +
+                (novas.length > 5 ? `\n\n... e mais ${novas.length - 5}.` : "") +
+                (linkCompartilhamento ? `\n\n🔗 Ver todas no painel: ${linkCompartilhamento}` : "");
               await enviarTelegram(busca.telegram_chats, corpoTg);
             } catch {}
           }

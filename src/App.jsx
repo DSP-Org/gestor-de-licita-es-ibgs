@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -14,9 +14,20 @@ import BuscasSalvas from "@/pages/BuscasSalvas";
 import Configuracoes from "@/pages/Configuracoes";
 import Usuarios from "@/pages/Usuarios";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
+import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const location = useLocation();
+
+  // Páginas públicas (compartilhamento por código) — não exigem login
+  if (location.pathname.startsWith("/compartilhar/")) {
+    return (
+      <Routes>
+        <Route path="/compartilhar/:codigo" element={<ResultadoCompartilhado />} />
+      </Routes>
+    );
+  }
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {

@@ -24,23 +24,26 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
 
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  const montarCorpo = () => {
+  const montarCorpo = (linkCompartilhamento) => {
     const base = window.location.origin;
     const cards = licitacoes.map((l, i) => {
       const valor = formatValor(l.valor);
       const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
-      const linkInterno = `${base}/licitacao/${encodeURIComponent(l.id_licitacao)}`;
       return `<tr><td style="padding:0 24px 12px;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
           <tr><td style="padding:16px;">
             <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${esc(l.titulo)}</p>
             <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">Órgão: ${esc(l.orgao) || "—"} · ${esc(local) || "—"} · ${esc(l.tipo) || "—"}</p>
             <p style="margin:0 0 8px;font-size:13px;color:#4b5563;">Abertura: ${esc(l.abertura) || "—"} · Valor: ${valor}</p>
-            <a href="${esc(linkInterno)}" style="font-size:13px;color:#2563eb;text-decoration:none;">Ver licitação no painel →</a>
           </td></tr>
         </table>
       </td></tr>`;
     }).join("");
+    const botaoCompartilhar = linkCompartilhamento
+      ? `<tr><td style="padding:8px 24px 20px;">
+          <a href="${esc(linkCompartilhamento)}" style="display:inline-block;padding:10px 20px;background:#111827;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Ver todas as licitações no painel →</a>
+        </td></tr>`
+      : "";
     return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
     <tr><td align="center">
@@ -68,10 +71,33 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
     setMsg("");
     setErro("");
     try {
+      // Cria um resultado compartilhado com código único
+      const codigo = crypto.randomUUID();
+      const base = window.location.origin;
+      const linkCompartilhamento = `${base}/compartilhar/${codigo}`;
+
+      await base44.entities.ResultadoCompartilhado.create({
+        codigo,
+        busca_nome: origem || "busca manual",
+        licitacoes: licitacoes.map((l) => ({
+          id_licitacao: l.id_licitacao,
+          titulo: l.titulo,
+          objeto: l.objeto,
+          orgao: l.orgao,
+          uf: l.uf,
+          municipio: l.municipio,
+          abertura: l.abertura,
+          tipo: l.tipo,
+          valor: l.valor,
+          link: l.link,
+          link_externo: l.link_externo,
+        })),
+      });
+
       await base44.integrations.Core.SendEmail({
         to: destinatario,
         subject: assunto,
-        body: montarCorpo(),
+        body: montarCorpo(linkCompartilhamento),
       });
       setMsg(`E-mail enviado para ${destinatario}.`);
     } catch (e) {
@@ -126,7 +152,7 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
             <label className="text-xs font-medium text-muted-foreground">Prévia do conteúdo</label>
             <div
               className="mt-1 w-full border rounded-md bg-white max-h-40 overflow-auto"
-              dangerouslySetInnerHTML={{ __html: montarCorpo() }}
+              dangerouslySetInnerHTML={{ __html: montarCorpo(`${window.location.origin}/compartilhar/CODIGO`) }}
             />
           </div>
 
