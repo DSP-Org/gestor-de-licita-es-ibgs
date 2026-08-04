@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Star, FileText, Clock, CheckCircle2 } from "lucide-react";
+import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
+import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 
 export default function MinhasLicitacoes() {
@@ -12,6 +13,7 @@ export default function MinhasLicitacoes() {
   const [busca, setBusca] = useState("");
   const [soFavoritos, setSoFavoritos] = useState(false);
   const [selecionada, setSelecionada] = useState(null);
+  const [modo, setModo] = useState("cards");
 
   const carregar = async () => {
     setLoading(true);
@@ -105,6 +107,22 @@ export default function MinhasLicitacoes() {
         >
           <Star className={`w-4 h-4 ${soFavoritos ? "fill-amber-400 text-amber-400" : ""}`} /> Favoritas
         </button>
+        <div className="inline-flex items-center border rounded-md overflow-hidden">
+          <button
+            onClick={() => setModo("cards")}
+            title="Visualização em cards"
+            className={`p-2 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setModo("tabela")}
+            title="Visualização em tabela"
+            className={`p-2 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+          >
+            <Table className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -115,11 +133,15 @@ export default function MinhasLicitacoes() {
           <a href="/explorar" className="inline-block text-sm text-primary underline">Explorar a API para salvar licitações →</a>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtradas.map((l) => (
-            <LicitacaoCard key={l.id} licitacao={l} onClick={() => setSelecionada(l)} />
-          ))}
-        </div>
+        modo === "cards" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtradas.map((l) => (
+              <LicitacaoCard key={l.id} licitacao={l} onClick={() => setSelecionada(l)} />
+            ))}
+          </div>
+        ) : (
+          <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} />
+        )
       )}
 
       {selecionada && (
