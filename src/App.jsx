@@ -23,7 +23,7 @@ import ResetPassword from "@/pages/ResetPassword";
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
   const location = useLocation();
 
   // Páginas públicas (compartilhamento por código) — não exigem login
@@ -65,6 +65,12 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  // Require authentication for all non-public routes
+  if (!isAuthenticated) {
+    navigateToLogin();
+    return null;
   }
 
   // Render the main app
