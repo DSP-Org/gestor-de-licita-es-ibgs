@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, LayoutGrid, Table, Trash2, Zap, Loader2, Check, AlertCircle } from "lucide-react";
+import { Search, LayoutGrid, Table, Zap, Loader2, Check, AlertCircle } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import ShareDialog from "@/components/licitacoes/ShareDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
+import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 
 export default function Atualizacao() {
@@ -100,17 +101,28 @@ export default function Atualizacao() {
     });
   };
 
+  const itensSelecionados = () => licitacoes.filter((item) => selecionadas.has(item.id_licitacao));
+
   const excluirSelecionadas = async () => {
     if (!window.confirm(`Excluir ${selecionadas.size} licitação(ões) selecionada(s)?`)) return;
-    const ids = licitacoes.filter((item) => selecionadas.has(item.id_licitacao)).map((item) => item.id);
+    const ids = itensSelecionados().map((item) => item.id);
     await base44.entities.Licitacao.deleteMany({ id: { $in: ids } });
     setLicitacoes((prev) => prev.filter((item) => !selecionadas.has(item.id_licitacao)));
     setSelecionadas(new Set());
   };
 
+  const salvarSelecionadas = async () => {
+    const itens = itensSelecionados();
+    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, salva_manualmente: true })));
+    setLicitacoes((prev) => prev.filter((item) => !selecionadas.has(item.id_licitacao)));
+    setSelecionadas(new Set());
+  };
+
+  const enviarSelecionadas = () => setCompartilhar(itensSelecionados());
+
   const renderActions = (licitacao) => (
     <AtualizacaoActions
-      onSend={() => setCompartilhar(licitacao)}
+      onSend={() => setCompartilhar([licitacao])}
       onSave={() => handleSaveManual(licitacao)}
       onDelete={() => handleDelete(licitacao)}
     />
@@ -244,9 +256,12 @@ export default function Atualizacao() {
             Selecionar todas
           </label>
           {selecionadas.size > 0 && (
-            <button onClick={excluirSelecionadas} className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90">
-              <Trash2 className="h-4 w-4" /> Excluir selecionadas ({selecionadas.size})
-            </button>
+            <AtualizacaoBulkActions
+              quantidade={selecionadas.size}
+              onSend={enviarSelecionadas}
+              onSave={salvarSelecionadas}
+              onDelete={excluirSelecionadas}
+            />
           )}
         </div>
       )}
@@ -298,8 +313,12 @@ export default function Atualizacao() {
       {selecionada && (
         <LicitacaoDetailDialog licitacao={selecionada} onClose={() => setSelecionada(null)} onSave={handleSave} />
       )}
-      {compartilhar && (
-        <ShareDialog licitacoes={[compartilhar]} origem={compartilhar.busca_origem} onClose={() => setCompartilhar(null)} />
+      {compartilhar?.length > 0 && (
+        <ShareDialog
+          licitacoes={compartilhar}
+          origem={compartilhar.length === 1 ? compartilhar[0].busca_origem : "Licitações selecionadas"}
+          onClose={() => setCompartilhar(null)}
+        />
       )}
     </div>
   );
