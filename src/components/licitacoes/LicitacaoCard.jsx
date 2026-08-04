@@ -19,21 +19,21 @@ export function formatValor(valor) {
 export default function LicitacaoCard({ licitacao, onClick, action }) {
   return (
     <div
-      className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-2"
+      className="bg-card border rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.99]"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">
         <span className="text-xs font-mono text-muted-foreground truncate">{licitacao.id_licitacao}</span>
         {licitacao.status && <StatusBadge status={licitacao.status} />}
       </div>
-      <h3 className="font-heading font-semibold text-sm leading-snug line-clamp-2">{licitacao.titulo}</h3>
+      <h3 className="font-heading font-semibold text-[15px] leading-snug line-clamp-2">{licitacao.titulo}</h3>
       <p className="text-xs text-muted-foreground line-clamp-2">{licitacao.objeto}</p>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
         <span className="font-medium text-foreground">{licitacao.uf} · {licitacao.municipio}</span>
         <span>·</span>
         <span>{licitacao.tipo}</span>
       </div>
-      <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="flex items-center justify-between gap-2 pt-2 mt-auto border-t">
         <div className="text-xs">
           <span className="text-muted-foreground">Abertura: </span>
           <span className="font-medium">{licitacao.aberturaComHora || licitacao.abertura || "—"}</span>

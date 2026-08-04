@@ -77,10 +77,10 @@ export default function MinhasLicitacoes() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Minhas Licitações</h1>
-        <p className="text-sm text-muted-foreground">Gerencie as licitações que você está acompanhando.</p>
+        <h1 className="font-heading text-xl sm:text-3xl font-bold tracking-tight">Minhas Licitações</h1>
+        <p className="text-sm text-muted-foreground mt-1">Gerencie as licitações que você está acompanhando.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -98,21 +98,21 @@ export default function MinhasLicitacoes() {
         />
       )}
 
-      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por título, órgão, objeto..."
-            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="flex-1 sm:flex-none px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 sm:flex-none min-w-[8.5rem] px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="todos">Todos os status</option>
             {STATUS_OPTIONS.map((s) => (
@@ -121,11 +121,12 @@ export default function MinhasLicitacoes() {
           </select>
           <button
             onClick={() => setSoFavoritos(!soFavoritos)}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md shrink-0 ${soFavoritos ? "bg-amber-50 border-amber-300 text-amber-700" : "hover:bg-muted"}`}
+            className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-lg shrink-0 transition-colors ${soFavoritos ? "bg-amber-50 border-amber-300 text-amber-700" : "hover:bg-muted"}`}
           >
-            <Star className={`w-4 h-4 ${soFavoritos ? "fill-amber-400 text-amber-400" : ""}`} /> Favoritas
+            <Star className={`w-4 h-4 ${soFavoritos ? "fill-amber-400 text-amber-400" : ""}`} />
+            <span className="hidden sm:inline">Favoritas</span>
           </button>
-          <div className="inline-flex items-center border rounded-md overflow-hidden shrink-0">
+          <div className="hidden sm:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
             <button
               onClick={() => setModo("cards")}
               title="Visualização em cards"
@@ -145,9 +146,10 @@ export default function MinhasLicitacoes() {
             onClick={() => setCompartilhar(true)}
             disabled={filtradas.length === 0}
             title="Compartilhar licitações"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md shrink-0 hover:bg-muted disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-lg shrink-0 hover:bg-muted disabled:opacity-50"
           >
-            <Share2 className="w-4 h-4" /> Compartilhar
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Compartilhar</span>
           </button>
         </div>
       </div>
@@ -200,13 +202,13 @@ export default function MinhasLicitacoes() {
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="bg-card border rounded-lg p-4 flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
+    <div className="bg-card border rounded-xl p-3.5 sm:p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+      <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
-      <div>
-        <p className="text-2xl font-bold leading-none">{value}</p>
-        <p className="text-xs text-muted-foreground mt-1">{label}</p>
+      <div className="min-w-0">
+        <p className="text-xl sm:text-2xl font-bold leading-none">{value}</p>
+        <p className="text-xs text-muted-foreground mt-1 truncate">{label}</p>
       </div>
     </div>
   );
