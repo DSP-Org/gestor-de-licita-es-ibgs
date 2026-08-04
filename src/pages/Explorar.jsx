@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
-import { Plus, Check, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Check, Loader2, AlertCircle, Mail } from "lucide-react";
 import LicitacaoFilters from "@/components/licitacoes/LicitacaoFilters";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
+import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 
 const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", data_insercao: "" };
 
@@ -17,6 +18,7 @@ export default function Explorar() {
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [salvandoId, setSalvandoId] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
+  const [enviarEmail, setEnviarEmail] = useState(false);
 
   const carregarSalvas = async () => {
     try {
@@ -104,9 +106,19 @@ export default function Explorar() {
       )}
 
       {meta && (
-        <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{meta.total}</span> licitações encontradas ·
-          mostrando {meta.nestaPagina} (página 1 de {meta.paginas})
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{meta.total}</span> licitações encontradas ·
+            mostrando {meta.nestaPagina} (página 1 de {meta.paginas})
+          </div>
+          {resultados.length > 0 && (
+            <button
+              onClick={() => setEnviarEmail(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted"
+            >
+              <Mail className="w-4 h-4" /> Enviar por e-mail
+            </button>
+          )}
         </div>
       )}
 
@@ -153,6 +165,14 @@ export default function Explorar() {
             await salvar(dados);
             setSelecionada(null);
           }}
+        />
+      )}
+
+      {enviarEmail && (
+        <EmailResultsDialog
+          licitacoes={resultados}
+          origem="Explorar API"
+          onClose={() => setEnviarEmail(false)}
         />
       )}
     </div>

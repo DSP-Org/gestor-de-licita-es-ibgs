@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
-import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
+import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 
 export default function BuscasSalvas() {
   const [buscas, setBuscas] = useState([]);
@@ -11,6 +12,9 @@ export default function BuscasSalvas() {
   const [editando, setEditando] = useState(null);
   const [sincronizando, setSincronizando] = useState(null);
   const [resultadoSync, setResultadoSync] = useState({});
+  const [emailBusca, setEmailBusca] = useState(null);
+  const [emailLics, setEmailLics] = useState([]);
+  const [carregandoEmail, setCarregandoEmail] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -35,6 +39,26 @@ export default function BuscasSalvas() {
     setMostrarForm(false);
     setEditando(null);
     carregar();
+  };
+
+  const enviarEmail = async (busca) => {
+    setCarregandoEmail(busca.id);
+    try {
+      const data = await buscarLicitacoes({
+        uf: busca.uf,
+        palavra_chave: busca.palavra_chave,
+        modalidade: busca.modalidade,
+        municipio_ibge: busca.municipio_ibge,
+        pagina: 1,
+        licitacoesPorPagina: busca.licitacoes_por_pagina || 50,
+      });
+      setEmailLics(data.licitacoes || []);
+      setEmailBusca(busca);
+    } catch (e) {
+      setResultadoSync((r) => ({ ...r, [busca.id]: { erro: e.message } }));
+    } finally {
+      setCarregandoEmail(null);
+    }
   };
 
   const remover = async (busca) => {
@@ -168,6 +192,14 @@ export default function BuscasSalvas() {
                       {sincronizando === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                     </button>
                     <button
+                      onClick={() => enviarEmail(b)}
+                      disabled={carregandoEmail === b.id}
+                      title="Enviar resultados por e-mail"
+                      className="p-2 rounded-md border hover:bg-muted disabled:opacity-50"
+                    >
+                      {carregandoEmail === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    </button>
+                    <button
                       onClick={() => { setEditando(b); setMostrarForm(true); }}
                       title="Editar"
                       className="p-2 rounded-md border hover:bg-muted"
@@ -192,6 +224,14 @@ export default function BuscasSalvas() {
             );
           })}
         </div>
+      )}
+
+      {emailBusca && (
+        <EmailResultsDialog
+          licitacoes={emailLics}
+          origem={emailBusca.nome}
+          onClose={() => { setEmailBusca(null); setEmailLics([]); }}
+        />
       )}
     </div>
   );
