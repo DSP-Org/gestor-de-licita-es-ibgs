@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw } from "lucide-react";
+import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, BookOpen } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 
@@ -9,6 +9,7 @@ const navItems = [
   { to: "/", label: "Minhas Licitações", icon: FileText, end: true },
   { to: "/explorar", label: "Explorar", icon: Search },
   { to: "/buscas", label: "Configuração", icon: Settings },
+  { to: "/instrucoes", label: "Instruções", icon: BookOpen },
 ];
 const adminItems = [{ to: "/usuarios", label: "Usuários", icon: Users }];
 

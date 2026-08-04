@@ -12,6 +12,7 @@ import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import Explorar from "@/pages/Explorar";
 import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
 import Atualizacao from "@/pages/Atualizacao";
+import Instrucoes from "@/pages/Instrucoes";
 import Usuarios from "@/pages/Usuarios";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/usuarios" element={<Usuarios />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
+        <Route path="/instrucoes" element={<Instrucoes />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
