@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, LayoutGrid, Table, Zap, Loader2, Check, AlertCircle } from "lucide-react";
+import { Search, LayoutGrid, Table, Trash2, Zap, Loader2, Check, AlertCircle } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
@@ -21,6 +21,7 @@ export default function Atualizacao() {
   const [buscasSalvas, setBuscasSalvas] = useState([]);
   const [buscasSelecionadas, setBuscasSelecionadas] = useState([]);
   const [compartilhar, setCompartilhar] = useState(null);
+  const [selecionadas, setSelecionadas] = useState(new Set());
 
   const carregar = async () => {
     setLoading(true);
@@ -84,6 +85,27 @@ export default function Atualizacao() {
     if (!window.confirm(`Excluir "${licitacao.titulo}" da lista?`)) return;
     await base44.entities.Licitacao.delete(licitacao.id);
     setLicitacoes((prev) => prev.filter((l) => l.id !== licitacao.id));
+    setSelecionadas((prev) => {
+      const nova = new Set(prev);
+      nova.delete(licitacao.id_licitacao);
+      return nova;
+    });
+  };
+
+  const toggleSelecao = (idLicitacao, marcada) => {
+    setSelecionadas((prev) => {
+      const nova = new Set(prev);
+      marcada ? nova.add(idLicitacao) : nova.delete(idLicitacao);
+      return nova;
+    });
+  };
+
+  const excluirSelecionadas = async () => {
+    if (!window.confirm(`Excluir ${selecionadas.size} licitação(ões) selecionada(s)?`)) return;
+    const ids = licitacoes.filter((item) => selecionadas.has(item.id_licitacao)).map((item) => item.id);
+    await base44.entities.Licitacao.deleteMany({ id: { $in: ids } });
+    setLicitacoes((prev) => prev.filter((item) => !selecionadas.has(item.id_licitacao)));
+    setSelecionadas(new Set());
   };
 
   const renderActions = (licitacao) => (
@@ -211,6 +233,24 @@ export default function Atualizacao() {
         </div>
       </div>
 
+      {!loading && filtradas.length > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={filtradas.length > 0 && filtradas.every((item) => selecionadas.has(item.id_licitacao))}
+              onChange={(e) => filtradas.forEach((item) => toggleSelecao(item.id_licitacao, e.target.checked))}
+            />
+            Selecionar todas
+          </label>
+          {selecionadas.size > 0 && (
+            <button onClick={excluirSelecionadas} className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90">
+              <Trash2 className="h-4 w-4" /> Excluir selecionadas ({selecionadas.size})
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-16 text-muted-foreground">Carregando licitações...</div>
       ) : filtradas.length === 0 ? (
@@ -228,12 +268,30 @@ export default function Atualizacao() {
                 key={l.id}
                 licitacao={l}
                 onClick={() => setSelecionada(l)}
-                action={renderActions(l)}
+                action={
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={selecionadas.has(l.id_licitacao)}
+                        onChange={(e) => toggleSelecao(l.id_licitacao, e.target.checked)}
+                      />
+                      Selecionar
+                    </label>
+                    {renderActions(l)}
+                  </div>
+                }
               />
             ))}
           </div>
         ) : (
-          <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} renderActions={renderActions} />
+          <LicitacaoTable
+            licitacoes={filtradas}
+            onRowClick={setSelecionada}
+            selecionados={selecionadas}
+            onToggleSelecao={toggleSelecao}
+            renderActions={renderActions}
+          />
         )
       )}
 
