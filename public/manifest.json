@@ -1,17 +1,16 @@
 {
   "name": "Gestor de Licitações IBGS",
-  "short_name": "Alerta Licitação",
-  "description": "Sistema centralizado para monitoramento e gestão inteligente de alertas de editais e licitações públicas.",
+  "short_name": "Licitações IBGS",
+  "description": "Monitoramento e gestão de editais e licitações públicas",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f0f",
+  "background_color": "#ffffff",
   "theme_color": "#0f0f0f",
   "icons": [
     {
       "src": "https://base44.com/logo_v2.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ]
 }

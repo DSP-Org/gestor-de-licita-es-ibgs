@@ -25,7 +25,6 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const montarCorpo = (linkCompartilhamento) => {
-    const base = window.location.origin;
     const cards = licitacoes.map((l, i) => {
       const valor = formatValor(l.valor);
       const local = [l.uf, l.municipio].filter(Boolean).join(" - ");
@@ -74,8 +73,7 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
     try {
       // Cria um resultado compartilhado com código único
       const codigo = crypto.randomUUID();
-      const base = window.location.origin;
-      const linkCompartilhamento = `${base}/compartilhar/${codigo}`;
+      const linkCompartilhamento = `${window.location.origin}/compartilhar/${codigo}`;
 
       await base44.entities.ResultadoCompartilhado.create({
         codigo,
