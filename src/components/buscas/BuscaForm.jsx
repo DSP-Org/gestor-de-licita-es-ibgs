@@ -9,6 +9,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     nome: "",
     uf: "",
     palavra_chave: "",
+    modo_palavras: "qualquer",
     modalidade: "",
     municipio_nome: "",
     municipio_ibge: "",
@@ -136,6 +137,8 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           <PalavrasChaveInput
             value={form.palavra_chave || ""}
             onChange={(v) => set("palavra_chave", v)}
+            modo={form.modo_palavras || "qualquer"}
+            onChangeModo={(v) => set("modo_palavras", v)}
           />
         </div>
         <div>

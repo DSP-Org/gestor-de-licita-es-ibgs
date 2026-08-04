@@ -27,6 +27,23 @@ export function datasParaSincronizar(ultimaSincronizacao?: string): string[] {
   return datas;
 }
 
+/**
+ * A API sempre trata as palavras-chave como "qualquer uma" (expansivo).
+ * No modo restritivo ("todas"), filtramos localmente exigindo que TODAS as
+ * palavras positivas apareçam no título ou no objeto.
+ */
+export function filtrarPorTodasPalavras(licitacoes: any[], palavraChave?: string) {
+  const termos = (palavraChave || "")
+    .split(",")
+    .map((p) => p.trim().replace(/^"|"$/g, "").toLowerCase())
+    .filter((p) => p && !p.startsWith("-"));
+  if (termos.length < 2) return licitacoes;
+  return licitacoes.filter((l) => {
+    const texto = `${l.titulo || ""} ${l.objeto || ""}`.toLowerCase();
+    return termos.every((t) => texto.includes(t));
+  });
+}
+
 export async function consultarAlertaLicitacao(filtros = {}) {
   const token = secrets.get("ALERTA_LICITACAO_TOKEN");
   if (!token) throw new Error("Token da API não configurado.");

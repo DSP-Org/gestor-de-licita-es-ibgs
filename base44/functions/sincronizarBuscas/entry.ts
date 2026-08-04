@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { secrets } from "base44:runtime";
-import { consultarAlertaLicitacao, datasParaSincronizar } from "../../shared/alertaApi.ts";
+import { consultarAlertaLicitacao, datasParaSincronizar, filtrarPorTodasPalavras } from "../../shared/alertaApi.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
 
 export default async function(req) {
@@ -51,10 +51,15 @@ export default async function(req) {
           resumo.push({ busca: busca.nome, erro: erroBusca });
           continue;
         }
+        // Modo restritivo: exige todas as palavras-chave no título/objeto
+        const resultados = busca.modo_palavras === "todas"
+          ? filtrarPorTodasPalavras(lics, busca.palavra_chave)
+          : lics;
+
         const existentes = await base44.asServiceRole.entities.Licitacao.filter({ created_by_id: busca.created_by_id });
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
-        const novas = lics
+        const novas = resultados
           .filter((l) => !existIds.has(l.id_licitacao))
           .map((l) => ({
             id_licitacao: l.id_licitacao,
@@ -183,10 +188,10 @@ export default async function(req) {
 
         await base44.asServiceRole.entities.BuscaSalva.update(busca.id, {
           ultima_sincronizacao: new Date().toISOString(),
-          total_encontrado: lics.length,
+          total_encontrado: resultados.length,
         });
         buscasProcessadas++;
-        resumo.push({ busca: busca.nome, novas: novas.length, total: lics.length });
+        resumo.push({ busca: busca.nome, novas: novas.length, total: resultados.length });
       } catch (e) {
         resumo.push({ busca: busca.nome, erro: e.message });
       }

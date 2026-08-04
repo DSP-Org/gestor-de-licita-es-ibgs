@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Plus } from "lucide-react";
 
 // Editor de múltiplas palavras-chave. Persiste como string separada por vírgula.
-export default function PalavrasChaveInput({ value = "", onChange }) {
+export default function PalavrasChaveInput({ value = "", onChange, modo = "qualquer", onChangeModo }) {
   const [texto, setTexto] = useState("");
   const palavras = (value || "").split(",").map((p) => p.trim()).filter(Boolean);
 
@@ -60,8 +60,28 @@ export default function PalavrasChaveInput({ value = "", onChange }) {
           ))}
         </div>
       )}
+      {onChangeModo && palavras.length > 1 && (
+        <div className="mt-2 flex flex-col sm:flex-row gap-2">
+          {[
+            { v: "qualquer", t: "Expansivo (qualquer palavra)", d: "Traz a licitação se contiver ao menos uma das palavras." },
+            { v: "todas", t: "Restritivo (todas as palavras)", d: "Traz apenas licitações que contenham todas as palavras." },
+          ].map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              onClick={() => onChangeModo(o.v)}
+              className={`flex-1 text-left px-3 py-2 border rounded-md text-xs ${
+                modo === o.v ? "border-primary bg-muted" : "hover:bg-muted"
+              }`}
+            >
+              <span className="font-medium block">{o.t}</span>
+              <span className="text-muted-foreground">{o.d}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <p className="text-xs text-muted-foreground mt-1">
-        Qualquer uma das palavras encontra a licitação. Use <code>-palavra</code> para excluir e aspas para expressões exatas.
+        Use <code>-palavra</code> para excluir e aspas para expressões exatas.
       </p>
     </div>
   );
