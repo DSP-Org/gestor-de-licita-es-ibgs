@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bell, RefreshCw, Loader2, Mail, Check, Clock, Zap } from "lucide-react";
+import { Bell, RefreshCw, Loader2, Mail, Check, Clock, Zap, BellRing, Smartphone } from "lucide-react";
+import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 
 export default function Configuracoes() {
   const [buscas, setBuscas] = useState([]);
@@ -8,6 +9,7 @@ export default function Configuracoes() {
   const [atualizando, setAtualizando] = useState(null);
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState(null);
+  const { permissao, solicitarPermissao, verificando, verificarNovas } = useNotificacoesNativas();
 
   const carregar = async () => {
     setLoading(true);
@@ -117,6 +119,51 @@ export default function Configuracoes() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Notificações no celular */}
+      <div className="bg-card border rounded-lg p-5 space-y-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0">
+            <Smartphone className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-heading font-semibold">Notificações no celular</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Receba alertas no aparelho quando novas licitações forem encontradas. Funciona com o app instalado (PWA).
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+          {permissao === "granted" ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded-md">
+                <Check className="w-4 h-4" /> Notificações ativadas
+              </span>
+              <button
+                onClick={verificarNovas}
+                disabled={verificando}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50"
+              >
+                {verificando ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellRing className="w-4 h-4" />}
+                Verificar agora
+              </button>
+            </>
+          ) : permissao === "denied" ? (
+            <span className="text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md">
+              Permissão negada. Habilite as notificações nas configurações do navegador/sistema.
+            </span>
+          ) : permissao === "unsupported" ? (
+            <span className="text-sm text-muted-foreground">Seu dispositivo não suporta notificações nativas.</span>
+          ) : (
+            <button
+              onClick={solicitarPermissao}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
+            >
+              <BellRing className="w-4 h-4" /> Ativar notificações
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Lista de buscas com toggles */}

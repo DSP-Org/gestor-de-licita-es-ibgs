@@ -81,8 +81,8 @@ export default function MinhasLicitacoes() {
         <StatCard icon={CheckCircle2} label="Ganhas" value={stats.ganhas} color="text-green-600 bg-green-50" />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={busca}
@@ -91,37 +91,39 @@ export default function MinhasLicitacoes() {
             className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <select
-          value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
-          className="px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="todos">Todos os status</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
-        <button
-          onClick={() => setSoFavoritos(!soFavoritos)}
-          className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md ${soFavoritos ? "bg-amber-50 border-amber-300 text-amber-700" : "hover:bg-muted"}`}
-        >
-          <Star className={`w-4 h-4 ${soFavoritos ? "fill-amber-400 text-amber-400" : ""}`} /> Favoritas
-        </button>
-        <div className="inline-flex items-center border rounded-md overflow-hidden">
-          <button
-            onClick={() => setModo("cards")}
-            title="Visualização em cards"
-            className={`p-2 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+        <div className="flex items-center gap-2">
+          <select
+            value={filtroStatus}
+            onChange={(e) => setFiltroStatus(e.target.value)}
+            className="flex-1 sm:flex-none px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
+            <option value="todos">Todos os status</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
           <button
-            onClick={() => setModo("tabela")}
-            title="Visualização em tabela"
-            className={`p-2 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            onClick={() => setSoFavoritos(!soFavoritos)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md shrink-0 ${soFavoritos ? "bg-amber-50 border-amber-300 text-amber-700" : "hover:bg-muted"}`}
           >
-            <Table className="w-4 h-4" />
+            <Star className={`w-4 h-4 ${soFavoritos ? "fill-amber-400 text-amber-400" : ""}`} /> Favoritas
           </button>
+          <div className="inline-flex items-center border rounded-md overflow-hidden shrink-0">
+            <button
+              onClick={() => setModo("cards")}
+              title="Visualização em cards"
+              className={`p-2 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setModo("tabela")}
+              title="Visualização em tabela"
+              className={`p-2 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            >
+              <Table className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

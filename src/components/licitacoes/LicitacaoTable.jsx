@@ -2,18 +2,18 @@ import { StatusBadge, formatValor } from "./LicitacaoCard";
 
 export default function LicitacaoTable({ licitacoes, onRowClick }) {
   return (
-    <div className="bg-card border rounded-lg overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="bg-card border rounded-lg overflow-hidden">
+      <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-            <th className="text-left font-medium px-3 py-2.5">ID</th>
+            <th className="text-left font-medium px-3 py-2.5 w-20 hidden sm:table-cell">ID</th>
             <th className="text-left font-medium px-3 py-2.5">Título</th>
-            <th className="text-left font-medium px-3 py-2.5">Status</th>
+            <th className="text-left font-medium px-3 py-2.5 w-20">Status</th>
             <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Órgão</th>
             <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Local</th>
             <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Modalidade</th>
             <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Abertura</th>
-            <th className="text-right font-medium px-3 py-2.5">Valor</th>
+            <th className="text-right font-medium px-3 py-2.5 w-24">Valor</th>
           </tr>
         </thead>
         <tbody>
@@ -23,8 +23,8 @@ export default function LicitacaoTable({ licitacoes, onRowClick }) {
               onClick={() => onRowClick?.(l)}
               className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
             >
-              <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{l.id_licitacao}</td>
-              <td className="px-3 py-2.5 max-w-[260px]">
+              <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground truncate hidden sm:table-cell">{l.id_licitacao}</td>
+              <td className="px-3 py-2.5">
                 <p className="font-medium line-clamp-1">{l.titulo}</p>
                 <p className="text-xs text-muted-foreground line-clamp-1">{l.objeto}</p>
               </td>
