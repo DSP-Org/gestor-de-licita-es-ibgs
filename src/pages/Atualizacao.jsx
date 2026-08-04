@@ -21,8 +21,8 @@ export default function Atualizacao() {
   const carregar = async () => {
     setLoading(true);
     try {
-      const lista = await base44.entities.Licitacao.filter({ salva_manualmente: false }, "-created_date", 500);
-      setLicitacoes(lista);
+      const lista = await base44.entities.Licitacao.list("-created_date", 500);
+      setLicitacoes(lista.filter((item) => item.salva_manualmente !== true && item.busca_origem));
     } finally {
       setLoading(false);
     }

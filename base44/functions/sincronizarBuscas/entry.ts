@@ -83,7 +83,8 @@ export default async function(req) {
             status: "interessado",
             favorito: false,
             busca_origem: busca.nome,
-            created_by_id: busca.created_by_id,
+            usuario_id: busca.created_by_id,
+            salva_manualmente: false,
           }));
 
         if (novas.length > 0) {
