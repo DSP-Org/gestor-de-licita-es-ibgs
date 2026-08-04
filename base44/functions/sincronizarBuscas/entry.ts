@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { secrets } from "base44:runtime";
-import { consultarAlertaLicitacao } from "../../shared/alertaApi.ts";
+import { consultarAlertaLicitacao, datasParaSincronizar } from "../../shared/alertaApi.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
 
 export default async function(req) {
@@ -22,21 +22,35 @@ export default async function(req) {
 
     for (const busca of buscas) {
       try {
-        const data = await consultarAlertaLicitacao({
-          uf: busca.uf,
-          palavra_chave: busca.palavra_chave,
-          modalidade: busca.modalidade,
-          municipio_ibge: busca.municipio_ibge,
-          pagina: 1,
-          licitacoesPorPagina: busca.licitacoes_por_pagina || 50,
-        });
-
-        if (data.totalErros > 0) {
-          resumo.push({ busca: busca.nome, erro: data.erros.map((e) => e.descricao).join("; ") });
-          continue;
+        // Consulta por data de inserção: a API devolve apenas licitações novas,
+        // então não se paga novamente por resultados já sincronizados.
+        const lics = [];
+        let erroBusca = null;
+        for (const data_insercao of datasParaSincronizar(busca.ultima_sincronizacao)) {
+          for (let pagina = 1; pagina <= 5; pagina++) {
+            const data = await consultarAlertaLicitacao({
+              uf: busca.uf,
+              palavra_chave: busca.palavra_chave,
+              modalidade: busca.modalidade,
+              municipio_ibge: busca.municipio_ibge,
+              data_insercao,
+              pagina,
+              licitacoesPorPagina: 100,
+            });
+            if (data.totalErros > 0) {
+              erroBusca = data.erros.map((e) => e.descricao).join("; ");
+              break;
+            }
+            lics.push(...(data.licitacoes || []));
+            if (pagina >= (Number(data.paginas) || 1)) break;
+          }
+          if (erroBusca) break;
         }
 
-        const lics = data.licitacoes || [];
+        if (erroBusca) {
+          resumo.push({ busca: busca.nome, erro: erroBusca });
+          continue;
+        }
         const existentes = await base44.asServiceRole.entities.Licitacao.filter({ created_by_id: busca.created_by_id });
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
@@ -169,10 +183,10 @@ export default async function(req) {
 
         await base44.asServiceRole.entities.BuscaSalva.update(busca.id, {
           ultima_sincronizacao: new Date().toISOString(),
-          total_encontrado: Number(data.totalLicitacoes) || 0,
+          total_encontrado: lics.length,
         });
         buscasProcessadas++;
-        resumo.push({ busca: busca.nome, novas: novas.length, total: Number(data.totalLicitacoes) || 0 });
+        resumo.push({ busca: busca.nome, novas: novas.length, total: lics.length });
       } catch (e) {
         resumo.push({ busca: busca.nome, erro: e.message });
       }

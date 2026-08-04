@@ -2,6 +2,31 @@ import { secrets } from "base44:runtime";
 
 const API_BASE = "https://alertalicitacao.com.br/api/v1/licitacoesAbertas/";
 
+// Data no fuso de São Paulo no formato YYYY-MM-DD exigido pela API
+function dataSP(d: Date) {
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
+
+/**
+ * Retorna as datas de inserção que devem ser consultadas.
+ * Consultar por data de inserção faz a API devolver SOMENTE licitações novas,
+ * evitando pagar novamente por resultados já sincronizados.
+ * Cobre também dias em que a sincronização falhou (limite de 3 dias).
+ */
+export function datasParaSincronizar(ultimaSincronizacao?: string): string[] {
+  const hoje = dataSP(new Date());
+  const datas: string[] = [];
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const s = dataSP(d);
+    // Ignora dias já cobertos por uma sincronização anterior
+    if (ultimaSincronizacao && s < dataSP(new Date(ultimaSincronizacao))) continue;
+    if (!datas.includes(s)) datas.push(s);
+  }
+  if (!datas.includes(hoje)) datas.push(hoje);
+  return datas;
+}
+
 export async function consultarAlertaLicitacao(filtros = {}) {
   const token = secrets.get("ALERTA_LICITACAO_TOKEN");
   if (!token) throw new Error("Token da API não configurado.");
