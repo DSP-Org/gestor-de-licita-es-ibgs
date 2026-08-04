@@ -157,12 +157,18 @@ export default function BuscasSalvas() {
           Nenhuma busca salva. Crie uma para automatizar a captação de licitações.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {buscas.map((b) => {
             const res = resultadoSync[b.id];
             return (
-              <div key={b.id} className="bg-card border rounded-lg p-4">
-                <div className="flex items-start justify-between gap-3">
+              <div key={b.id} className="bg-card border rounded-xl p-4 shadow-sm flex flex-col">
+                <BuscaToggles
+                  busca={b}
+                  onUpdated={(id, campo, valor) =>
+                    setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                  }
+                />
+                <div className="flex items-start justify-between gap-3 mt-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-heading font-semibold">{b.nome}</h3>
@@ -217,12 +223,6 @@ export default function BuscasSalvas() {
                     </button>
                   </div>
                 </div>
-                <BuscaToggles
-                  busca={b}
-                  onUpdated={(id, campo, valor) =>
-                    setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                  }
-                />
                 {res && (
                   <div className={`mt-2 text-xs flex items-center gap-1.5 ${res.erro ? "text-red-600" : "text-green-600"}`}>
                     {res.erro ? `Erro: ${res.erro}` : <><Check className="w-3.5 h-3.5" /> {res.novas} novas importadas de {res.total} encontradas</>}
