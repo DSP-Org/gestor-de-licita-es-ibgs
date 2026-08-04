@@ -38,16 +38,43 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
     const maxW = pageW - margin * 2;
     let y = 20;
 
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Detalhes da Licitação", margin, y);
-    y += 8;
+    // Cabeçalho com a identidade do sistema (logo + nome)
+    doc.setFillColor(15, 15, 15);
+    doc.roundedRect(margin, y, 12, 12, 2, 2, "F");
+    // Sino simplificado em branco dentro do quadrado
+    doc.setDrawColor(255, 255, 255);
+    doc.setFillColor(255, 255, 255);
+    doc.circle(margin + 6, y + 5.5, 2.2, "S");
+    doc.setLineWidth(0.6);
+    doc.line(margin + 6, y + 3.3, margin + 6, y + 2.5);
+    doc.setFillColor(255, 255, 255);
+    doc.circle(margin + 6, y + 8.2, 0.5, "F");
 
-    doc.setFontSize(9);
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("Alerta Licitação", margin + 16, y + 5);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(120);
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text("Gestão de licitações", margin + 16, y + 9.5);
+
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y + 15, pageW - margin, y + 15);
+    y += 22;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 30, 30);
+    doc.text("Detalhes da Licitação", margin, y);
+    y += 7;
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
     doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, y);
-    y += 10;
+    y += 8;
 
     const statusLabel = STATUS_OPTIONS.find((s) => s.value === status)?.label || status;
     const linhas = [
