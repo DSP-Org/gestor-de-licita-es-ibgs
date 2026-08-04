@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { UFS, MODALIDADES } from "@/shared/alertaApi";
+import { Mail, Send, Users, Loader2 } from "lucide-react";
 
 export default function BuscaForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -11,15 +13,29 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     municipio_ibge: "",
     licitacoes_por_pagina: 50,
     ativa: true,
+    notificar_email: true,
+    destinatarios_email: [],
+    telegram_chats: "",
   });
   const [municipios, setMunicipios] = useState([]);
   const [carregandoMun, setCarregandoMun] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+  const [carregandoUsers, setCarregandoUsers] = useState(false);
 
   useEffect(() => {
-    if (initial) setForm((f) => ({ ...f, ...initial }));
+    if (initial) setForm((f) => ({ ...f, ...initial, destinatarios_email: initial.destinatarios_email || [], telegram_chats: initial.telegram_chats || "" }));
   }, [initial]);
 
-  // Busca municípios do IBGE quando a UF muda
+  useEffect(() => {
+    let cancelado = false;
+    setCarregandoUsers(true);
+    base44.entities.User.list("-created_date", 200)
+      .then((lista) => !cancelado && setUsuarios(Array.isArray(lista) ? lista : []))
+      .catch(() => !cancelado && setUsuarios([]))
+      .finally(() => !cancelado && setCarregandoUsers(false));
+    return () => { cancelado = true; };
+  }, []);
+
   useEffect(() => {
     const uf = (form.uf || "").trim();
     if (!uf || uf.includes(",")) {
@@ -45,6 +61,14 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     } else {
       set("municipio_nome", nome);
     }
+  };
+
+  const toggleDestinatario = (userId) => {
+    setForm((f) => {
+      const atual = f.destinatarios_email || [];
+      const existe = atual.includes(userId);
+      return { ...f, destinatarios_email: existe ? atual.filter((id) => id !== userId) : [...atual, userId] };
+    });
   };
 
   const submit = () => {
@@ -138,6 +162,70 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
         />
         Busca ativa (aparece para sincronização)
       </label>
+
+      {/* Notificações */}
+      <div className="border-t pt-4 space-y-3">
+        <h3 className="text-sm font-heading font-semibold flex items-center gap-1.5">
+          <Mail className="w-4 h-4" /> Notificações
+        </h3>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.notificar_email}
+            onChange={(e) => set("notificar_email", e.target.checked)}
+            className="w-4 h-4"
+          />
+          Enviar e-mail ao encontrar novas licitações
+        </label>
+
+        {form.notificar_email && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Users className="w-3 h-3" /> Destinatários do e-mail (usuários cadastrados)
+            </label>
+            {carregandoUsers ? (
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Carregando usuários...</p>
+            ) : usuarios.length === 0 ? (
+              <p className="text-xs text-muted-foreground mt-1">Nenhum usuário cadastrado. O e-mail será enviado ao dono da busca.</p>
+            ) : (
+              <div className="mt-1 max-h-32 overflow-auto border rounded-md p-2 space-y-1">
+                {usuarios.map((u) => (
+                  <label key={u.id} className="flex items-center gap-2 text-sm py-0.5 cursor-pointer hover:bg-muted rounded px-1">
+                    <input
+                      type="checkbox"
+                      checked={(form.destinatarios_email || []).includes(u.id)}
+                      onChange={() => toggleDestinatario(u.id)}
+                      className="w-4 h-4"
+                    />
+                    <span className="min-w-0 truncate">{u.full_name || u.email}</span>
+                    {u.email && <span className="text-xs text-muted-foreground truncate">· {u.email}</span>}
+                  </label>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {(form.destinatarios_email || []).length} selecionado(s). Se nenhum for escolhido, avisa o dono da busca.
+            </p>
+          </div>
+        )}
+
+        <div>
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Send className="w-3 h-3" /> Telegram — IDs de chat (separados por vírgula)
+          </label>
+          <input
+            value={form.telegram_chats || ""}
+            onChange={(e) => set("telegram_chats", e.target.value)}
+            placeholder="Ex: 123456789, -1009876543"
+            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Para descobrir seu chat ID, envie uma mensagem ao bot e acesse <code>api.telegram.org/bot&lt;token&gt;/getUpdates</code>.
+          </p>
+        </div>
+      </div>
+
       <div className="flex gap-2 pt-2">
         <button onClick={submit} className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90">
           Salvar busca

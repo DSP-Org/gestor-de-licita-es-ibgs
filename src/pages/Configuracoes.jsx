@@ -146,6 +146,10 @@ export default function Configuracoes() {
                         <Clock className="w-3 h-3" /> Última sync: {new Date(b.ultima_sincronizacao).toLocaleString("pt-BR")}
                       </p>
                     )}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs">
+                      <span className="text-muted-foreground">E-mails: <b className="text-foreground">{(b.destinatarios_email || []).length || "dono da busca"}</b></span>
+                      {b.telegram_chats && <span className="text-muted-foreground">Telegram: <b className="text-foreground">{b.telegram_chats.split(",").filter(Boolean).length} chat(s)</b></span>}
+                    </div>
                   </div>
                 </div>
 

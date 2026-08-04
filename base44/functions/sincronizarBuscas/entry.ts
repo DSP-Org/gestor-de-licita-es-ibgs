@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { consultarAlertaLicitacao } from "../../shared/alertaApi.ts";
+import { enviarTelegram } from "../../shared/telegram.ts";
 
 export default async function(req) {
   try {
@@ -64,27 +65,45 @@ export default async function(req) {
           await base44.asServiceRole.entities.Licitacao.bulkCreate(novas);
           totalNovas += novas.length;
 
-          // Envia notificação por e-mail ao dono da busca (se habilitado)
+          // Monta o corpo da notificação
+          const linhas = novas.slice(0, 10).map((l, i) =>
+            `${i + 1}. ${l.titulo}\n   ${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n   ${l.link || ""}`
+          ).join("\n\n");
+          const corpo = `Foram encontradas ${novas.length} nova(s) licitação(ões) para a busca "${busca.nome}":\n\n${linhas}` +
+            (novas.length > 10 ? `\n\n... e mais ${novas.length - 10} licitação(ões).` : "") +
+            `\n\nAcesse o painel para visualizar e gerenciar.`;
+
+          // E-mail aos destinatários selecionados (ou ao dono da busca)
           if (busca.notificar_email !== false) {
             try {
-              const usuario = await base44.asServiceRole.entities.User.get(busca.created_by_id);
-              if (usuario && usuario.email) {
-              const linhas = novas.slice(0, 10).map((l, i) =>
-                `${i + 1}. ${l.titulo}\n   ${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n   ${l.link || ""}`
-              ).join("\n\n");
-              const corpo = `Foram encontradas ${novas.length} nova(s) licitação(ões) para a busca "${busca.nome}":\n\n${linhas}` +
-                (novas.length > 10 ? `\n\n... e mais ${novas.length - 10} licitação(ões).` : "") +
-                `\n\nAcesse o painel para visualizar e gerenciar.`;
-
-                await base44.asServiceRole.integrations.Core.SendEmail({
-                  to: usuario.email,
-                  subject: `Novas licitações encontradas — ${busca.nome}`,
-                  body: corpo,
-                });
+              const ids = Array.isArray(busca.destinatarios_email) && busca.destinatarios_email.length > 0
+                ? busca.destinatarios_email
+                : [busca.created_by_id];
+              for (const uid of ids) {
+                try {
+                  const u = await base44.asServiceRole.entities.User.get(uid);
+                  if (u && u.email) {
+                    await base44.asServiceRole.integrations.Core.SendEmail({
+                      to: u.email,
+                      subject: `Novas licitações encontradas — ${busca.nome}`,
+                      body: corpo,
+                    });
+                  }
+                } catch {}
               }
-            } catch (e) {
-              // e-mail falha não interrompe a sincronização
-            }
+            } catch {}
+          }
+
+          // Telegram
+          if (busca.telegram_chats) {
+            try {
+              const corpoTg = `<b>🔔 ${novas.length} nova(s) licitação(ões) — ${busca.nome}</b>\n\n` +
+                novas.slice(0, 5).map((l, i) =>
+                  `${i + 1}. <b>${l.titulo}</b>\n${l.uf || ""} - ${l.municipio || ""} | Abertura: ${l.abertura || "—"}\n${l.link || ""}`
+                ).join("\n\n") +
+                (novas.length > 5 ? `\n\n... e mais ${novas.length - 5}.` : "");
+              await enviarTelegram(busca.telegram_chats, corpoTg);
+            } catch {}
           }
         }
 
