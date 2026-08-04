@@ -13,6 +13,8 @@ export default function MinhasLicitacoes() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [busca, setBusca] = useState("");
   const [soFavoritos, setSoFavoritos] = useState(false);
+  const [dataAberturaIni, setDataAberturaIni] = useState("");
+  const [dataAberturaFim, setDataAberturaFim] = useState("");
   const [selecionada, setSelecionada] = useState(null);
   const [modo, setModo] = useState("cards");
   const [compartilhar, setCompartilhar] = useState(false);
@@ -35,6 +37,12 @@ export default function MinhasLicitacoes() {
     return licitacoes.filter((l) => {
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (soFavoritos && !l.favorito) return false;
+      if (dataAberturaIni || dataAberturaFim) {
+        const dataLic = l.abertura_datetime ? l.abertura_datetime.split("T")[0] : (l.abertura ? l.abertura.split("/").reverse().join("-") : "");
+        if (!dataLic) return false;
+        if (dataAberturaIni && dataLic < dataAberturaIni) return false;
+        if (dataAberturaFim && dataLic > dataAberturaFim) return false;
+      }
       if (busca) {
         const q = busca.toLowerCase();
         const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao}`.toLowerCase();
@@ -42,7 +50,7 @@ export default function MinhasLicitacoes() {
       }
       return true;
     });
-  }, [licitacoes, filtroStatus, busca, soFavoritos]);
+  }, [licitacoes, filtroStatus, busca, soFavoritos, dataAberturaIni, dataAberturaFim]);
 
   const stats = useMemo(() => {
     const porStatus = {};
@@ -114,6 +122,23 @@ export default function MinhasLicitacoes() {
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div className="hidden md:flex items-center gap-1 shrink-0">
+            <input
+              type="date"
+              value={dataAberturaIni}
+              onChange={(e) => setDataAberturaIni(e.target.value)}
+              title="Data de abertura inicial"
+              className="px-2.5 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <span className="text-muted-foreground text-xs">até</span>
+            <input
+              type="date"
+              value={dataAberturaFim}
+              onChange={(e) => setDataAberturaFim(e.target.value)}
+              title="Data de abertura final"
+              className="px-2.5 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
@@ -124,6 +149,14 @@ export default function MinhasLicitacoes() {
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
+          {(dataAberturaIni || dataAberturaFim) && (
+            <button
+              onClick={() => { setDataAberturaIni(""); setDataAberturaFim(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+            >
+              Limpar data
+            </button>
+          )}
           <button
             onClick={() => setSoFavoritos(!soFavoritos)}
             className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-lg shrink-0 transition-colors ${soFavoritos ? "bg-amber-50 border-amber-300 text-amber-700" : "hover:bg-muted"}`}
