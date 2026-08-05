@@ -23,7 +23,7 @@ export default function MinhasLicitacoes() {
     setLoading(true);
     try {
       const lista = await base44.entities.Licitacao.filter({ salva_manualmente: true }, "-updated_date", 500);
-      setLicitacoes(lista);
+      setLicitacoes(Array.isArray(lista) ? lista : (lista?.items || lista?.data || []));
     } finally {
       setLoading(false);
     }
