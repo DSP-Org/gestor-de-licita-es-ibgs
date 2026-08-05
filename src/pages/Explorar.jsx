@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
-import { Plus, Check, Loader2, AlertCircle, Mail, LayoutGrid, Table } from "lucide-react";
+import { Plus, Check, Loader2, AlertCircle, Mail, LayoutGrid, Table, FileDown } from "lucide-react";
 import LicitacaoFilters from "@/components/licitacoes/LicitacaoFilters";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import { toArray } from "@/lib/toArray";
+import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 
 const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: "", data_inicio: "", data_fim: "" };
 
@@ -152,9 +153,15 @@ export default function Explorar() {
                 </button>
               </div>
               <button
+                onClick={() => exportarLicitacoesPDF(resultados, "Explorar — Licitações")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted"
+              >
+                <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">Exportar PDF</span><span className="sm:hidden">PDF</span>
+              </button>
+              <button
                 onClick={() => setEnviarEmail(true)}
                 disabled={selecionados.size === 0}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted disabled:opacity-50 ml-auto"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted disabled:opacity-50"
               >
                 <Mail className="w-4 h-4" /> <span className="hidden sm:inline">Enviar por e-mail</span><span className="sm:hidden">E-mail</span>
               </button>
