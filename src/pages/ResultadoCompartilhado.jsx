@@ -108,7 +108,7 @@ export default function ResultadoCompartilhado() {
         <div className="max-w-3xl mx-auto px-4 py-5 sm:py-6">
           <div className="flex items-center gap-2 mb-1">
             <Bell className="w-5 h-5" />
-            <span className="text-sm font-medium opacity-90">LicitaAlerta</span>
+            <span className="text-sm font-medium opacity-90">Licitalerta360</span>
           </div>
           <h1 className="font-heading text-lg sm:text-xl font-semibold">Resultados compartilhados</h1>
           {resultado?.busca_nome && (
@@ -193,7 +193,7 @@ export default function ResultadoCompartilhado() {
 
         <footer className="pt-4 text-center space-y-0.5">
           <p className="text-xs text-muted-foreground">
-            Resultado compartilhado via LicitaAlerta
+            Resultado compartilhado via Licitalerta360
           </p>
           <p className="text-xs font-medium text-foreground/70">
             Desenvolvido por Data5 Tecnologia — Todos os direitos reservados © {new Date().getFullYear()}

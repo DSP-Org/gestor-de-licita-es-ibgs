@@ -20,11 +20,11 @@ export default function InstalarAppPrompt() {
         <div className="flex flex-col items-center text-center gap-3">
           <img
             src="https://media.base44.com/images/public/6a720719f600bb866f6561f7/90a393f87_generated_image.png"
-            alt="LicitaAlerta"
+            alt="Licitalerta360"
             className="w-16 h-16 rounded-2xl shadow-md"
           />
           <div>
-            <h2 className="font-heading text-lg font-bold">Instale o LicitaAlerta</h2>
+            <h2 className="font-heading text-lg font-bold">Instale o Licitalerta360</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Adicione o app à tela inicial para acesso rápido, tela cheia e notificações.
             </p>

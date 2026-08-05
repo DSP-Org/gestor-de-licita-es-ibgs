@@ -62,7 +62,7 @@ export default function ShareDialog({ licitacoes, origem, onClose }) {
     } catch {}
   };
 
-  const texto = `${licitacoes.length} licitação(ões) compartilhada(s) com você via Gestor de Licitações: ${link}`;
+  const texto = `${licitacoes.length} licitação(ões) compartilhada(s) com você via Licitalerta360: ${link}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>

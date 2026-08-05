@@ -51,7 +51,7 @@ export default function Layout() {
             <Bell className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="min-w-0">
-            <p className="font-heading font-semibold leading-tight truncate">LicitaAlerta</p>
+            <p className="font-heading font-semibold leading-tight truncate">Licitalerta360</p>
             <p className="text-xs text-muted-foreground">Gestão de licitações</p>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function Layout() {
             <Bell className="w-4.5 h-4.5 text-white" />
           </div>
           <div className="min-w-0 leading-tight">
-            <p className="font-heading font-bold text-[15px] truncate">LicitaAlerta</p>
+            <p className="font-heading font-bold text-[15px] truncate">Licitalerta360</p>
             <p className="text-[10px] text-white/75">Gestão de licitações</p>
           </div>
           {permissao !== "granted" && permissao !== "unsupported" && (

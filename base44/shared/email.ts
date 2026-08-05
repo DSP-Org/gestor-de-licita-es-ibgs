@@ -15,7 +15,7 @@ export async function enviarEmailExterno(emails, subject, htmlBody) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Gestor de Licitações <onboarding@resend.dev>",
+      from: "Licitalerta360 <onboarding@resend.dev>",
       to: emails,
       subject,
       html: htmlBody,

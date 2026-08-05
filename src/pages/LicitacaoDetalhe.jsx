@@ -78,7 +78,7 @@ export default function LicitacaoDetalhe() {
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    doc.text("Gestor de Licitações IBGS", margin + 16, y + 5);
+    doc.text("Licitalerta360", margin + 16, y + 5);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);

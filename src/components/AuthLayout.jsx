@@ -13,7 +13,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Bell className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-heading font-semibold text-lg">Alerta Licitação</span>
+            <span className="font-heading font-semibold text-lg">Licitalerta360</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{title}</h1>
           {subtitle && <p className="text-muted-foreground mt-2 text-sm">{subtitle}</p>}

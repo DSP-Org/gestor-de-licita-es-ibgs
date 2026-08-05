@@ -90,7 +90,7 @@ export default function Instrucoes() {
         </div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">Como usar a plataforma</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Conheça as funcionalidades do LicitaAlerta e comece a monitorar oportunidades públicas.
+          Conheça as funcionalidades do Licitalerta360 e comece a monitorar oportunidades públicas.
         </p>
       </div>
 
@@ -158,7 +158,7 @@ export default function Instrucoes() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground pt-2">
-        LicitaAlerta · Desenvolvido por Data5 Tecnologia
+        Licitalerta360 · Desenvolvido por Data5 Tecnologia
       </p>
     </div>
   );

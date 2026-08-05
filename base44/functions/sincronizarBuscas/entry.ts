@@ -152,7 +152,7 @@ export default async function(req) {
                   ${novas.length > 10 ? `<tr><td style="padding:0 24px 8px;font-size:13px;color:#6b7280;">... e mais ${novas.length - 10} licitação(oes). Acesse o painel para visualizar todas.</td></tr>` : ""}
                   ${botaoCompartilhar}
                   <tr><td style="padding:16px 24px 24px;">
-                    <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Gestor de Licitações IBGS</p>
+                    <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Enviado pelo Licitalerta360</p>
                     <p style="margin:0;font-size:11px;color:#9ca3af;">Desenvolvido por Data5 Tecnologia — Todos os direitos reservados</p>
                   </td></tr>
                 </table>
