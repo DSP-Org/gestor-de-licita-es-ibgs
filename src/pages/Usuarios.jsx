@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail } from "lucide-react";
+import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail, KeyRound, Eye, EyeOff } from "lucide-react";
 import AprovacaoUsuario from "@/components/usuarios/AprovacaoUsuario";
 import { toArray } from "@/lib/toArray";
 
@@ -9,6 +9,9 @@ export default function Usuarios({ embedded = false }) {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [role, setRole] = useState("user");
   const [invitando, setInvitando] = useState(false);
   const [liberarJa, setLiberarJa] = useState(true);
@@ -34,27 +37,49 @@ export default function Usuarios({ embedded = false }) {
   const convidar = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
+    if (senha && senha.length < 6) {
+      setErro("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (senha && senha !== confirmarSenha) {
+      setErro("As senhas não coincidem.");
+      return;
+    }
     setInvitando(true);
     setMsg("");
     setErro("");
     try {
       const alvo = email.trim();
-      await base44.users.inviteUser(alvo, role);
-      if (liberarJa) {
-        const encontrados = toArray(await base44.entities.User.filter({ email: alvo }));
-        if (encontrados[0]) {
-          await base44.entities.User.update(encontrados[0].id, { approval_status: "approved" });
+      if (senha) {
+        // Cria usuário com senha definida pelo admin
+        await base44.auth.register({ email: alvo, password: senha });
+      } else {
+        // Convite tradicional — usuário define a própria senha depois
+        await base44.users.inviteUser(alvo, role);
+      }
+      // Atualiza role e status de aprovação
+      const encontrados = toArray(await base44.entities.User.filter({ email: alvo }));
+      if (encontrados[0]) {
+        const atualizacoes = {};
+        if (encontrados[0].role !== role) atualizacoes.role = role;
+        if (liberarJa) atualizacoes.approval_status = "approved";
+        if (Object.keys(atualizacoes).length > 0) {
+          await base44.entities.User.update(encontrados[0].id, atualizacoes);
         }
       }
       setMsg(
-        liberarJa
-          ? `Usuário ${alvo} criado com acesso liberado.`
-          : `Convite enviado para ${alvo}. Acesso ficará pendente de liberação.`
+        senha
+          ? `Usuário ${alvo} criado com a senha definida${liberarJa ? " e acesso liberado" : ""}.`
+          : liberarJa
+            ? `Usuário ${alvo} criado com acesso liberado.`
+            : `Convite enviado para ${alvo}. Acesso ficará pendente de liberação.`
       );
       setEmail("");
+      setSenha("");
+      setConfirmarSenha("");
       carregar();
     } catch (e) {
-      setErro(e.message || "Erro ao convidar usuário.");
+      setErro(e.message || "Erro ao criar usuário.");
     } finally {
       setInvitando(false);
     }
@@ -117,8 +142,35 @@ export default function Usuarios({ embedded = false }) {
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 sm:shrink-0"
           >
             {invitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-            {liberarJa ? "Criar" : "Convidar"}
+            {senha ? "Criar com senha" : liberarJa ? "Criar" : "Convidar"}
           </button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="relative">
+            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type={mostrarSenha ? "text" : "password"}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="Senha (opcional — defina para o usuário)"
+              className="w-full pl-9 pr-9 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {mostrarSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <input
+            type={mostrarSenha ? "text" : "password"}
+            value={confirmarSenha}
+            onChange={(e) => setConfirmarSenha(e.target.value)}
+            placeholder="Confirmar senha"
+            disabled={!senha}
+            className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
         </div>
         <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
           <input
@@ -130,7 +182,9 @@ export default function Usuarios({ embedded = false }) {
           Criar já com acesso liberado (sem esperar aprovação)
         </label>
         <p className="text-xs text-muted-foreground">
-          O usuário recebe um e-mail para definir a senha e acessar o sistema.
+          {senha
+            ? "O usuário será criado com a senha informada e receberá um e-mail de verificação (OTP) para ativar a conta."
+            : "Deixe a senha em branco para enviar um convite — o usuário define a própria senha depois."}
         </p>
         {msg && <p className="text-sm text-green-600">{msg}</p>}
         {erro && <p className="text-sm text-red-600">{erro}</p>}
