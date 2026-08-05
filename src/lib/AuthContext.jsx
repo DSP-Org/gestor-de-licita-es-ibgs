@@ -51,8 +51,9 @@ export const AuthProvider = ({ children }) => {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         setAppPublicSettings(publicSettings);
         
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
+        // Verifica a sessão real do SDK, inclusive após login por senha ou Google.
+        const authenticated = await base44.auth.isAuthenticated();
+        if (authenticated) {
           await checkUserAuth();
         } else {
           setIsLoadingAuth(false);
