@@ -93,17 +93,17 @@ export default function Layout() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                  `flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
                     isActive ? "text-primary" : "text-sidebar-foreground/60"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`flex items-center justify-center w-10 h-7 rounded-lg ${isActive ? "bg-accent" : ""}`}>
-                      <item.icon className="w-5 h-5" />
+                    <span className={`flex items-center justify-center w-8 h-6 rounded-lg ${isActive ? "bg-accent" : ""}`}>
+                      <item.icon className="w-4.5 h-4.5" />
                     </span>
-                    {item.label}
+                    <span className="truncate max-w-full leading-tight">{item.label}</span>
                   </>
                 )}
               </NavLink>

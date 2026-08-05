@@ -122,7 +122,7 @@ export default function MinhasLicitacoes() {
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <div className="hidden md:flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <input
               type="date"
               value={dataAberturaIni}

@@ -130,10 +130,10 @@ export default function Explorar() {
             <span className="font-medium text-foreground">{meta.total}</span> licitações encontradas ·
             mostrando {meta.nestaPagina} (página 1 de {meta.paginas})
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {resultados.length > 0 && (
               <>
-                <span className="text-xs text-muted-foreground hidden sm:inline">
+                <span className="text-xs text-muted-foreground">
                   {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
                 </span>
                 <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden shrink-0">
@@ -157,7 +157,7 @@ export default function Explorar() {
                   disabled={selecionados.size === 0}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted disabled:opacity-50"
                 >
-                  <Mail className="w-4 h-4" /> Enviar por e-mail
+                  <Mail className="w-4 h-4" /> <span className="hidden sm:inline">Enviar por e-mail</span><span className="sm:hidden">E-mail</span>
                 </button>
               </>
             )}

@@ -156,22 +156,22 @@ export default function Atualizacao() {
               {licitacoes.length} licitação(ões) encontradas pela última sincronização.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-            <BuscaMultiSelect
-              options={buscasSalvas}
-              value={buscasSelecionadas}
-              onChange={setBuscasSelecionadas}
-              disabled={sincronizando || buscasSalvas.length === 0}
-            />
-            <button
-              onClick={sincronizarAgora}
-              disabled={sincronizando || buscasSelecionadas.length === 0}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 shrink-0"
-            >
-              {sincronizando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-              {sincronizando ? "Sincronizando..." : "Sincronizar agora"}
-            </button>
-          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <BuscaMultiSelect
+            options={buscasSalvas}
+            value={buscasSelecionadas}
+            onChange={setBuscasSelecionadas}
+            disabled={sincronizando || buscasSalvas.length === 0}
+          />
+          <button
+            onClick={sincronizarAgora}
+            disabled={sincronizando || buscasSelecionadas.length === 0}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 sm:shrink-0"
+          >
+            {sincronizando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            {sincronizando ? "Sincronizando..." : "Sincronizar agora"}
+          </button>
         </div>
 
         {resultadoSync && (
