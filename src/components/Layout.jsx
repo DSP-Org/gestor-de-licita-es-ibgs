@@ -3,6 +3,7 @@ import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, BookOpen, MoreHorizontal, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
+import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const navItems = [
   { to: "/atualizacao", label: "Atualização", icon: RefreshCw },
@@ -42,6 +43,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex bg-background">
+      <InstalarAppPrompt />
       <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar sticky top-0 h-screen">
         <div className="h-16 flex items-center gap-2.5 px-5 border-b">
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
