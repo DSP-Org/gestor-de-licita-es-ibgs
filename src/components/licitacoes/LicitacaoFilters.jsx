@@ -37,7 +37,7 @@ export default function LicitacaoFilters({ filtros, onChange, onBuscar, onLimpar
   const temFiltro = !!(filtros.uf || filtros.palavra_chave || filtros.modalidade || filtros.municipio_ibge || filtros.data_inicio || filtros.data_fim);
 
   return (
-    <div className="bg-card border rounded-lg p-4 space-y-4">
+    <div className="bg-card border rounded-lg p-3.5 sm:p-4 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Estado (UF)</label>
@@ -123,18 +123,18 @@ export default function LicitacaoFilters({ filtros, onChange, onBuscar, onLimpar
           />
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
         <button
           onClick={onBuscar}
           disabled={loading || !temFiltro}
           title={!temFiltro ? "Informe ao menos um filtro para buscar" : ""}
-          className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+          className="px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Buscando..." : "Buscar licitações"}
         </button>
         <button
           onClick={onLimpar}
-          className="px-4 py-2 text-sm font-medium border rounded-md hover:bg-muted"
+          className="px-4 py-2.5 text-sm font-medium border rounded-md hover:bg-muted"
         >
           Limpar
         </button>

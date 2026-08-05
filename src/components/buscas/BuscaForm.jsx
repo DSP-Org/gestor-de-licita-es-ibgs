@@ -92,7 +92,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
   };
 
   return (
-    <div className="bg-card border rounded-lg p-5 space-y-4">
+    <div className="bg-card border rounded-lg p-4 sm:p-5 space-y-4">
       <div>
         <label className="text-xs font-medium text-muted-foreground">Nome da busca *</label>
         <input
@@ -270,12 +270,12 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
 
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <button onClick={submit} className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90">
+      <div className="flex flex-col sm:flex-row gap-2 pt-2">
+        <button onClick={submit} className="px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 sm:order-2 sm:ml-auto">
           Salvar busca
         </button>
         {onCancel && (
-          <button onClick={onCancel} className="px-4 py-2 text-sm border rounded-md hover:bg-muted">
+          <button onClick={onCancel} className="px-4 py-2.5 text-sm border rounded-md hover:bg-muted sm:order-1">
             Cancelar
           </button>
         )}

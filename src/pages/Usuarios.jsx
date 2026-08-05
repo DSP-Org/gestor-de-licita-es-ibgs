@@ -59,8 +59,8 @@ export default function Usuarios() {
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-4xl mx-auto">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Usuários</h1>
-        <p className="text-sm text-muted-foreground">Convide usuários para acessar o sistema. Cada um verá apenas suas próprias licitações e buscas.</p>
+        <h1 className="font-heading text-xl sm:text-2xl font-bold">Usuários</h1>
+        <p className="text-sm text-muted-foreground mt-1">Convide usuários para acessar o sistema. Cada um verá apenas suas próprias licitações e buscas.</p>
       </div>
 
       <form onSubmit={convidar} className="bg-card border rounded-lg p-4 space-y-3">
@@ -80,7 +80,7 @@ export default function Usuarios() {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="user">Usuário (vê só os seus)</option>
             <option value="admin">Admin (vê tudo)</option>
@@ -88,7 +88,7 @@ export default function Usuarios() {
           <button
             type="submit"
             disabled={invitando}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 sm:shrink-0"
           >
             {invitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
             Convidar
@@ -109,23 +109,23 @@ export default function Usuarios() {
         ) : (
           <div className="divide-y">
             {usuarios.map((u) => (
-              <div key={u.id} className="px-4 py-3 flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${u.role === "admin" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              <div key={u.id} className="px-3 sm:px-4 py-3 flex items-center gap-2.5 sm:gap-3">
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 ${u.role === "admin" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                   {u.role === "admin" ? <Shield className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{u.full_name || u.email}</p>
+                  <p className="font-medium text-sm truncate">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${u.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                   {u.role === "admin" ? "Admin" : "Usuário"}
                 </span>
                 <button
                   onClick={() => remover(u)}
-                  className="p-2 rounded-md border hover:bg-red-50 hover:text-red-600"
+                  className="p-1.5 sm:p-2 rounded-md border hover:bg-red-50 hover:text-red-600 shrink-0"
                   title="Remover"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             ))}

@@ -95,16 +95,16 @@ export default function Instrucoes() {
       </div>
 
       <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 sm:p-5 flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <Bell className="w-5 h-5" />
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
-        <div className="text-sm space-y-1">
+        <div className="text-sm space-y-1 min-w-0">
           <p className="font-medium">Comece por aqui:</p>
           <ol className="list-decimal list-inside space-y-0.5 text-muted-foreground">
-            <li>Crie uma busca em <strong>Buscas e Automação</strong> com seus filtros.</li>
+            <li>Crie uma busca em <strong>Buscas</strong> com seus filtros.</li>
             <li>Ative a sincronização automática e configure os destinatários.</li>
             <li>Salve licitações de interesse em <strong>Explorar</strong>.</li>
-            <li>Acompanhe tudo em <strong>Minhas Licitações</strong>.</li>
+            <li>Acompanhe tudo em <strong>Minhas</strong>.</li>
           </ol>
         </div>
       </div>
@@ -113,8 +113,8 @@ export default function Instrucoes() {
         {secoes.map((sec, i) => (
           <div key={i} className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <sec.icon className="w-5 h-5" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <sec.icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="font-heading font-semibold text-base">{sec.titulo}</h2>

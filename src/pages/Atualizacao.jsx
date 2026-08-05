@@ -141,7 +141,7 @@ export default function Atualizacao() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="font-heading text-xl sm:text-3xl font-bold tracking-tight">Atualização</h1>
-        <p className="text-sm text-muted-foreground mt-1">Licitações trazidas automaticamente pela sincronização das buscas salvas.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">Licitações trazidas automaticamente pela sincronização das buscas salvas.</p>
       </div>
 
       {/* Painel de sincronização */}

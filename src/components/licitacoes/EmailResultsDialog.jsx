@@ -158,12 +158,12 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
           {msg && <p className="text-sm text-green-600">{msg}</p>}
           {erro && <p className="text-sm text-red-600">{erro}</p>}
 
-          <div className="flex justify-end gap-2 pt-2 border-t">
-            <button onClick={onClose} className="px-4 py-2 text-sm border rounded-md hover:bg-muted">Fechar</button>
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2 border-t">
+            <button onClick={onClose} className="px-4 py-2.5 text-sm border rounded-md hover:bg-muted order-2 sm:order-1">Fechar</button>
             <button
               onClick={enviar}
               disabled={enviando || !destinatario}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 order-1 sm:order-2"
             >
               {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Enviar

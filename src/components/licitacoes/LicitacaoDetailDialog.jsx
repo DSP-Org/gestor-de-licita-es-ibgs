@@ -216,27 +216,27 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 border-t pt-4">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-t pt-4">
             {licitacao.link_externo && (
-              <a href={licitacao.link_externo} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted">
-                <ExternalLink className="w-4 h-4" /> Portal oficial
+              <a href={licitacao.link_externo} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted">
+                <ExternalLink className="w-4 h-4" /> Portal
               </a>
             )}
             <button
               onClick={() => setCompartilhar(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
             >
               <Share2 className="w-4 h-4" /> Compartilhar
             </button>
             <button
               onClick={gerarPDF}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
             >
-              <FileDown className="w-4 h-4" /> Gerar PDF
+              <FileDown className="w-4 h-4" /> PDF
             </button>
             <button
               onClick={handleSave}
-              className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
+              className="col-span-2 sm:col-span-1 sm:ml-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
             >
               <Save className="w-4 h-4" /> Salvar
             </button>

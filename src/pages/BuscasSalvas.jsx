@@ -163,12 +163,12 @@ export default function BuscasSalvas() {
           {buscas.map((b) => {
             const res = resultadoSync[b.id];
             return (
-              <div key={b.id} className="bg-card border border-border/70 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
                 {/* Título + badge + ações */}
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-2 sm:gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-heading font-semibold text-lg leading-tight truncate">{b.nome}</h3>
+                      <h3 className="font-heading font-semibold text-base sm:text-lg leading-tight truncate">{b.nome}</h3>
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${b.ativa ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                         {b.ativa ? "Ativa" : "Inativa"}
                       </span>
@@ -209,8 +209,8 @@ export default function BuscasSalvas() {
                 </div>
 
                 {/* Metadados */}
-                <div className="mt-3 space-y-2">
-                  <div className="flex flex-wrap gap-2">
+                <div className="mt-2.5 sm:mt-3 space-y-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {b.uf && (
                       <span className="inline-flex items-center gap-1 text-xs bg-muted/60 px-2 py-1 rounded-md">
                         <MapPin className="w-3 h-3 text-muted-foreground" /> <b className="text-foreground">{b.uf}</b>
@@ -237,7 +237,7 @@ export default function BuscasSalvas() {
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {b.ultima_sincronizacao

@@ -111,7 +111,7 @@ export default function MinhasLicitacoes() {
         <StatCard icon={CheckCircle2} label="Ganhas" value={stats.ganhas} color="text-green-600 bg-green-50" />
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+      <div className="flex flex-col gap-2 bg-card border rounded-xl p-2.5 sm:p-2 shadow-sm">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -128,7 +128,7 @@ export default function MinhasLicitacoes() {
               value={dataAberturaIni}
               onChange={(e) => setDataAberturaIni(e.target.value)}
               title="Data de abertura inicial"
-              className="px-2.5 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="px-2 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <span className="text-muted-foreground text-xs">até</span>
             <input
@@ -136,7 +136,7 @@ export default function MinhasLicitacoes() {
               value={dataAberturaFim}
               onChange={(e) => setDataAberturaFim(e.target.value)}
               title="Data de abertura final"
-              className="px-2.5 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              className="px-2 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <select

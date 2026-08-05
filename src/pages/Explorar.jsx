@@ -106,8 +106,8 @@ export default function Explorar() {
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Explorar API</h1>
-        <p className="text-sm text-muted-foreground">Consulte licitações abertas em tempo real e salve as de interesse.</p>
+        <h1 className="font-heading text-xl sm:text-2xl font-bold">Explorar API</h1>
+        <p className="text-sm text-muted-foreground mt-1">Consulte licitações abertas em tempo real e salve as de interesse.</p>
       </div>
 
       <LicitacaoFilters
@@ -125,43 +125,40 @@ export default function Explorar() {
       )}
 
       {meta && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-col gap-2">
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{meta.total}</span> licitações encontradas ·
-            mostrando {meta.nestaPagina} (página 1 de {meta.paginas})
+            <span className="font-medium text-foreground">{meta.total}</span> licitações · {meta.nestaPagina} na pág. 1 de {meta.paginas}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {resultados.length > 0 && (
-              <>
-                <span className="text-xs text-muted-foreground">
-                  {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
-                </span>
-                <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden shrink-0">
-                  <button
-                    onClick={() => setModo("cards")}
-                    title="Visualização em cards"
-                    className={`p-1.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setModo("tabela")}
-                    title="Visualização em tabela"
-                    className={`p-1.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                  >
-                    <Table className="w-4 h-4" />
-                  </button>
-                </div>
+          {resultados.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground">
+                {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
+              </span>
+              <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden shrink-0">
                 <button
-                  onClick={() => setEnviarEmail(true)}
-                  disabled={selecionados.size === 0}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted disabled:opacity-50"
+                  onClick={() => setModo("cards")}
+                  title="Visualização em cards"
+                  className={`p-1.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                 >
-                  <Mail className="w-4 h-4" /> <span className="hidden sm:inline">Enviar por e-mail</span><span className="sm:hidden">E-mail</span>
+                  <LayoutGrid className="w-4 h-4" />
                 </button>
-              </>
-            )}
-          </div>
+                <button
+                  onClick={() => setModo("tabela")}
+                  title="Visualização em tabela"
+                  className={`p-1.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                >
+                  <Table className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={() => setEnviarEmail(true)}
+                disabled={selecionados.size === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md hover:bg-muted disabled:opacity-50 ml-auto"
+              >
+                <Mail className="w-4 h-4" /> <span className="hidden sm:inline">Enviar por e-mail</span><span className="sm:hidden">E-mail</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
