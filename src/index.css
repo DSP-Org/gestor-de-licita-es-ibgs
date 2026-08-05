@@ -101,4 +101,17 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .animate-ticker {
+    animation: ticker 34s linear infinite;
+  }
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker { animation-play-state: paused; }
 }

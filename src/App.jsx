@@ -21,6 +21,7 @@ import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import AcessoPendente from "@/components/auth/AcessoPendente";
+import LandingPage from "@/pages/LandingPage";
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
@@ -56,6 +57,11 @@ const AuthenticatedApp = () => {
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  // A página inicial funciona como apresentação pública para visitantes
+  if (location.pathname === "/" && !isAuthenticated) {
+    return <LandingPage />;
   }
 
   // Handle authentication errors
