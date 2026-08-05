@@ -45,6 +45,9 @@ const AuthenticatedApp = () => {
 
   // Páginas de autenticação — não exigem login
   if (AUTH_PATHS.includes(location.pathname)) {
+    if (isAuthenticated && location.pathname === "/login") {
+      return <Navigate to="/" replace />;
+    }
     return (
       <Routes>
         <Route path="/login" element={<Login />} />

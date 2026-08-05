@@ -38,8 +38,15 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserAuth = async () => {
     try {
-      // Now check if the user is authenticated
       setIsLoadingAuth(true);
+      // Sem token salvo não há sessão — evita chamada desnecessária que trava a tela
+      if (!localStorage.getItem("base44_access_token")) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+        return;
+      }
       const currentUser = await base44.auth.me();
       setUser(normalizeUser(currentUser));
       setIsAuthenticated(true);
@@ -50,13 +57,12 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
+
+      // Token inválido/expirado: limpa para permitir novo login
+      const status = error?.status || error?.response?.status;
+      if (status === 401 || status === 403) {
+        localStorage.removeItem("base44_access_token");
+        localStorage.removeItem("token");
       }
     }
   };
