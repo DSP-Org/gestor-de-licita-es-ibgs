@@ -20,11 +20,12 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import AcessoPendente from "@/components/auth/AcessoPendente";
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  const { user, isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
   const location = useLocation();
 
   // Páginas públicas (compartilhamento por código) — não exigem login
@@ -72,6 +73,11 @@ const AuthenticatedApp = () => {
   if (!isAuthenticated) {
     navigateToLogin();
     return null;
+  }
+
+  const approvalStatus = user?.approval_status || "pending";
+  if (user?.role !== "admin" && approvalStatus !== "approved") {
+    return <AcessoPendente rejeitado={approvalStatus === "rejected"} />;
   }
 
   // Render the main app

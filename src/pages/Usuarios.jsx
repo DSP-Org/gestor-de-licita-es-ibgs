@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail } from "lucide-react";
+import AprovacaoUsuario from "@/components/usuarios/AprovacaoUsuario";
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -46,6 +47,16 @@ export default function Usuarios() {
     }
   };
 
+  const alterarAcesso = async (usuario, approval_status) => {
+    setErro("");
+    try {
+      await base44.entities.User.update(usuario.id, { approval_status });
+      setUsuarios((atuais) => atuais.map((item) => item.id === usuario.id ? { ...item, approval_status } : item));
+    } catch (e) {
+      setErro(e.message || "Erro ao alterar o acesso do usuário.");
+    }
+  };
+
   const remover = async (u) => {
     if (!confirm(`Remover o usuário ${u.email}?`)) return;
     try {
@@ -60,7 +71,7 @@ export default function Usuarios() {
     <div className="p-4 sm:p-6 space-y-5 max-w-4xl mx-auto">
       <div>
         <h1 className="font-heading text-xl sm:text-2xl font-bold">Usuários</h1>
-        <p className="text-sm text-muted-foreground mt-1">Convide usuários para acessar o sistema. Cada um verá apenas suas próprias licitações e buscas.</p>
+        <p className="text-sm text-muted-foreground mt-1">Cadastros novos ficam pendentes até que um administrador libere o acesso.</p>
       </div>
 
       <form onSubmit={convidar} className="bg-card border rounded-lg p-4 space-y-3">
@@ -117,9 +128,12 @@ export default function Usuarios() {
                   <p className="font-medium text-sm truncate">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                 </div>
-                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${u.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                  {u.role === "admin" ? "Admin" : "Usuário"}
-                </span>
+                <div className="hidden sm:block text-right">
+                  <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${u.role === "admin" || u.approval_status === "approved" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    {u.role === "admin" ? "Admin" : u.approval_status === "approved" ? "Liberado" : u.approval_status === "rejected" ? "Bloqueado" : "Pendente"}
+                  </span>
+                </div>
+                <AprovacaoUsuario usuario={u} onChange={alterarAcesso} />
                 <button
                   onClick={() => remover(u)}
                   className="p-1.5 sm:p-2 rounded-md border hover:bg-red-50 hover:text-red-600 shrink-0"
