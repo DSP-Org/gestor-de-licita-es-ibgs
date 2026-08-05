@@ -5,7 +5,7 @@ import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
-import ShareDialog from "@/components/licitacoes/ShareDialog";
+import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
@@ -316,7 +316,7 @@ export default function Atualizacao() {
         <LicitacaoDetailDialog licitacao={selecionada} onClose={() => setSelecionada(null)} onSave={handleSave} />
       )}
       {compartilhar?.length > 0 && (
-        <ShareDialog
+        <EmailResultsDialog
           licitacoes={compartilhar}
           origem={compartilhar.length === 1 ? compartilhar[0].busca_origem : "Licitações selecionadas"}
           onClose={() => setCompartilhar(null)}

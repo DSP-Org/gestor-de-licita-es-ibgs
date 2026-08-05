@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { Link } from "react-router-dom";
 import { X, Mail, Loader2, Send } from "lucide-react";
 import { formatValor } from "./LicitacaoCard";
+import { toArray } from "@/lib/toArray";
 
 export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
-  const [usuarios, setUsuarios] = useState([]);
-  const [destinatario, setDestinatario] = useState("");
+  const [contatos, setContatos] = useState([]);
+  const [selecionados, setSelecionados] = useState([]);
   const [assunto, setAssunto] = useState(`Resultados de licitações — ${origem || "busca"}`);
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
@@ -13,14 +15,14 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
-    base44.entities.User.list("-created_date", 100)
-      .then((lista) => {
-        setUsuarios(lista);
-        if (lista.length > 0) setDestinatario(lista[0].email);
-      })
-      .catch((e) => setErro(e.message || "Erro ao carregar usuários."))
+    base44.entities.Destinatario.list("-created_date", 200)
+      .then((lista) => setContatos(toArray(lista)))
+      .catch((e) => setErro(e.message || "Erro ao carregar destinatários."))
       .finally(() => setLoading(false));
   }, []);
+
+  const toggle = (email) =>
+    setSelecionados((prev) => (prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]));
 
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -66,7 +68,7 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   };
 
   const enviar = async () => {
-    if (!destinatario) return;
+    if (selecionados.length === 0) return;
     setEnviando(true);
     setMsg("");
     setErro("");
@@ -93,14 +95,15 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
         })),
       });
 
-      await base44.integrations.Core.SendEmail({
-        to: destinatario,
+      const res = await base44.functions.invoke("enviarEmailResultados", {
+        emails: selecionados,
         subject: assunto,
-        body: montarCorpo(linkCompartilhamento),
+        html: montarCorpo(linkCompartilhamento),
       });
-      setMsg(`E-mail enviado para ${destinatario}.`);
+      if (res.data?.error) throw new Error(res.data.error);
+      setMsg(`E-mail enviado para ${selecionados.length} destinatário(s).`);
     } catch (e) {
-      setErro(e.message || "Erro ao enviar e-mail. Apenas usuários cadastrados no app podem receber.");
+      setErro(e.message || "Erro ao enviar e-mail.");
     } finally {
       setEnviando(false);
     }
@@ -116,26 +119,37 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
 
         <div className="p-5 space-y-4">
           <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-            {licitacoes.length} licitação(ões) serão enviadas. Só é possível enviar para usuários cadastrados no app.
+            {licitacoes.length} licitação(ões) serão enviadas para os destinatários selecionados.
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Destinatário</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium text-muted-foreground">Destinatários</label>
+              <Link to="/destinatarios" className="text-xs text-primary hover:underline">Gerenciar lista</Link>
+            </div>
             {loading ? (
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Carregando usuários...</div>
-            ) : usuarios.length === 0 ? (
-              <p className="mt-1 text-sm text-red-600">Nenhum usuário cadastrado disponível.</p>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Carregando destinatários...</div>
+            ) : contatos.length === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nenhum destinatário cadastrado. <Link to="/destinatarios" className="text-primary underline">Cadastrar agora</Link>.
+              </p>
             ) : (
-              <select
-                value={destinatario}
-                onChange={(e) => setDestinatario(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {usuarios.map((u) => (
-                  <option key={u.id} value={u.email}>{u.email}{u.role === "admin" ? " (admin)" : ""}</option>
+              <div className="mt-1 max-h-40 overflow-auto border rounded-md p-2 space-y-1">
+                {contatos.map((d) => (
+                  <label key={d.id} className="flex items-center gap-2 text-sm py-0.5 px-1 rounded cursor-pointer hover:bg-muted">
+                    <input
+                      type="checkbox"
+                      checked={selecionados.includes(d.email)}
+                      onChange={() => toggle(d.email)}
+                      className="w-4 h-4"
+                    />
+                    <span className="min-w-0 truncate">{d.nome || d.email}</span>
+                    {d.nome && <span className="text-xs text-muted-foreground truncate">· {d.email}</span>}
+                  </label>
                 ))}
-              </select>
+              </div>
             )}
+            <p className="text-xs text-muted-foreground mt-1">{selecionados.length} selecionado(s).</p>
           </div>
 
           <div>
@@ -162,7 +176,7 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
             <button onClick={onClose} className="px-4 py-2.5 text-sm border rounded-md hover:bg-muted order-2 sm:order-1">Fechar</button>
             <button
               onClick={enviar}
-              disabled={enviando || !destinatario}
+              disabled={enviando || selecionados.length === 0}
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 order-1 sm:order-2"
             >
               {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

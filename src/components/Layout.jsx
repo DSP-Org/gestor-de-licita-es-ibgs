@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, BookOpen, MoreHorizontal, X } from "lucide-react";
+import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, BookOpen, MoreHorizontal, Mail, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
@@ -12,6 +12,7 @@ const navItems = [
 ];
 const moreItems = [
   { to: "/buscas", label: "Buscas", icon: Settings },
+  { to: "/destinatarios", label: "Destinatários", icon: Mail },
   { to: "/instrucoes", label: "Ajuda", icon: BookOpen },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];

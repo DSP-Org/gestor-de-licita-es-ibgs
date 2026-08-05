@@ -14,6 +14,7 @@ import Explorar from "@/pages/Explorar";
 import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
 import Atualizacao from "@/pages/Atualizacao";
 import Instrucoes from "@/pages/Instrucoes";
+import Destinatarios from "@/pages/Destinatarios";
 import Administrador from "@/pages/Administrador";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
         <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/admin" element={<Administrador />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
+        <Route path="/destinatarios" element={<Destinatarios />} />
         <Route path="/instrucoes" element={<Instrucoes />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
