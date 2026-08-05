@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Outlet, NavLink } from "react-router-dom";
-import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, BookOpen } from "lucide-react";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, BookOpen, MoreHorizontal, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 
@@ -8,6 +8,8 @@ const navItems = [
   { to: "/atualizacao", label: "Atualização", icon: RefreshCw },
   { to: "/", label: "Minhas", icon: FileText, end: true },
   { to: "/explorar", label: "Explorar", icon: Search },
+];
+const moreItems = [
   { to: "/buscas", label: "Buscas", icon: Settings },
   { to: "/instrucoes", label: "Ajuda", icon: BookOpen },
 ];
@@ -15,7 +17,9 @@ const adminItems = [{ to: "/usuarios", label: "Usuários", icon: Users }];
 
 export default function Layout() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
+  const location = useLocation();
 
   useEffect(() => {
     base44.auth.me()
@@ -23,7 +27,18 @@ export default function Layout() {
       .catch(() => setIsAdmin(false));
   }, []);
 
-  const items = isAdmin ? [...navItems, ...adminItems] : navItems;
+  // Fecha o menu ao navegar
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [location.pathname]);
+
+  const allItems = isAdmin ? [...navItems, ...moreItems, ...adminItems] : [...navItems, ...moreItems];
+  const moreList = isAdmin ? [...moreItems, ...adminItems] : moreItems;
+
+  // Verifica se alguma rota do menu "Mais" está ativa
+  const moreActive = moreList.some((item) =>
+    item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to)
+  );
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -38,7 +53,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {items.map((item) => (
+          {allItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -87,7 +102,7 @@ export default function Layout() {
         {/* Barra de navegação inferior — celular */}
         <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 border-t bg-sidebar/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
           <div className="flex items-stretch">
-            {items.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -108,8 +123,55 @@ export default function Layout() {
                 )}
               </NavLink>
             ))}
+
+            {/* Botão "Mais" */}
+            <button
+              onClick={() => setMenuAberto((v) => !v)}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 text-[9px] font-medium transition-colors ${
+                menuAberto || moreActive ? "text-primary" : "text-sidebar-foreground/60"
+              }`}
+            >
+              <span className={`flex items-center justify-center w-7 h-7 rounded-lg ${menuAberto || moreActive ? "bg-accent" : ""}`}>
+                {menuAberto ? <X className="w-4 h-4" /> : <MoreHorizontal className="w-4 h-4" />}
+              </span>
+              <span className="leading-tight">{menuAberto ? "Fechar" : "Mais"}</span>
+            </button>
           </div>
         </nav>
+
+        {/* Menu "Mais" — drawer superior a partir da barra inferior */}
+        {menuAberto && (
+          <>
+            <div
+              className="md:hidden fixed inset-0 z-30 bg-black/30"
+              onClick={() => setMenuAberto(false)}
+            />
+            <div className="md:hidden fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom))] inset-x-0 z-40 bg-card border-t rounded-t-2xl shadow-lg pb-2 animate-in slide-in-from-bottom duration-200">
+              <div className="px-4 pt-3 pb-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mais opções</p>
+              </div>
+              <div className="grid grid-cols-3 gap-1 p-2">
+                {moreList.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl text-xs font-medium transition-colors ${
+                        isActive
+                          ? "bg-accent text-primary"
+                          : "text-sidebar-foreground/70 hover:bg-muted"
+                      }`
+                    }
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
