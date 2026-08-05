@@ -25,6 +25,8 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
   const [usuarios, setUsuarios] = useState([]);
   const [carregandoUsers, setCarregandoUsers] = useState(false);
   const [novoEmail, setNovoEmail] = useState("");
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     if (initial) setForm((f) => ({ ...f, ...initial, destinatarios_email: initial.destinatarios_email || [], destinatarios_extras: initial.destinatarios_extras || [], telegram_chats: initial.telegram_chats || "" }));
@@ -86,9 +88,25 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     setForm((f) => ({ ...f, destinatarios_extras: (f.destinatarios_extras || []).filter((_, i) => i !== index) }));
   };
 
-  const submit = () => {
-    if (!form.nome.trim()) return;
-    onSave(form);
+  const submit = async () => {
+    if (!form.nome?.trim()) {
+      setErro("Informe o nome da busca para salvar.");
+      return;
+    }
+    setErro("");
+    setSalvando(true);
+    try {
+      const { id, created_date, updated_date, created_by_id, created_by, ...dados } = form;
+      await onSave({
+        ...dados,
+        nome: dados.nome.trim(),
+        licitacoes_por_pagina: Number(dados.licitacoes_por_pagina) || 50,
+      });
+    } catch (e) {
+      setErro(e?.message || "Não foi possível salvar a busca.");
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -270,8 +288,15 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
 
       </div>
 
+      {erro && <p className="text-sm text-red-600">{erro}</p>}
+
       <div className="flex flex-col sm:flex-row gap-2 pt-2">
-        <button onClick={submit} className="px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 sm:order-2 sm:ml-auto">
+        <button
+          onClick={submit}
+          disabled={salvando}
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 sm:order-2 sm:ml-auto"
+        >
+          {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
           Salvar busca
         </button>
         {onCancel && (
