@@ -11,6 +11,7 @@ export default function Usuarios({ embedded = false }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("user");
   const [invitando, setInvitando] = useState(false);
+  const [liberarJa, setLiberarJa] = useState(true);
   const [msg, setMsg] = useState("");
 
   const carregar = async () => {
@@ -37,8 +38,19 @@ export default function Usuarios({ embedded = false }) {
     setMsg("");
     setErro("");
     try {
-      await base44.users.inviteUser(email.trim(), role);
-      setMsg(`Convite enviado para ${email.trim()}.`);
+      const alvo = email.trim();
+      await base44.users.inviteUser(alvo, role);
+      if (liberarJa) {
+        const encontrados = toArray(await base44.entities.User.filter({ email: alvo }));
+        if (encontrados[0]) {
+          await base44.entities.User.update(encontrados[0].id, { approval_status: "approved" });
+        }
+      }
+      setMsg(
+        liberarJa
+          ? `Usuário ${alvo} criado com acesso liberado.`
+          : `Convite enviado para ${alvo}. Acesso ficará pendente de liberação.`
+      );
       setEmail("");
       carregar();
     } catch (e) {
@@ -78,7 +90,7 @@ export default function Usuarios({ embedded = false }) {
       )}
 
       <form onSubmit={convidar} className="bg-card border rounded-lg p-4 space-y-3">
-        <h3 className="font-heading font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Convidar usuário</h3>
+        <h3 className="font-heading font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Criar / convidar usuário</h3>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -105,9 +117,21 @@ export default function Usuarios({ embedded = false }) {
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 sm:shrink-0"
           >
             {invitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-            Convidar
+            {liberarJa ? "Criar" : "Convidar"}
           </button>
         </div>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={liberarJa}
+            onChange={(e) => setLiberarJa(e.target.checked)}
+            className="w-4 h-4"
+          />
+          Criar já com acesso liberado (sem esperar aprovação)
+        </label>
+        <p className="text-xs text-muted-foreground">
+          O usuário recebe um e-mail para definir a senha e acessar o sistema.
+        </p>
         {msg && <p className="text-sm text-green-600">{msg}</p>}
         {erro && <p className="text-sm text-red-600">{erro}</p>}
       </form>
