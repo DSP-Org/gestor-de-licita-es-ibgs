@@ -7,6 +7,7 @@ import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
+import { toArray } from "@/lib/toArray";
 
 const filtrosIniciais = { uf: "", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: "", data_inicio: "", data_fim: "" };
 
@@ -35,7 +36,7 @@ export default function Explorar() {
   const carregarSalvas = async () => {
     try {
       const lista = await base44.entities.Licitacao.list("-updated_date", 500);
-      setSalvasIds(new Set(lista.map((l) => l.id_licitacao)));
+      setSalvasIds(new Set(toArray(lista).map((l) => l.id_licitacao)));
     } catch {
       /* ignore */
     }
@@ -61,7 +62,7 @@ export default function Explorar() {
       if (data.totalErros > 0) {
         setErro(data.erros.map((e) => e.descricao).join("; "));
       } else {
-        setResultados(data.licitacoes || []);
+        setResultados(toArray(data.licitacoes));
         setMeta({
           total: data.totalLicitacoes,
           paginas: data.paginas,

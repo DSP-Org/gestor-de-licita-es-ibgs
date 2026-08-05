@@ -9,6 +9,7 @@ import ShareDialog from "@/components/licitacoes/ShareDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
+import { toArray } from "@/lib/toArray";
 
 export default function Atualizacao() {
   const [licitacoes, setLicitacoes] = useState([]);
@@ -28,7 +29,7 @@ export default function Atualizacao() {
     setLoading(true);
     try {
       const lista = await base44.entities.Licitacao.list("-created_date", 500);
-      setLicitacoes(lista.filter((item) => item.salva_manualmente !== true && item.busca_origem));
+      setLicitacoes(toArray(lista).filter((item) => item.salva_manualmente !== true && item.busca_origem));
     } finally {
       setLoading(false);
     }
@@ -36,7 +37,8 @@ export default function Atualizacao() {
 
   useEffect(() => {
     carregar();
-    base44.entities.BuscaSalva.filter({ ativa: true }, "nome", 100).then((lista) => {
+    base44.entities.BuscaSalva.filter({ ativa: true }, "nome", 100).then((res) => {
+      const lista = toArray(res);
       setBuscasSalvas(lista);
       setBuscasSelecionadas(lista.map((item) => item.id));
     });

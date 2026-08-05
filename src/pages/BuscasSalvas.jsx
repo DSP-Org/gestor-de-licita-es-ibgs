@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, 
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
+import { toArray } from "@/lib/toArray";
 
 export default function BuscasSalvas() {
   const [buscas, setBuscas] = useState([]);
@@ -21,7 +22,7 @@ export default function BuscasSalvas() {
     setLoading(true);
     try {
       const lista = await base44.entities.BuscaSalva.list("-updated_date", 100);
-      setBuscas(lista);
+      setBuscas(toArray(lista));
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export default function BuscasSalvas() {
         pagina: 1,
         licitacoesPorPagina: busca.licitacoes_por_pagina || 50,
       });
-      setEmailLics(data.licitacoes || []);
+      setEmailLics(toArray(data.licitacoes));
       setEmailBusca(busca);
     } catch (e) {
       setResultadoSync((r) => ({ ...r, [busca.id]: { erro: e.message } }));
@@ -84,9 +85,9 @@ export default function BuscasSalvas() {
         setResultadoSync((r) => ({ ...r, [busca.id]: { erro: data.erros.map((e) => e.descricao).join("; ") } }));
         return;
       }
-      const lics = data.licitacoes || [];
+      const lics = toArray(data.licitacoes);
       const existentes = await base44.entities.Licitacao.list("-updated_date", 500);
-      const existIds = new Set(existentes.map((l) => l.id_licitacao));
+      const existIds = new Set(toArray(existentes).map((l) => l.id_licitacao));
       const novas = lics
         .filter((l) => !existIds.has(l.id_licitacao))
         .map((l) => ({

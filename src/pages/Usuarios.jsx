@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail } from "lucide-react";
 import AprovacaoUsuario from "@/components/usuarios/AprovacaoUsuario";
+import { toArray } from "@/lib/toArray";
 
 export default function Usuarios({ embedded = false }) {
   const [usuarios, setUsuarios] = useState([]);
@@ -17,7 +18,7 @@ export default function Usuarios({ embedded = false }) {
     setErro("");
     try {
       const lista = await base44.entities.User.list("-created_date", 100);
-      setUsuarios(lista);
+      setUsuarios(toArray(lista));
     } catch (e) {
       setErro(e.message || "Erro ao carregar usuários. Apenas admins podem acessar.");
     } finally {

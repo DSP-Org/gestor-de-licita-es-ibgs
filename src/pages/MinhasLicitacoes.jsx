@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Trash2, Wallet } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
+import { toArray } from "@/lib/toArray";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
@@ -23,7 +24,7 @@ export default function MinhasLicitacoes() {
     setLoading(true);
     try {
       const lista = await base44.entities.Licitacao.filter({ salva_manualmente: true }, "-updated_date", 500);
-      setLicitacoes(Array.isArray(lista) ? lista : (lista?.items || lista?.data || []));
+      setLicitacoes(toArray(lista));
     } finally {
       setLoading(false);
     }
