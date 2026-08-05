@@ -82,7 +82,8 @@ const AuthenticatedApp = () => {
   }
 
   const approvalStatus = user?.approval_status || "pending";
-  if (user?.role !== "admin" && approvalStatus !== "approved") {
+  const isMaster = user?.email?.toLowerCase() === "nailton.alsampaio@gmail.com";
+  if (!isMaster && user?.role !== "admin" && approvalStatus !== "approved") {
     return <AcessoPendente rejeitado={approvalStatus === "rejected"} />;
   }
 
