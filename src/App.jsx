@@ -20,15 +20,12 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
-import AcessoPendente from "@/components/auth/AcessoPendente";
 import LandingPage from "@/pages/LandingPage";
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
-const MASTER_USER_ID = "6a72071af600bb866f6561f8";
-const MASTER_EMAIL = "nailton.alsampaio@gmail.com";
 
 const AuthenticatedApp = () => {
-  const { user, isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
   const location = useLocation();
 
   // Páginas públicas (compartilhamento por código) — não exigem login
@@ -81,13 +78,6 @@ const AuthenticatedApp = () => {
   if (!isAuthenticated) {
     navigateToLogin();
     return null;
-  }
-
-  const approvalStatus = user?.approval_status || user?.data?.approval_status || "pending";
-  const userRole = user?.role || user?.data?.role;
-  const isMaster = user?.id === MASTER_USER_ID || user?.email?.trim().toLowerCase() === MASTER_EMAIL;
-  if (!isMaster && userRole !== "admin" && approvalStatus !== "approved") {
-    return <AcessoPendente rejeitado={approvalStatus === "rejected"} />;
   }
 
   // Render the main app
