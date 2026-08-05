@@ -4,6 +4,19 @@ import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
+const MASTER_USER_ID = "6a72071af600bb866f6561f8";
+const MASTER_EMAIL = "nailton.alsampaio@gmail.com";
+
+function normalizeUser(currentUser) {
+  const isMaster = currentUser?.id === MASTER_USER_ID || currentUser?.email?.trim().toLowerCase() === MASTER_EMAIL;
+  const data = currentUser?.data || {};
+
+  return {
+    ...currentUser,
+    role: isMaster ? "admin" : (data.role || currentUser?.role),
+    approval_status: isMaster ? "approved" : (data.approval_status || currentUser?.approval_status),
+  };
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -94,7 +107,7 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      setUser(normalizeUser(currentUser));
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
