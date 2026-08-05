@@ -19,7 +19,7 @@ export function formatValor(valor) {
 export default function LicitacaoCard({ licitacao, onClick, action }) {
   return (
     <div
-      className="bg-card border rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.99]"
+      className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.98]"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">

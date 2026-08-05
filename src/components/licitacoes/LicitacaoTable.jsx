@@ -88,7 +88,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
           <div
             key={l.id || l.id_licitacao}
             onClick={() => onRowClick?.(l)}
-            className="bg-card border rounded-xl p-4 shadow-sm active:scale-[0.99] transition-transform cursor-pointer"
+            className="bg-card border rounded-2xl p-4 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
