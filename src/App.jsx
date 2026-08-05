@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -25,8 +25,14 @@ import LandingPage from "@/pages/LandingPage";
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
   const location = useLocation();
+  const loginRedirect = (
+    <Navigate
+      to={"/login?returnTo=" + encodeURIComponent(location.pathname + location.search)}
+      replace
+    />
+  );
 
   // Páginas públicas (compartilhamento por código) — não exigem login
   if (location.pathname.startsWith("/compartilhar/")) {
@@ -64,20 +70,13 @@ const AuthenticatedApp = () => {
   }
 
   // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
   // Require authentication for all non-public routes
   if (!isAuthenticated) {
-    navigateToLogin();
-    return null;
+    return loginRedirect;
   }
 
   // Render the main app
