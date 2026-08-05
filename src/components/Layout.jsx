@@ -14,7 +14,7 @@ const moreItems = [
   { to: "/buscas", label: "Buscas", icon: Settings },
   { to: "/instrucoes", label: "Ajuda", icon: BookOpen },
 ];
-const adminItems = [{ to: "/usuarios", label: "Usuários", icon: Users }];
+const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 
 export default function Layout() {
   const [isAdmin, setIsAdmin] = useState(false);

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail } from "lucide-react";
 import AprovacaoUsuario from "@/components/usuarios/AprovacaoUsuario";
 
-export default function Usuarios() {
+export default function Usuarios({ embedded = false }) {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
@@ -68,11 +68,13 @@ export default function Usuarios() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-4xl mx-auto">
-      <div>
-        <h1 className="font-heading text-xl sm:text-2xl font-bold">Usuários</h1>
-        <p className="text-sm text-muted-foreground mt-1">Cadastros novos ficam pendentes até que um administrador libere o acesso.</p>
-      </div>
+    <div className={embedded ? "space-y-5" : "p-4 sm:p-6 space-y-5 max-w-4xl mx-auto"}>
+      {!embedded && (
+        <div>
+          <h1 className="font-heading text-xl sm:text-2xl font-bold">Usuários</h1>
+          <p className="text-sm text-muted-foreground mt-1">Cadastros novos ficam pendentes até que um administrador libere o acesso.</p>
+        </div>
+      )}
 
       <form onSubmit={convidar} className="bg-card border rounded-lg p-4 space-y-3">
         <h3 className="font-heading font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Convidar usuário</h3>
