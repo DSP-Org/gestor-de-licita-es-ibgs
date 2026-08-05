@@ -47,7 +47,11 @@ export const AuthProvider = ({ children }) => {
         setAuthChecked(true);
         return;
       }
-      const currentUser = await base44.auth.me();
+      // Evita tela branca caso a chamada nunca responda
+      const currentUser = await Promise.race([
+        base44.auth.me(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000)),
+      ]);
       setUser(normalizeUser(currentUser));
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
