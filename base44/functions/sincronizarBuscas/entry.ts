@@ -9,15 +9,15 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const appUrl = (secrets.get("APP_URL") || "").replace(/\/$/, "");
 
-    // Se houver usuário autenticado, exige admin (invocação manual);
-    // se não houver (chamada via workflow agendado), prossegue com service role.
+    // Usuário autenticado sincroniza apenas as próprias buscas (admin sincroniza todas).
+    // Sem usuário (workflow agendado) processa todas as buscas ativas.
     const user = await base44.auth.me().catch(() => null);
-    if (user && user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const payload = await req.json().catch(() => ({}));
-    const buscasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter({ ativa: true });
+    const filtroBuscas = user && user.role !== 'admin'
+      ? { ativa: true, created_by_id: user.id }
+      : { ativa: true };
+    const buscasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter(filtroBuscas);
     const idsSelecionados = Array.isArray(payload.buscaIds)
       ? payload.buscaIds
       : payload.buscaId ? [payload.buscaId] : null;
