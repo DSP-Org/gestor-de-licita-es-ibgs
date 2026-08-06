@@ -7,13 +7,13 @@ import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const navItems = [
   { to: "/atualizacao", label: "Atualização", icon: RefreshCw },
-  { to: "/", label: "Minhas", icon: FileText, end: true },
+  { to: "/assistente", label: "Assistente", icon: Sparkles },
   { to: "/explorar", label: "Explorar", icon: Search },
 ];
 const moreItems = [
+  { to: "/", label: "Minhas", icon: FileText, end: true },
   { to: "/buscas", label: "Buscas", icon: Settings },
   { to: "/destinatarios", label: "Destinatários", icon: Mail },
-  { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 
