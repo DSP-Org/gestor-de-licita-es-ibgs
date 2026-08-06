@@ -12,7 +12,7 @@ const navItems = [
 ];
 const moreItems = [
   { to: "/", label: "Minhas", icon: FileText, end: true },
-  { to: "/buscas", label: "Buscas", icon: Settings },
+  { to: "/buscas", label: "Configuração", icon: Settings },
   { to: "/destinatarios", label: "Destinatários", icon: Mail },
   { to: "/banco-licitacoes", label: "Banco de Licitação", icon: Database },
 ];

@@ -133,7 +133,7 @@ export default function BuscasSalvas() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">Buscas Salvas</h1>
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">Configuração</h1>
           <p className="text-sm text-muted-foreground mt-1">Crie filtros recorrentes e sincronize licitações com um clique.</p>
         </div>
         <button
