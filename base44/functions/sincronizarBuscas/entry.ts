@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { secrets } from "base44:runtime";
-import { consultarAlertaLicitacao, datasParaSincronizar, filtrarPorTodasPalavras } from "../../shared/alertaApi.ts";
+import { datasParaSincronizar, filtrarPorTodasPalavras } from "../../shared/alertaApi.ts";
+import { consultarComCache } from "../../shared/consultaCache.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
 import { enviarEmailExterno } from "../../shared/email.ts";
 
@@ -28,33 +29,18 @@ export default async function(req) {
     let totalNovas = 0;
     const resumo = [];
 
-    // Cache em memória do ciclo: evita repetir a mesma chamada de API quando
-    // várias buscas (de usuários diferentes) usam os mesmos filtros e data.
-    const cacheAPI = new Map();
-
     for (const busca of buscas) {
       try {
         // Consulta por data de inserção: a API devolve apenas licitações novas,
         // então não se paga novamente por resultados já sincronizados.
-        const assinatura = [busca.uf || "", busca.palavra_chave || "", busca.modalidade || "", busca.municipio_ibge || ""].join("|");
+        // O cache persistente (ConsultaCache) também evita repetir a mesma
+        // chamada quando outra busca (do mesmo usuário ou de outro) usa os
+        // mesmos filtros e data.
         const lics = [];
         let erroBusca = null;
         for (const data_insercao of datasParaSincronizar(busca.ultima_sincronizacao)) {
-          const chaveCache = `${assinatura}|${data_insercao}`;
-          if (cacheAPI.has(chaveCache)) {
-            const cache = cacheAPI.get(chaveCache);
-            if (cache.erro) {
-              erroBusca = cache.erro;
-              break;
-            }
-            lics.push(...cache.lics);
-            continue;
-          }
-
-          const licsData = [];
-          let erroData = null;
           for (let pagina = 1; pagina <= 5; pagina++) {
-            const data = await consultarAlertaLicitacao({
+            const data = await consultarComCache(base44, {
               uf: busca.uf,
               palavra_chave: busca.palavra_chave,
               modalidade: busca.modalidade,
@@ -64,18 +50,13 @@ export default async function(req) {
               licitacoesPorPagina: 100,
             });
             if (data.totalErros > 0) {
-              erroData = data.erros.map((e) => e.descricao).join("; ");
+              erroBusca = data.erros.map((e) => e.descricao).join("; ");
               break;
             }
-            licsData.push(...(data.licitacoes || []));
+            lics.push(...(data.licitacoes || []));
             if (pagina >= (Number(data.paginas) || 1)) break;
           }
-          cacheAPI.set(chaveCache, erroData ? { erro: erroData } : { lics: licsData });
-          if (erroData) {
-            erroBusca = erroData;
-            break;
-          }
-          lics.push(...licsData);
+          if (erroBusca) break;
         }
 
         if (erroBusca) {

@@ -1,0 +1,48 @@
+{
+  "name": "ConsultaCache",
+  "type": "object",
+  "properties": {
+    "chave": {
+      "type": "string",
+      "description": "Chave \u00fanica representando os filtros da consulta (uf, palavra-chave, modalidade, munic\u00edpio, data, p\u00e1gina)"
+    },
+    "uf": {
+      "type": "string",
+      "description": "Sigla do Estado consultado"
+    },
+    "palavra_chave": {
+      "type": "string",
+      "description": "Palavras-chave consultadas"
+    },
+    "modalidade": {
+      "type": "string",
+      "description": "Modalidade(s) consultada(s)"
+    },
+    "municipio_ibge": {
+      "type": "string",
+      "description": "C\u00f3digo IBGE do munic\u00edpio consultado"
+    },
+    "data_insercao": {
+      "type": "string",
+      "description": "Data de inser\u00e7\u00e3o consultada (YYYY-MM-DD)"
+    },
+    "pagina": {
+      "type": "number",
+      "description": "P\u00e1gina consultada"
+    },
+    "resultado": {
+      "type": "object",
+      "description": "Resposta bruta da API Alerta Licita\u00e7\u00e3o armazenada em cache"
+    },
+    "expira_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento em que este registro de cache deixa de ser v\u00e1lido"
+    }
+  },
+  "required": [
+    "chave",
+    "resultado",
+    "expira_em"
+  ]
+}

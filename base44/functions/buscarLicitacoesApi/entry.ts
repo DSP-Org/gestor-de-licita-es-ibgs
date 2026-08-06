@@ -1,4 +1,5 @@
-import { consultarAlertaLicitacao } from "../../shared/alertaApi.ts";
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { consultarComCache } from "../../shared/consultaCache.ts";
 
 function datasNoIntervalo(inicio: string, fim: string): string[] {
   const datas: string[] = [];
@@ -15,6 +16,7 @@ function datasNoIntervalo(inicio: string, fim: string): string[] {
 
 export default async function(req) {
   try {
+    const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
 
     // Período: percorre cada data do intervalo e consolida os resultados
@@ -26,7 +28,7 @@ export default async function(req) {
       let paginas = 0;
 
       for (const data of datas) {
-        const resultado = await consultarAlertaLicitacao({ ...body, data_insercao: data, data_inicio: undefined, data_fim: undefined });
+        const resultado = await consultarComCache(base44, { ...body, data_insercao: data, data_inicio: undefined, data_fim: undefined });
         if (resultado.totalErros > 0) {
           totalErros += resultado.totalErros;
           erros.push(...(resultado.erros || []));
@@ -54,7 +56,7 @@ export default async function(req) {
       });
     }
 
-    const data = await consultarAlertaLicitacao(body);
+    const data = await consultarComCache(base44, body);
     return Response.json(data);
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
