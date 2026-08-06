@@ -78,6 +78,8 @@ export default function BancoLicitacoes() {
         salva_manualmente: true,
       });
       setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
+      // Reforça a permanência da licitação no banco compartilhado.
+      base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {});
     } finally {
       setSalvandoId(null);
     }

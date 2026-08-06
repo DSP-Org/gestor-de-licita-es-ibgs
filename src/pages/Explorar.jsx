@@ -122,6 +122,8 @@ export default function Explorar() {
         salva_manualmente: true,
       });
       setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
+      // Alimenta o banco de licitação compartilhado — economiza chamadas futuras à API.
+      base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {});
     } finally {
       setSalvandoId(null);
     }
