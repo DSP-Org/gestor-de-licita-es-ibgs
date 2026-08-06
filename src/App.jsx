@@ -23,6 +23,7 @@ import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import LandingPage from "@/pages/LandingPage";
+import Assistente from "@/pages/Assistente";
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
@@ -97,6 +98,7 @@ const AuthenticatedApp = () => {
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
         <Route path="/destinatarios" element={<Destinatarios />} />
         <Route path="/instrucoes" element={<Instrucoes />} />
+        <Route path="/assistente" element={<Assistente />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
