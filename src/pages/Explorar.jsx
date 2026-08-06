@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { Plus, Check, Loader2, AlertCircle, Mail, LayoutGrid, Table, FileDown } from "lucide-react";
@@ -24,6 +24,8 @@ export default function Explorar() {
   const [enviarEmail, setEnviarEmail] = useState(false);
   const [modo, setModo] = useState("cards");
   const [selecionados, setSelecionados] = useState(new Set());
+  const cacheBuscaRef = useRef(new Map());
+  const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
 
   const toggleSelecao = (id, checked) => {
     setSelecionados((prev) => {
@@ -53,22 +55,36 @@ export default function Explorar() {
       setErro("Informe ao menos um filtro (UF, município, palavra-chave ou modalidade) para buscar.");
       return;
     }
-    setLoading(true);
     setErro("");
     setResultados([]);
     setMeta(null);
     setSelecionados(new Set());
+
+    // Reaproveita o resultado se a mesma busca foi feita há pouco tempo,
+    // evitando consumir a API novamente.
+    const chaveCache = JSON.stringify(filtros);
+    const emCache = cacheBuscaRef.current.get(chaveCache);
+    if (emCache && Date.now() - emCache.timestamp < CACHE_TTL_MS) {
+      setResultados(emCache.resultados);
+      setMeta(emCache.meta);
+      return;
+    }
+
+    setLoading(true);
     try {
       const data = await buscarLicitacoes({ ...filtros, pagina: 1, licitacoesPorPagina: 50 });
       if (data.totalErros > 0) {
         setErro(data.erros.map((e) => e.descricao).join("; "));
       } else {
-        setResultados(toArray(data.licitacoes));
-        setMeta({
+        const resultados = toArray(data.licitacoes);
+        const meta = {
           total: data.totalLicitacoes,
           paginas: data.paginas,
           nestaPagina: data.licitacoesNestaPagina,
-        });
+        };
+        setResultados(resultados);
+        setMeta(meta);
+        cacheBuscaRef.current.set(chaveCache, { resultados, meta, timestamp: Date.now() });
       }
     } catch (e) {
       setErro(e.message || "Erro ao consultar a API.");

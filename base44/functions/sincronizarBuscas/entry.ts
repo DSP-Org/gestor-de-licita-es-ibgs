@@ -28,13 +28,31 @@ export default async function(req) {
     let totalNovas = 0;
     const resumo = [];
 
+    // Cache em memória do ciclo: evita repetir a mesma chamada de API quando
+    // várias buscas (de usuários diferentes) usam os mesmos filtros e data.
+    const cacheAPI = new Map();
+
     for (const busca of buscas) {
       try {
         // Consulta por data de inserção: a API devolve apenas licitações novas,
         // então não se paga novamente por resultados já sincronizados.
+        const assinatura = [busca.uf || "", busca.palavra_chave || "", busca.modalidade || "", busca.municipio_ibge || ""].join("|");
         const lics = [];
         let erroBusca = null;
         for (const data_insercao of datasParaSincronizar(busca.ultima_sincronizacao)) {
+          const chaveCache = `${assinatura}|${data_insercao}`;
+          if (cacheAPI.has(chaveCache)) {
+            const cache = cacheAPI.get(chaveCache);
+            if (cache.erro) {
+              erroBusca = cache.erro;
+              break;
+            }
+            lics.push(...cache.lics);
+            continue;
+          }
+
+          const licsData = [];
+          let erroData = null;
           for (let pagina = 1; pagina <= 5; pagina++) {
             const data = await consultarAlertaLicitacao({
               uf: busca.uf,
@@ -46,13 +64,18 @@ export default async function(req) {
               licitacoesPorPagina: 100,
             });
             if (data.totalErros > 0) {
-              erroBusca = data.erros.map((e) => e.descricao).join("; ");
+              erroData = data.erros.map((e) => e.descricao).join("; ");
               break;
             }
-            lics.push(...(data.licitacoes || []));
+            licsData.push(...(data.licitacoes || []));
             if (pagina >= (Number(data.paginas) || 1)) break;
           }
-          if (erroBusca) break;
+          cacheAPI.set(chaveCache, erroData ? { erro: erroData } : { lics: licsData });
+          if (erroData) {
+            erroBusca = erroData;
+            break;
+          }
+          lics.push(...licsData);
         }
 
         if (erroBusca) {
