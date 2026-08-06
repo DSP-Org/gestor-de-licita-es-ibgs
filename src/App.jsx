@@ -13,7 +13,6 @@ import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import Explorar from "@/pages/Explorar";
 import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
 import Atualizacao from "@/pages/Atualizacao";
-import Instrucoes from "@/pages/Instrucoes";
 import Destinatarios from "@/pages/Destinatarios";
 import Administrador from "@/pages/Administrador";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
@@ -97,7 +96,6 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<Administrador />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
         <Route path="/destinatarios" element={<Destinatarios />} />
-        <Route path="/instrucoes" element={<Instrucoes />} />
         <Route path="/assistente" element={<Assistente />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
