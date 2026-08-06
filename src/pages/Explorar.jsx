@@ -10,7 +10,9 @@ import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 
-const filtrosIniciais = { uf: "BA", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: "", data_inicio: "", data_fim: "" };
+const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+const filtrosIniciais = { uf: "BA", palavra_chave: "", modalidade: "", municipio_ibge: "", municipio_nome: "", data_insercao: hojeISO(), data_inicio: "", data_fim: "" };
 
 export default function Explorar() {
   const [filtros, setFiltros] = useState(filtrosIniciais);
