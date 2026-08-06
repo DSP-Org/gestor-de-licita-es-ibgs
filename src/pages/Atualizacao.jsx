@@ -24,6 +24,9 @@ export default function Atualizacao() {
   const [buscasSelecionadas, setBuscasSelecionadas] = useState([]);
   const [compartilhar, setCompartilhar] = useState(null);
   const [selecionadas, setSelecionadas] = useState(new Set());
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+  const [filtroUsuario, setFiltroUsuario] = useState("todos");
 
   const carregar = async () => {
     setLoading(true);
@@ -42,10 +45,17 @@ export default function Atualizacao() {
       setBuscasSalvas(lista);
       setBuscasSelecionadas(lista.map((item) => item.id));
     });
+    base44.auth.me().then((u) => {
+      if (u?.role === "admin") {
+        setIsAdmin(true);
+        base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
+      }
+    });
   }, []);
 
   const filtradas = useMemo(() => {
     return licitacoes.filter((l) => {
+      if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (busca) {
         const q = busca.toLowerCase();
@@ -145,6 +155,22 @@ export default function Atualizacao() {
         <h1 className="font-heading text-xl sm:text-3xl font-bold tracking-tight">Atualização</h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">Licitações trazidas automaticamente pela sincronização das buscas salvas.</p>
       </div>
+
+      {isAdmin && (
+        <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+          <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
+          <select
+            value={filtroUsuario}
+            onChange={(e) => setFiltroUsuario(e.target.value)}
+            className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="todos">Todos os usuários</option>
+            {usuarios.map((u) => (
+              <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Painel de sincronização */}
       <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm space-y-3">
