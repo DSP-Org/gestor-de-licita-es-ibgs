@@ -76,7 +76,13 @@ export default function Explorar() {
       if (data.totalErros > 0) {
         setErro(data.erros.map((e) => e.descricao).join("; "));
       } else {
-        const resultados = toArray(data.licitacoes);
+        // Remove licitações duplicadas (mesmo id_licitacao repetido no resultado)
+        const vistos = new Set();
+        const resultados = toArray(data.licitacoes).filter((l) => {
+          if (!l.id_licitacao || vistos.has(l.id_licitacao)) return false;
+          vistos.add(l.id_licitacao);
+          return true;
+        });
         const meta = {
           total: data.totalLicitacoes,
           paginas: data.paginas,
