@@ -87,13 +87,24 @@ export default function BancoLicitacoes() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
-      <div>
-        <h1 className="font-heading text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Database className="w-5 h-5" /> Banco de Licitação
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Todas as licitações já consultadas por qualquer usuário, reunidas em um único lugar.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Database className="w-5 h-5" /> Banco de Licitação
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Todas as licitações já consultadas por qualquer usuário, reunidas em um único lugar.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xl font-bold leading-none">{licitacoes.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">no banco</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
