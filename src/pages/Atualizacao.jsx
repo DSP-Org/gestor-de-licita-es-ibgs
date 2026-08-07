@@ -35,6 +35,7 @@ export default function Atualizacao() {
   const [historicoLoading, setHistoricoLoading] = useState(false);
   const [historicoCarregado, setHistoricoCarregado] = useState(false);
   const [historicoSalvasIds, setHistoricoSalvasIds] = useState(new Set());
+  const [historicoOwners, setHistoricoOwners] = useState(new Map());
   const [salvandoHistoricoId, setSalvandoHistoricoId] = useState(null);
 
   const carregar = async () => {
@@ -61,6 +62,11 @@ export default function Atualizacao() {
           if (l?.id_licitacao && !mapa.has(l.id_licitacao)) mapa.set(l.id_licitacao, l);
         }
       }
+      const donosMap = new Map();
+      for (const l of toArray(salvasList)) {
+        if (l.id_licitacao) donosMap.set(l.id_licitacao, { created_by_id: l.created_by_id, usuario_id: l.usuario_id });
+      }
+      setHistoricoOwners(donosMap);
       setHistoricoSalvasIds(new Set(toArray(salvasList).map((l) => l.id_licitacao)));
       setHistorico(Array.from(mapa.values()));
     } finally {
@@ -114,13 +120,19 @@ export default function Atualizacao() {
   }, [licitacoes, filtroStatus, busca, filtroUsuario, filtroOrigem]);
 
   const historicoFiltrado = useMemo(() => {
-    if (!busca) return historico;
-    const q = busca.toLowerCase();
     return historico.filter((l) => {
-      const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao}`.toLowerCase();
-      return txt.includes(q);
+      if (filtroUsuario !== "todos") {
+        const dono = historicoOwners.get(l.id_licitacao);
+        if (!dono || (dono.created_by_id !== filtroUsuario && dono.usuario_id !== filtroUsuario)) return false;
+      }
+      if (busca) {
+        const q = busca.toLowerCase();
+        const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao}`.toLowerCase();
+        if (!txt.includes(q)) return false;
+      }
+      return true;
     });
-  }, [historico, busca]);
+  }, [historico, busca, filtroUsuario, historicoOwners]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
@@ -258,7 +270,7 @@ export default function Atualizacao() {
         </button>
       </div>
 
-      {aba === "novas" && isAdmin && (
+      {isAdmin && (
         <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
           <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
           <select
