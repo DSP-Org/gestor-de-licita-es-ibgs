@@ -1,10 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight, FileDown, Sheet, RefreshCw, Mail } from "lucide-react";
+import {
+  Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight,
+  FileDown, Sheet, RefreshCw, Mail, Zap, AlertCircle, Sparkles,
+} from "lucide-react";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
+import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
+import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
+import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import { toArray } from "@/lib/toArray";
 import { UFS, MODALIDADES, buscarLicitacoes } from "@/shared/alertaApi";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
@@ -13,27 +19,181 @@ import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
 export default function BancoLicitacoes() {
-  const [licitacoes, setLicitacoes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState("");
+  const [aba, setAba] = useState("novas");
+  const [modo, setModo] = useState("cards");
   const [busca, setBusca] = useState("");
+  const [selecionada, setSelecionada] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+  const [filtroUsuario, setFiltroUsuario] = useState("todos");
+
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      if (u?.role === "admin") {
+        setIsAdmin(true);
+        base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
+      }
+    });
+  }, []);
+
+  // ---------- Aba "Novas" (sincronização automática) ----------
+  const [novas, setNovas] = useState([]);
+  const [novasLoading, setNovasLoading] = useState(true);
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [sincronizando, setSincronizando] = useState(false);
+  const [resultadoSync, setResultadoSync] = useState(null);
+  const [buscasSalvas, setBuscasSalvas] = useState([]);
+  const [buscasSelecionadas, setBuscasSelecionadas] = useState([]);
+  const [compartilhar, setCompartilhar] = useState(null);
+  const [selecionadasNovas, setSelecionadasNovas] = useState(new Set());
+  const [filtroOrigem, setFiltroOrigem] = useState(null);
+
+  const carregarNovas = async () => {
+    setNovasLoading(true);
+    try {
+      const lista = await base44.entities.Licitacao.list("-created_date", 500);
+      setNovas(toArray(lista).filter((item) => item.salva_manualmente !== true && item.busca_origem));
+    } finally {
+      setNovasLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarNovas();
+    base44.entities.BuscaSalva.filter({ ativa: true }, "nome", 100).then((res) => {
+      const lista = toArray(res);
+      setBuscasSalvas(lista);
+      setBuscasSelecionadas(lista.map((item) => item.id));
+    });
+  }, []);
+
+  const buscasFiltradas = useMemo(() => {
+    if (filtroUsuario === "todos") return buscasSalvas;
+    return buscasSalvas.filter((b) => b.created_by_id === filtroUsuario || b.usuario_id === filtroUsuario);
+  }, [buscasSalvas, filtroUsuario]);
+
+  useEffect(() => {
+    setBuscasSelecionadas(buscasFiltradas.map((b) => b.id));
+  }, [buscasFiltradas]);
+
+  const novasFiltradas = useMemo(() => {
+    return novas.filter((l) => {
+      if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
+      if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+      if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
+      if (busca) {
+        const q = busca.toLowerCase();
+        const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
+        if (!txt.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [novas, filtroStatus, busca, filtroUsuario, filtroOrigem]);
+
+  const porBuscaOrigem = useMemo(() => {
+    const grupos = {};
+    novas
+      .filter((l) => filtroUsuario === "todos" || l.created_by_id === filtroUsuario || l.usuario_id === filtroUsuario)
+      .forEach((l) => {
+        const key = l.busca_origem || "Sem origem";
+        grupos[key] = (grupos[key] || 0) + 1;
+      });
+    return grupos;
+  }, [novas, filtroUsuario]);
+
+  const sincronizarAgora = async () => {
+    setSincronizando(true);
+    setResultadoSync(null);
+    try {
+      const res = await base44.functions.invoke("sincronizarBuscas", { buscaIds: buscasSelecionadas });
+      setResultadoSync(res.data || res);
+      carregarNovas();
+    } catch (e) {
+      setResultadoSync({ error: e.message });
+    } finally {
+      setSincronizando(false);
+    }
+  };
+
+  const handleSaveNova = async (dados) => {
+    const { id, created_date, updated_date, created_by_id, ...rest } = dados;
+    if (selecionada?.id) {
+      await base44.entities.Licitacao.update(selecionada.id, rest);
+    }
+    setSelecionada(null);
+    carregarNovas();
+  };
+
+  const handleSaveManual = async (licitacao) => {
+    await base44.entities.Licitacao.update(licitacao.id, { salva_manualmente: true });
+    setNovas((prev) => prev.filter((item) => item.id !== licitacao.id));
+  };
+
+  const handleDeleteNova = async (licitacao) => {
+    if (!window.confirm(`Excluir "${licitacao.titulo}" da lista?`)) return;
+    await base44.entities.Licitacao.delete(licitacao.id);
+    setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
+    setSelecionadasNovas((prev) => {
+      const nova = new Set(prev);
+      nova.delete(licitacao.id_licitacao);
+      return nova;
+    });
+  };
+
+  const toggleSelecaoNova = (idLicitacao, marcada) => {
+    setSelecionadasNovas((prev) => {
+      const nova = new Set(prev);
+      marcada ? nova.add(idLicitacao) : nova.delete(idLicitacao);
+      return nova;
+    });
+  };
+
+  const itensSelecionadosNovas = () => novas.filter((item) => selecionadasNovas.has(item.id_licitacao));
+
+  const excluirSelecionadasNovas = async () => {
+    if (!window.confirm(`Excluir ${selecionadasNovas.size} licitação(ões) selecionada(s)?`)) return;
+    const ids = itensSelecionadosNovas().map((item) => item.id);
+    await base44.entities.Licitacao.deleteMany({ id: { $in: ids } });
+    setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
+    setSelecionadasNovas(new Set());
+  };
+
+  const salvarSelecionadasNovas = async () => {
+    const itens = itensSelecionadosNovas();
+    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, salva_manualmente: true })));
+    setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
+    setSelecionadasNovas(new Set());
+  };
+
+  const enviarSelecionadasNovas = () => setCompartilhar(itensSelecionadosNovas());
+
+  const renderActionsNova = (licitacao) => (
+    <AtualizacaoActions
+      onSend={() => setCompartilhar([licitacao])}
+      onSave={() => handleSaveManual(licitacao)}
+      onDelete={() => handleDeleteNova(licitacao)}
+    />
+  );
+
+  // ---------- Aba "Acervo" (banco global consolidado) ----------
+  const [acervo, setAcervo] = useState([]);
+  const [acervoLoading, setAcervoLoading] = useState(true);
+  const [erro, setErro] = useState("");
   const [filtroUf, setFiltroUf] = useState("");
   const [filtroCidade, setFiltroCidade] = useState("");
   const [filtroModalidade, setFiltroModalidade] = useState("");
-  const [buscasSalvas, setBuscasSalvas] = useState([]);
+  const [buscasSalvasAcervo, setBuscasSalvasAcervo] = useState([]);
   const [filtroBuscaId, setFiltroBuscaId] = useState("");
-  const [modo, setModo] = useState("cards");
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [salvandoId, setSalvandoId] = useState(null);
-  const [selecionada, setSelecionada] = useState(null);
   const [pagina, setPagina] = useState(1);
   const porPagina = 30;
   const [buscandoApi, setBuscandoApi] = useState(false);
-  const [selecionados, setSelecionados] = useState(new Set());
+  const [selecionadosAcervo, setSelecionadosAcervo] = useState(new Set());
   const [enviarEmail, setEnviarEmail] = useState(false);
 
-  const toggleSelecao = (id, checked) => {
-    setSelecionados((prev) => {
+  const toggleSelecaoAcervo = (id, checked) => {
+    setSelecionadosAcervo((prev) => {
       const next = new Set(prev);
       if (checked) next.add(id);
       else next.delete(id);
@@ -50,8 +210,6 @@ export default function BancoLicitacoes() {
         ]);
         setSalvasIds(new Set(toArray(salvasList).map((l) => l.id_licitacao)));
 
-        // Consolida todas as licitações já consultadas por qualquer usuário,
-        // removendo duplicatas (mesma licitação pode aparecer em várias buscas).
         const mapa = new Map();
         for (const cache of toArray(cachesList)) {
           const lics = toArray(cache.resultado?.licitacoes);
@@ -61,19 +219,19 @@ export default function BancoLicitacoes() {
             }
           }
         }
-        setLicitacoes(Array.from(mapa.values()));
+        setAcervo(Array.from(mapa.values()));
       } catch (e) {
         setErro(e.message || "Erro ao carregar o banco de licitações.");
       } finally {
-        setLoading(false);
+        setAcervoLoading(false);
       }
     })();
-    base44.entities.BuscaSalva.list("nome", 100).then((res) => setBuscasSalvas(toArray(res)));
+    base44.entities.BuscaSalva.list("nome", 100).then((res) => setBuscasSalvasAcervo(toArray(res)));
   }, []);
 
   const buscaSelecionada = useMemo(
-    () => buscasSalvas.find((b) => b.id === filtroBuscaId) || null,
-    [buscasSalvas, filtroBuscaId]
+    () => buscasSalvasAcervo.find((b) => b.id === filtroBuscaId) || null,
+    [buscasSalvasAcervo, filtroBuscaId]
   );
 
   const configFiltros = useMemo(() => {
@@ -87,8 +245,6 @@ export default function BancoLicitacoes() {
     };
   }, [buscaSelecionada]);
 
-  // Reproduz localmente o mesmo critério de palavras-chave usado na sincronização:
-  // termos com "-" excluem, e o modo "todas" exige que todos os termos positivos apareçam.
   const combinaComPalavraChave = (l, palavraChave, modoPalavras) => {
     const termos = (palavraChave || "").split(",").map((t) => t.trim()).filter(Boolean);
     if (termos.length === 0) return true;
@@ -107,17 +263,17 @@ export default function BancoLicitacoes() {
   };
 
   const cidadesDisponiveis = useMemo(() => {
-    const base = filtroUf ? licitacoes.filter((l) => l.uf === filtroUf) : licitacoes;
+    const base = filtroUf ? acervo.filter((l) => l.uf === filtroUf) : acervo;
     return Array.from(new Set(base.map((l) => l.municipio).filter(Boolean))).sort();
-  }, [licitacoes, filtroUf]);
+  }, [acervo, filtroUf]);
 
   const modalidadesDisponiveis = useMemo(() => {
-    return Array.from(new Set(licitacoes.map((l) => l.tipo).filter(Boolean))).sort();
-  }, [licitacoes]);
+    return Array.from(new Set(acervo.map((l) => l.tipo).filter(Boolean))).sort();
+  }, [acervo]);
 
-  const filtradas = useMemo(() => {
+  const acervoFiltrado = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    return licitacoes.filter((l) => {
+    return acervo.filter((l) => {
       if (configFiltros) {
         if (configFiltros.ufs.length && !configFiltros.ufs.includes(l.uf)) return false;
         if (configFiltros.modalidades.length && !configFiltros.modalidades.includes(String(l.id_tipo))) return false;
@@ -133,25 +289,23 @@ export default function BancoLicitacoes() {
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [licitacoes, busca, filtroUf, filtroCidade, filtroModalidade, configFiltros]);
+  }, [acervo, busca, filtroUf, filtroCidade, filtroModalidade, configFiltros]);
 
   useEffect(() => {
     setPagina(1);
-    setSelecionados(new Set());
+    setSelecionadosAcervo(new Set());
   }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId]);
 
   useEffect(() => {
     setFiltroCidade("");
   }, [filtroUf]);
 
-  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / porPagina));
+  const totalPaginas = Math.max(1, Math.ceil(acervoFiltrado.length / porPagina));
   const paginadas = useMemo(
-    () => filtradas.slice((pagina - 1) * porPagina, pagina * porPagina),
-    [filtradas, pagina]
+    () => acervoFiltrado.slice((pagina - 1) * porPagina, pagina * porPagina),
+    [acervoFiltrado, pagina]
   );
 
-  // Consulta a fonte externa por novas licitações e as incorpora ao banco —
-  // para o usuário isso é só "buscar", sem distinção entre cache e API.
   const buscarNaApi = async () => {
     const modalidadeCodigo = MODALIDADES.find((m) => m.nome === filtroModalidade)?.id || "";
     if (!filtroUf && !busca.trim() && !modalidadeCodigo) {
@@ -172,10 +326,10 @@ export default function BancoLicitacoes() {
       if (data.totalErros > 0) {
         setErro(data.erros.map((e) => e.descricao).join("; "));
       } else {
-        const novas = toArray(data.licitacoes);
-        setLicitacoes((prev) => {
+        const novasApi = toArray(data.licitacoes);
+        setAcervo((prev) => {
           const mapa = new Map(prev.map((l) => [l.id_licitacao, l]));
-          novas.forEach((l) => {
+          novasApi.forEach((l) => {
             if (l?.id_licitacao) mapa.set(l.id_licitacao, l);
           });
           return Array.from(mapa.values());
@@ -211,7 +365,6 @@ export default function BancoLicitacoes() {
         salva_manualmente: true,
       });
       setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
-      // Reforça a permanência da licitação no banco compartilhado.
       base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {});
     } finally {
       setSalvandoId(null);
@@ -223,10 +376,10 @@ export default function BancoLicitacoes() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-heading text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Database className="w-5 h-5" /> Banco de Licitação
+            <Database className="w-5 h-5" /> Licitações
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Todas as licitações já consultadas por qualquer usuário, reunidas em um único lugar.
+            Novidades da sincronização automática e o acervo completo já consultado, em um só lugar.
           </p>
         </div>
         <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
@@ -234,208 +387,427 @@ export default function BancoLicitacoes() {
             <Database className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xl font-bold leading-none">{licitacoes.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">no banco</p>
+            <p className="text-xl font-bold leading-none">{acervo.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">no acervo</p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por título, órgão, UF, município ou modalidade..."
-              className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+      {/* Abas + seletor de usuário (persistente entre abas) */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="inline-flex items-center border rounded-lg overflow-hidden bg-card shadow-sm">
           <button
-            onClick={buscarNaApi}
-            disabled={buscandoApi}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
+            onClick={() => setAba("novas")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium ${aba === "novas" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
           >
-            {buscandoApi ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            {buscandoApi ? "Buscando..." : "Buscar novas licitações"}
+            <Sparkles className="w-4 h-4" /> Novas
+          </button>
+          <button
+            onClick={() => setAba("acervo")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l ${aba === "acervo" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+          >
+            <Database className="w-4 h-4" /> Acervo
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+        {isAdmin && (
+          <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+            <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
             <select
-              value={filtroBuscaId}
-              onChange={(e) => setFiltroBuscaId(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              value={filtroUsuario}
+              onChange={(e) => setFiltroUsuario(e.target.value)}
+              className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Filtrar por configuração salva...</option>
-              {buscasSalvas.map((b) => (
-                <option key={b.id} value={b.id}>{b.nome}</option>
-              ))}
-            </select>
-            <select
-              value={filtroUf}
-              onChange={(e) => setFiltroUf(e.target.value)}
-              disabled={!!configFiltros}
-              className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-            >
-              <option value="">Todos os estados</option>
-              {UFS.map((uf) => (
-                <option key={uf} value={uf}>{uf}</option>
-              ))}
-            </select>
-            <select
-              value={filtroCidade}
-              onChange={(e) => setFiltroCidade(e.target.value)}
-              disabled={!!configFiltros}
-              className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-            >
-              <option value="">Todas as cidades</option>
-              {cidadesDisponiveis.map((cidade) => (
-                <option key={cidade} value={cidade}>{cidade}</option>
-              ))}
-            </select>
-            <select
-              value={filtroModalidade}
-              onChange={(e) => setFiltroModalidade(e.target.value)}
-              disabled={!!configFiltros}
-              className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-            >
-              <option value="">Todas as modalidades</option>
-              {modalidadesDisponiveis.map((modalidade) => (
-                <option key={modalidade} value={modalidade}>{modalidade}</option>
+              <option value="todos">Todos os usuários</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
               ))}
             </select>
           </div>
+        )}
+      </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {selecionados.size > 0 && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                <span>{selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}</span>
-                <button
-                  onClick={() => setEnviarEmail(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
-                >
-                  <Mail className="w-4 h-4" /> <span className="hidden sm:inline">E-mail</span>
-                </button>
+      {aba === "novas" ? (
+        <>
+          {/* Painel de sincronização */}
+          <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-heading font-semibold">Sincronização automática</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {novas.length} licitação(ões) encontradas pela última sincronização.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <BuscaMultiSelect
+                options={buscasFiltradas}
+                value={buscasSelecionadas}
+                onChange={setBuscasSelecionadas}
+                disabled={sincronizando || buscasFiltradas.length === 0}
+              />
+              <button
+                onClick={sincronizarAgora}
+                disabled={sincronizando || buscasSelecionadas.length === 0}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 sm:shrink-0"
+              >
+                {sincronizando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {sincronizando ? "Sincronizando..." : "Sincronizar agora"}
+              </button>
+            </div>
+
+            {resultadoSync && (
+              <div className={`text-sm rounded-md p-3 ${resultadoSync.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+                {resultadoSync.error ? (
+                  <span className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Erro: {resultadoSync.error}</span>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="font-medium flex items-center gap-1.5"><Check className="w-4 h-4" /> {resultadoSync.buscasProcessadas} busca(s) processada(s), {resultadoSync.totalNovas} nova(s) licitação(ões).</p>
+                    {resultadoSync.resumo?.length > 0 && (
+                      <ul className="text-xs space-y-0.5 mt-2">
+                        {resultadoSync.resumo.map((r, i) => (
+                          <li key={i}>
+                            <b>{r.busca}</b>: {r.erro ? `❌ ${r.erro}` : `${r.novas} novas de ${r.total}`}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             )}
-            <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden">
+
+            {Object.keys(porBuscaOrigem).length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t">
+                {Object.entries(porBuscaOrigem).map(([origem, count]) => (
+                  <button
+                    key={origem}
+                    onClick={() => setFiltroOrigem((prev) => (prev === origem ? null : origem))}
+                    className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
+                      filtroOrigem === origem ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
+                    }`}
+                  >
+                    {origem}: <b>{count}</b>
+                  </button>
+                ))}
+                {filtroOrigem && (
+                  <button onClick={() => setFiltroOrigem(null)} className="text-xs text-muted-foreground underline px-1">
+                    Limpar filtro
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Filtros */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por título, órgão, busca de origem..."
+                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+              className="flex-1 sm:flex-none min-w-[8.5rem] px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="todos">Todos os status</option>
+              <option value="interessado">Interessado</option>
+              <option value="acompanhando">Acompanhando</option>
+              <option value="participando">Participando</option>
+              <option value="vencida">Vencida</option>
+              <option value="ganha">Ganha</option>
+              <option value="perdida">Perdida</option>
+              <option value="descartada">Descartada</option>
+            </select>
+            <div className="hidden md:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
               <button
                 onClick={() => setModo("cards")}
                 title="Visualização em cards"
-                className={`p-2.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                className={`p-2 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setModo("tabela")}
                 title="Visualização em tabela"
-                className={`p-2.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                className={`p-2 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
               >
                 <Table className="w-4 h-4" />
               </button>
             </div>
-            <button
-              onClick={() => exportarLicitacoesPDF(filtradas, "Banco de Licitação")}
-              disabled={filtradas.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
-            >
-              <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
-            </button>
-            <button
-              onClick={() => exportarLicitacoesExcel(filtradas, "banco-licitacoes")}
-              disabled={filtradas.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
-            >
-              <Sheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
-            </button>
           </div>
-        </div>
-      </div>
 
-      {erro && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{erro}</div>
-      )}
+          {!novasLoading && novasFiltradas.length > 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={novasFiltradas.length > 0 && novasFiltradas.every((item) => selecionadasNovas.has(item.id_licitacao))}
+                  onChange={(e) => novasFiltradas.forEach((item) => toggleSelecaoNova(item.id_licitacao, e.target.checked))}
+                />
+                Selecionar todas
+              </label>
+              {selecionadasNovas.size > 0 && (
+                <AtualizacaoBulkActions
+                  quantidade={selecionadasNovas.size}
+                  onSend={enviarSelecionadasNovas}
+                  onSave={salvarSelecionadasNovas}
+                  onDelete={excluirSelecionadasNovas}
+                />
+              )}
+            </div>
+          )}
 
-      {loading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin" /> Carregando banco de licitações...
-        </div>
-      ) : filtradas.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground text-sm">
-          Nenhuma licitação encontrada ainda. Faça buscas em "Explorar" para popular o banco.
-        </div>
-      ) : (
-        <>
-          {modo === "cards" ? (
+          {novasLoading ? (
+            <div className="text-center py-16 text-muted-foreground">Carregando licitações...</div>
+          ) : novasFiltradas.length === 0 ? (
+            <div className="text-center py-16 space-y-2">
+              <p className="text-muted-foreground">Nenhuma licitação encontrada na última sincronização.</p>
+              <button onClick={sincronizarAgora} disabled={sincronizando} className="inline-block text-sm text-primary underline">
+                Executar sincronização agora →
+              </button>
+            </div>
+          ) : modo === "cards" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginadas.map((lic) => {
-                const jaSalva = salvasIds.has(lic.id_licitacao);
-                const sel = selecionados.has(lic.id_licitacao);
-                return (
-                  <div key={lic.id_licitacao} className="relative">
-                    <label className="absolute top-2 left-2 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur px-2 py-1 rounded-md border text-xs cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={sel}
-                        onChange={(e) => toggleSelecao(lic.id_licitacao, e.target.checked)}
-                        className="w-3.5 h-3.5 rounded cursor-pointer"
-                      />
-                    </label>
-                    <LicitacaoCard
-                      licitacao={lic}
-                      onClick={() => setSelecionada(lic)}
-                      action={
-                        jaSalva ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                            <Check className="w-4 h-4" /> Salva
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => salvar(lic)}
-                            disabled={salvandoId === lic.id_licitacao}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
-                          </button>
-                        )
-                      }
-                    />
-                  </div>
-                );
-              })}
+              {novasFiltradas.map((l) => (
+                <LicitacaoCard
+                  key={l.id}
+                  licitacao={l}
+                  onClick={() => setSelecionada(l)}
+                  action={
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={selecionadasNovas.has(l.id_licitacao)}
+                          onChange={(e) => toggleSelecaoNova(l.id_licitacao, e.target.checked)}
+                        />
+                        Selecionar
+                      </label>
+                      {renderActionsNova(l)}
+                    </div>
+                  }
+                />
+              ))}
             </div>
           ) : (
             <LicitacaoTable
-              licitacoes={paginadas}
+              licitacoes={novasFiltradas}
               onRowClick={setSelecionada}
-              selecionados={selecionados}
-              onToggleSelecao={toggleSelecao}
+              selecionados={selecionadasNovas}
+              onToggleSelecao={toggleSelecaoNova}
+              renderActions={renderActionsNova}
             />
           )}
-
-          {totalPaginas > 1 && (
-            <div className="flex items-center justify-center gap-3 pt-2">
+        </>
+      ) : (
+        <>
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar por título, órgão, UF, município ou modalidade..."
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
               <button
-                onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                disabled={pagina === 1}
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={buscarNaApi}
+                disabled={buscandoApi}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
               >
-                <ChevronLeft className="w-4 h-4" /> Anterior
-              </button>
-              <span className="text-sm text-muted-foreground">
-                Página <span className="font-medium text-foreground">{pagina}</span> de {totalPaginas}
-              </span>
-              <button
-                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                disabled={pagina === totalPaginas}
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Próxima <ChevronRight className="w-4 h-4" />
+                {buscandoApi ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {buscandoApi ? "Buscando..." : "Buscar novas licitações"}
               </button>
             </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+                <select
+                  value={filtroBuscaId}
+                  onChange={(e) => setFiltroBuscaId(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Filtrar por configuração salva...</option>
+                  {buscasSalvasAcervo.map((b) => (
+                    <option key={b.id} value={b.id}>{b.nome}</option>
+                  ))}
+                </select>
+                <select
+                  value={filtroUf}
+                  onChange={(e) => setFiltroUf(e.target.value)}
+                  disabled={!!configFiltros}
+                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                >
+                  <option value="">Todos os estados</option>
+                  {UFS.map((uf) => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
+                <select
+                  value={filtroCidade}
+                  onChange={(e) => setFiltroCidade(e.target.value)}
+                  disabled={!!configFiltros}
+                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                >
+                  <option value="">Todas as cidades</option>
+                  {cidadesDisponiveis.map((cidade) => (
+                    <option key={cidade} value={cidade}>{cidade}</option>
+                  ))}
+                </select>
+                <select
+                  value={filtroModalidade}
+                  onChange={(e) => setFiltroModalidade(e.target.value)}
+                  disabled={!!configFiltros}
+                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                >
+                  <option value="">Todas as modalidades</option>
+                  {modalidadesDisponiveis.map((modalidade) => (
+                    <option key={modalidade} value={modalidade}>{modalidade}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {selecionadosAcervo.size > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                    <span>{selecionadosAcervo.size} selecionada{selecionadosAcervo.size === 1 ? "" : "s"}</span>
+                    <button
+                      onClick={() => setEnviarEmail(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
+                    >
+                      <Mail className="w-4 h-4" /> <span className="hidden sm:inline">E-mail</span>
+                    </button>
+                  </div>
+                )}
+                <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden">
+                  <button
+                    onClick={() => setModo("cards")}
+                    title="Visualização em cards"
+                    className={`p-2.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setModo("tabela")}
+                    title="Visualização em tabela"
+                    className={`p-2.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  >
+                    <Table className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => exportarLicitacoesPDF(acervoFiltrado, "Banco de Licitação")}
+                  disabled={acervoFiltrado.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+                >
+                  <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
+                </button>
+                <button
+                  onClick={() => exportarLicitacoesExcel(acervoFiltrado, "banco-licitacoes")}
+                  disabled={acervoFiltrado.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+                >
+                  <Sheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {erro && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{erro}</div>
+          )}
+
+          {acervoLoading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin" /> Carregando banco de licitações...
+            </div>
+          ) : acervoFiltrado.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground text-sm">
+              Nenhuma licitação encontrada ainda. Use "Buscar novas licitações" para popular o acervo.
+            </div>
+          ) : (
+            <>
+              {modo === "cards" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {paginadas.map((lic) => {
+                    const jaSalva = salvasIds.has(lic.id_licitacao);
+                    const sel = selecionadosAcervo.has(lic.id_licitacao);
+                    return (
+                      <div key={lic.id_licitacao} className="relative">
+                        <label className="absolute top-2 left-2 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur px-2 py-1 rounded-md border text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={sel}
+                            onChange={(e) => toggleSelecaoAcervo(lic.id_licitacao, e.target.checked)}
+                            className="w-3.5 h-3.5 rounded cursor-pointer"
+                          />
+                        </label>
+                        <LicitacaoCard
+                          licitacao={lic}
+                          onClick={() => setSelecionada(lic)}
+                          action={
+                            jaSalva ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                                <Check className="w-4 h-4" /> Salva
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => salvar(lic)}
+                                disabled={salvandoId === lic.id_licitacao}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
+                              </button>
+                            )
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <LicitacaoTable
+                  licitacoes={paginadas}
+                  onRowClick={setSelecionada}
+                  selecionados={selecionadosAcervo}
+                  onToggleSelecao={toggleSelecaoAcervo}
+                />
+              )}
+
+              {totalPaginas > 1 && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                    disabled={pagina === 1}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Anterior
+                  </button>
+                  <span className="text-sm text-muted-foreground">
+                    Página <span className="font-medium text-foreground">{pagina}</span> de {totalPaginas}
+                  </span>
+                  <button
+                    onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                    disabled={pagina === totalPaginas}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Próxima <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -444,16 +816,21 @@ export default function BancoLicitacoes() {
         <LicitacaoDetailDialog
           licitacao={selecionada}
           onClose={() => setSelecionada(null)}
-          onSave={async (dados) => {
-            await salvar(dados);
-            setSelecionada(null);
-          }}
+          onSave={aba === "novas" ? handleSaveNova : async (dados) => { await salvar(dados); setSelecionada(null); }}
+        />
+      )}
+
+      {compartilhar?.length > 0 && (
+        <EmailResultsDialog
+          licitacoes={compartilhar}
+          origem={compartilhar.length === 1 ? compartilhar[0].busca_origem : "Licitações selecionadas"}
+          onClose={() => setCompartilhar(null)}
         />
       )}
 
       {enviarEmail && (
         <EmailResultsDialog
-          licitacoes={paginadas.filter((l) => selecionados.has(l.id_licitacao))}
+          licitacoes={paginadas.filter((l) => selecionadosAcervo.has(l.id_licitacao))}
           origem="Banco de Licitação"
           onClose={() => setEnviarEmail(false)}
         />

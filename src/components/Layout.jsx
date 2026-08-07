@@ -6,9 +6,8 @@ import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const navItems = [
-  { to: "/atualizacao", label: "Atualização", icon: RefreshCw },
+  { to: "/banco-licitacoes", label: "Atualização", icon: RefreshCw },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
-  { to: "/banco-licitacoes", label: "Banco", icon: Database },
 ];
 const moreItems = [
   { to: "/", label: "Minhas", icon: FileText, end: true },
