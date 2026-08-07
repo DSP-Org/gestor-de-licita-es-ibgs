@@ -460,15 +460,15 @@ export default function BancoLicitacoes() {
       ) : aba === "novas" ? (
         <>
           {/* Painel de sincronização */}
-          <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-primary-foreground" />
+          <div className="bg-card border rounded-xl p-3 sm:p-5 shadow-sm space-y-2.5 sm:space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary flex items-center justify-center shrink-0">
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-heading font-semibold">Sincronização automática</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {novas.length} licitação(ões) encontradas pela última sincronização.
+                <h2 className="font-heading font-semibold text-sm sm:text-base">Sincronização automática</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0">
+                  {novas.length} licitação(ões) encontradas.
                 </p>
               </div>
             </div>
