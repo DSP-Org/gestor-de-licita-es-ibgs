@@ -255,36 +255,38 @@ export default function Atualizacao() {
       </div>
 
       {/* Abas */}
-      <div className="inline-flex items-center border rounded-lg overflow-hidden bg-card shadow-sm">
-        <button
-          onClick={() => setAba("novas")}
-          className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium ${aba === "novas" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-        >
-          <Sparkles className="w-4 h-4" /> Novas
-        </button>
-        <button
-          onClick={() => setAba("historico")}
-          className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l ${aba === "historico" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-        >
-          <History className="w-4 h-4" /> Histórico
-        </button>
-      </div>
-
-      {isAdmin && (
-        <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
-          <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
-          <select
-            value={filtroUsuario}
-            onChange={(e) => setFiltroUsuario(e.target.value)}
-            className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="inline-flex items-center border rounded-lg overflow-hidden bg-card shadow-sm">
+          <button
+            onClick={() => setAba("novas")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium ${aba === "novas" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
           >
-            <option value="todos">Todos os usuários</option>
-            {usuarios.map((u) => (
-              <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
-            ))}
-          </select>
+            <Sparkles className="w-4 h-4" /> Novas
+          </button>
+          <button
+            onClick={() => setAba("historico")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l ${aba === "historico" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+          >
+            <History className="w-4 h-4" /> Histórico
+          </button>
         </div>
-      )}
+
+        {isAdmin && (
+          <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+            <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
+            <select
+              value={filtroUsuario}
+              onChange={(e) => setFiltroUsuario(e.target.value)}
+              className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="todos">Todos os usuários</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {aba === "novas" && (
         <>
