@@ -15,6 +15,8 @@ export default function BancoLicitacoes() {
   const [filtroUf, setFiltroUf] = useState("");
   const [filtroCidade, setFiltroCidade] = useState("");
   const [filtroModalidade, setFiltroModalidade] = useState("");
+  const [buscasSalvas, setBuscasSalvas] = useState([]);
+  const [filtroBuscaId, setFiltroBuscaId] = useState("");
   const [modo, setModo] = useState("cards");
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [salvandoId, setSalvandoId] = useState(null);
@@ -49,7 +51,22 @@ export default function BancoLicitacoes() {
         setLoading(false);
       }
     })();
+    base44.entities.BuscaSalva.list("nome", 100).then((res) => setBuscasSalvas(toArray(res)));
   }, []);
+
+  const buscaSelecionada = useMemo(
+    () => buscasSalvas.find((b) => b.id === filtroBuscaId) || null,
+    [buscasSalvas, filtroBuscaId]
+  );
+
+  const configFiltros = useMemo(() => {
+    if (!buscaSelecionada) return null;
+    return {
+      ufs: (buscaSelecionada.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
+      modalidades: (buscaSelecionada.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
+      municipioIbge: buscaSelecionada.municipio_ibge || "",
+    };
+  }, [buscaSelecionada]);
 
   const cidadesDisponiveis = useMemo(() => {
     const base = filtroUf ? licitacoes.filter((l) => l.uf === filtroUf) : licitacoes;
@@ -63,19 +80,25 @@ export default function BancoLicitacoes() {
   const filtradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return licitacoes.filter((l) => {
-      if (filtroUf && l.uf !== filtroUf) return false;
-      if (filtroCidade && l.municipio !== filtroCidade) return false;
-      if (filtroModalidade && l.tipo !== filtroModalidade) return false;
+      if (configFiltros) {
+        if (configFiltros.ufs.length && !configFiltros.ufs.includes(l.uf)) return false;
+        if (configFiltros.modalidades.length && !configFiltros.modalidades.includes(String(l.id_tipo))) return false;
+        if (configFiltros.municipioIbge && l.municipio_IBGE !== configFiltros.municipioIbge) return false;
+      } else {
+        if (filtroUf && l.uf !== filtroUf) return false;
+        if (filtroCidade && l.municipio !== filtroCidade) return false;
+        if (filtroModalidade && l.tipo !== filtroModalidade) return false;
+      }
       if (!termo) return true;
       return [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [licitacoes, busca, filtroUf, filtroCidade, filtroModalidade]);
+  }, [licitacoes, busca, filtroUf, filtroCidade, filtroModalidade, configFiltros]);
 
   useEffect(() => {
     setPagina(1);
-  }, [busca, filtroUf, filtroCidade, filtroModalidade]);
+  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId]);
 
   useEffect(() => {
     setFiltroCidade("");
@@ -150,9 +173,20 @@ export default function BancoLicitacoes() {
           />
         </div>
         <select
+          value={filtroBuscaId}
+          onChange={(e) => setFiltroBuscaId(e.target.value)}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[12rem]"
+        >
+          <option value="">Filtrar por configuração salva...</option>
+          {buscasSalvas.map((b) => (
+            <option key={b.id} value={b.id}>{b.nome}</option>
+          ))}
+        </select>
+        <select
           value={filtroUf}
           onChange={(e) => setFiltroUf(e.target.value)}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          disabled={!!configFiltros}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
         >
           <option value="">Todos os estados</option>
           {UFS.map((uf) => (
@@ -162,7 +196,8 @@ export default function BancoLicitacoes() {
         <select
           value={filtroCidade}
           onChange={(e) => setFiltroCidade(e.target.value)}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem]"
+          disabled={!!configFiltros}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem] disabled:opacity-50"
         >
           <option value="">Todas as cidades</option>
           {cidadesDisponiveis.map((cidade) => (
@@ -172,7 +207,8 @@ export default function BancoLicitacoes() {
         <select
           value={filtroModalidade}
           onChange={(e) => setFiltroModalidade(e.target.value)}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem]"
+          disabled={!!configFiltros}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem] disabled:opacity-50"
         >
           <option value="">Todas as modalidades</option>
           {modalidadesDisponiveis.map((modalidade) => (
