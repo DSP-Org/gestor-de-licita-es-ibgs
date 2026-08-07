@@ -1,4 +1,5 @@
 import UfMultiSelect from "@/components/buscas/UfMultiSelect";
+import OpcoesMultiSelect from "@/components/buscas/OpcoesMultiSelect";
 import PalavrasChaveInput from "@/components/buscas/PalavrasChaveInput";
 
 // Filtros da aba "Acervo": ou seleciona uma configuração de busca salva,
@@ -47,16 +48,12 @@ export default function AcervoFiltros({
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <UfMultiSelect value={filtroUf} onChange={onChangeUf} />
-            <select
+            <OpcoesMultiSelect
               value={filtroCidade}
-              onChange={(e) => onChangeCidade(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todas as cidades</option>
-              {cidadesDisponiveis.map((cidade) => (
-                <option key={cidade} value={cidade}>{cidade}</option>
-              ))}
-            </select>
+              onChange={onChangeCidade}
+              options={cidadesDisponiveis}
+              placeholder="Todas as cidades"
+            />
             <select
               value={filtroModalidade}
               onChange={(e) => onChangeModalidade(e.target.value)}

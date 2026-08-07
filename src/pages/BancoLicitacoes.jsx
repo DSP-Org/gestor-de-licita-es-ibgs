@@ -276,9 +276,14 @@ export default function BancoLicitacoes() {
     return Array.from(new Set(base.map((l) => l.municipio).filter(Boolean))).sort();
   }, [acervo, ufsLivreSelecionadas]);
 
+  const cidadesLivreSelecionadas = useMemo(
+    () => (filtroCidade || "").split(",").map((s) => s.trim()).filter(Boolean),
+    [filtroCidade]
+  );
+
   const filtrosLivrePreenchidos =
     (ufsLivreSelecionadas.length ? 1 : 0) +
-    (filtroCidade ? 1 : 0) +
+    (cidadesLivreSelecionadas.length ? 1 : 0) +
     (filtroModalidade ? 1 : 0) +
     (filtroPalavraChaveLivre.trim() ? 1 : 0);
 
@@ -296,7 +301,7 @@ export default function BancoLicitacoes() {
         if (!combinaComPalavraChave(l, configFiltros.palavraChave, configFiltros.modoPalavras)) return false;
       } else if (filtroModoAcervo === "livre" && filtrosLivrePreenchidos >= 2) {
         if (ufsLivreSelecionadas.length && !ufsLivreSelecionadas.includes(l.uf)) return false;
-        if (filtroCidade && l.municipio !== filtroCidade) return false;
+        if (cidadesLivreSelecionadas.length && !cidadesLivreSelecionadas.includes(l.municipio)) return false;
         if (filtroModalidade && l.tipo !== filtroModalidade) return false;
         if (!combinaComPalavraChave(l, filtroPalavraChaveLivre, filtroModoPalavrasLivre)) return false;
       }
@@ -305,7 +310,7 @@ export default function BancoLicitacoes() {
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [acervo, busca, ufsLivreSelecionadas, filtroCidade, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos]);
+  }, [acervo, busca, ufsLivreSelecionadas, cidadesLivreSelecionadas, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos]);
 
   useEffect(() => {
     setPagina(1);
