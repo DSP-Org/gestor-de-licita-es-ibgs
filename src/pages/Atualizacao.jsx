@@ -53,6 +53,15 @@ export default function Atualizacao() {
     });
   }, []);
 
+  const buscasFiltradas = useMemo(() => {
+    if (filtroUsuario === "todos") return buscasSalvas;
+    return buscasSalvas.filter((b) => b.created_by_id === filtroUsuario || b.usuario_id === filtroUsuario);
+  }, [buscasSalvas, filtroUsuario]);
+
+  useEffect(() => {
+    setBuscasSelecionadas(buscasFiltradas.map((b) => b.id));
+  }, [buscasFiltradas]);
+
   const filtradas = useMemo(() => {
     return licitacoes.filter((l) => {
       if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
@@ -187,10 +196,10 @@ export default function Atualizacao() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <BuscaMultiSelect
-            options={buscasSalvas}
+            options={buscasFiltradas}
             value={buscasSelecionadas}
             onChange={setBuscasSelecionadas}
-            disabled={sincronizando || buscasSalvas.length === 0}
+            disabled={sincronizando || buscasFiltradas.length === 0}
           />
           <button
             onClick={sincronizarAgora}
