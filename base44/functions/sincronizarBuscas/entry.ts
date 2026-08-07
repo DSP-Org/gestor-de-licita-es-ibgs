@@ -15,10 +15,10 @@ export default async function(req) {
     const user = await base44.auth.me().catch(() => null);
 
     const payload = await req.json().catch(() => ({}));
-    const filtroBuscas = user && user.role !== 'admin'
-      ? { ativa: true, created_by_id: user.id }
-      : { ativa: true };
-    const buscasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter(filtroBuscas);
+    const todasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter({ ativa: true });
+    const buscasAtivas = user && user.role !== 'admin'
+      ? todasAtivas.filter((b) => b.created_by_id === user.id || b.usuario_id === user.id)
+      : todasAtivas;
     const idsSelecionados = Array.isArray(payload.buscaIds)
       ? payload.buscaIds
       : payload.buscaId ? [payload.buscaId] : null;
@@ -31,6 +31,7 @@ export default async function(req) {
 
     for (const busca of buscas) {
       try {
+        const donoId = busca.usuario_id || busca.created_by_id;
         // Consulta por data de inserção: a API devolve apenas licitações novas,
         // então não se paga novamente por resultados já sincronizados.
         // O cache persistente (ConsultaCache) também evita repetir a mesma
@@ -68,7 +69,7 @@ export default async function(req) {
           ? filtrarPorTodasPalavras(lics, busca.palavra_chave)
           : lics;
 
-        const existentes = await base44.asServiceRole.entities.Licitacao.filter({ usuario_id: busca.created_by_id });
+        const existentes = await base44.asServiceRole.entities.Licitacao.filter({ usuario_id: donoId });
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
         const novas = resultados
@@ -91,7 +92,7 @@ export default async function(req) {
             status: "interessado",
             favorito: false,
             busca_origem: busca.nome,
-            usuario_id: busca.created_by_id,
+            usuario_id: donoId,
             salva_manualmente: false,
           }));
 
@@ -169,7 +170,7 @@ export default async function(req) {
             try {
               const ids = Array.isArray(busca.destinatarios_email) && busca.destinatarios_email.length > 0
                 ? busca.destinatarios_email
-                : [busca.created_by_id];
+                : [donoId];
               for (const uid of ids) {
                 try {
                   const u = await base44.asServiceRole.entities.User.get(uid);

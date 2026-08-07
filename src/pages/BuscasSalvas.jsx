@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
@@ -17,6 +17,9 @@ export default function BuscasSalvas() {
   const [emailBusca, setEmailBusca] = useState(null);
   const [emailLics, setEmailLics] = useState([]);
   const [carregandoEmail, setCarregandoEmail] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState("todos");
 
   const carregar = async () => {
     setLoading(true);
@@ -30,13 +33,25 @@ export default function BuscasSalvas() {
 
   useEffect(() => {
     carregar();
+    base44.auth.me().then((u) => {
+      if (u?.role === "admin") {
+        setIsAdmin(true);
+        base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
+      }
+    });
   }, []);
 
+  const buscasExibidas = useMemo(() => {
+    if (!isAdmin || usuarioSelecionado === "todos") return buscas;
+    return buscas.filter((b) => b.created_by_id === usuarioSelecionado || b.usuario_id === usuarioSelecionado);
+  }, [buscas, isAdmin, usuarioSelecionado]);
+
   const salvar = async (form) => {
+    const dados = isAdmin && usuarioSelecionado !== "todos" ? { ...form, usuario_id: usuarioSelecionado } : form;
     if (editando?.id) {
-      await base44.entities.BuscaSalva.update(editando.id, form);
+      await base44.entities.BuscaSalva.update(editando.id, dados);
     } else {
-      await base44.entities.BuscaSalva.create(form);
+      await base44.entities.BuscaSalva.create(dados);
     }
     setMostrarForm(false);
     setEditando(null);
@@ -145,6 +160,22 @@ export default function BuscasSalvas() {
         </button>
       </div>
 
+      {isAdmin && (
+        <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+          <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Configurar para:</label>
+          <select
+            value={usuarioSelecionado}
+            onChange={(e) => setUsuarioSelecionado(e.target.value)}
+            className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="todos">Todos os usuários</option>
+            {usuarios.map((u) => (
+              <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {mostrarForm && (
         <BuscaForm
           initial={editando}
@@ -155,13 +186,13 @@ export default function BuscasSalvas() {
 
       {loading ? (
         <div className="text-center py-20 text-muted-foreground">Carregando buscas...</div>
-      ) : buscas.length === 0 ? (
+      ) : buscasExibidas.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           Nenhuma busca salva. Crie uma para automatizar a captação de licitações.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {buscas.map((b) => {
+          {buscasExibidas.map((b) => {
             const res = resultadoSync[b.id];
             return (
               <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
@@ -174,6 +205,11 @@ export default function BuscasSalvas() {
                         {b.ativa ? "Ativa" : "Inativa"}
                       </span>
                     </div>
+                    {isAdmin && b.usuario_id && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Configurada para: {usuarios.find((u) => u.id === b.usuario_id)?.full_name || usuarios.find((u) => u.id === b.usuario_id)?.email || b.usuario_id}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
