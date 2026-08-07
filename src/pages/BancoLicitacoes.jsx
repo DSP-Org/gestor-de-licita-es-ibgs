@@ -5,12 +5,16 @@ import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import { toArray } from "@/lib/toArray";
+import { UFS } from "@/shared/alertaApi";
 
 export default function BancoLicitacoes() {
   const [licitacoes, setLicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
+  const [filtroUf, setFiltroUf] = useState("");
+  const [filtroCidade, setFiltroCidade] = useState("");
+  const [filtroModalidade, setFiltroModalidade] = useState("");
   const [modo, setModo] = useState("cards");
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [salvandoId, setSalvandoId] = useState(null);
@@ -47,19 +51,35 @@ export default function BancoLicitacoes() {
     })();
   }, []);
 
+  const cidadesDisponiveis = useMemo(() => {
+    const base = filtroUf ? licitacoes.filter((l) => l.uf === filtroUf) : licitacoes;
+    return Array.from(new Set(base.map((l) => l.municipio).filter(Boolean))).sort();
+  }, [licitacoes, filtroUf]);
+
+  const modalidadesDisponiveis = useMemo(() => {
+    return Array.from(new Set(licitacoes.map((l) => l.tipo).filter(Boolean))).sort();
+  }, [licitacoes]);
+
   const filtradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return licitacoes;
-    return licitacoes.filter((l) =>
-      [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
+    return licitacoes.filter((l) => {
+      if (filtroUf && l.uf !== filtroUf) return false;
+      if (filtroCidade && l.municipio !== filtroCidade) return false;
+      if (filtroModalidade && l.tipo !== filtroModalidade) return false;
+      if (!termo) return true;
+      return [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
         .filter(Boolean)
-        .some((campo) => String(campo).toLowerCase().includes(termo))
-    );
-  }, [licitacoes, busca]);
+        .some((campo) => String(campo).toLowerCase().includes(termo));
+    });
+  }, [licitacoes, busca, filtroUf, filtroCidade, filtroModalidade]);
 
   useEffect(() => {
     setPagina(1);
-  }, [busca]);
+  }, [busca, filtroUf, filtroCidade, filtroModalidade]);
+
+  useEffect(() => {
+    setFiltroCidade("");
+  }, [filtroUf]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / porPagina));
   const paginadas = useMemo(
@@ -129,6 +149,36 @@ export default function BancoLicitacoes() {
             className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+        <select
+          value={filtroUf}
+          onChange={(e) => setFiltroUf(e.target.value)}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">Todos os estados</option>
+          {UFS.map((uf) => (
+            <option key={uf} value={uf}>{uf}</option>
+          ))}
+        </select>
+        <select
+          value={filtroCidade}
+          onChange={(e) => setFiltroCidade(e.target.value)}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem]"
+        >
+          <option value="">Todas as cidades</option>
+          {cidadesDisponiveis.map((cidade) => (
+            <option key={cidade} value={cidade}>{cidade}</option>
+          ))}
+        </select>
+        <select
+          value={filtroModalidade}
+          onChange={(e) => setFiltroModalidade(e.target.value)}
+          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem]"
+        >
+          <option value="">Todas as modalidades</option>
+          {modalidadesDisponiveis.map((modalidade) => (
+            <option key={modalidade} value={modalidade}>{modalidade}</option>
+          ))}
+        </select>
         <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden shrink-0">
           <button
             onClick={() => setModo("cards")}
