@@ -67,8 +67,29 @@ export default function BancoLicitacoes() {
       ufs: (buscaSelecionada.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
       modalidades: (buscaSelecionada.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
       municipioIbge: buscaSelecionada.municipio_ibge || "",
+      palavraChave: buscaSelecionada.palavra_chave || "",
+      modoPalavras: buscaSelecionada.modo_palavras || "qualquer",
     };
   }, [buscaSelecionada]);
+
+  // Reproduz localmente o mesmo critério de palavras-chave usado na sincronização:
+  // termos com "-" excluem, e o modo "todas" exige que todos os termos positivos apareçam.
+  const combinaComPalavraChave = (l, palavraChave, modoPalavras) => {
+    const termos = (palavraChave || "").split(",").map((t) => t.trim()).filter(Boolean);
+    if (termos.length === 0) return true;
+    const texto = `${l.titulo || ""} ${l.objeto || ""}`.toLowerCase();
+    const positivos = [];
+    const negativos = [];
+    termos.forEach((termo) => {
+      const negativo = termo.startsWith("-");
+      const limpo = (negativo ? termo.slice(1) : termo).replace(/^"|"$/g, "").trim().toLowerCase();
+      if (!limpo) return;
+      (negativo ? negativos : positivos).push(limpo);
+    });
+    if (negativos.some((n) => texto.includes(n))) return false;
+    if (positivos.length === 0) return true;
+    return modoPalavras === "todas" ? positivos.every((p) => texto.includes(p)) : positivos.some((p) => texto.includes(p));
+  };
 
   const cidadesDisponiveis = useMemo(() => {
     const base = filtroUf ? licitacoes.filter((l) => l.uf === filtroUf) : licitacoes;
@@ -86,6 +107,7 @@ export default function BancoLicitacoes() {
         if (configFiltros.ufs.length && !configFiltros.ufs.includes(l.uf)) return false;
         if (configFiltros.modalidades.length && !configFiltros.modalidades.includes(String(l.id_tipo))) return false;
         if (configFiltros.municipioIbge && l.municipio_IBGE !== configFiltros.municipioIbge) return false;
+        if (!combinaComPalavraChave(l, configFiltros.palavraChave, configFiltros.modoPalavras)) return false;
       } else {
         if (filtroUf && l.uf !== filtroUf) return false;
         if (filtroCidade && l.municipio !== filtroCidade) return false;
