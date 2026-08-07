@@ -81,6 +81,10 @@
     "total_encontrado": {
       "type": "number",
       "description": "Total de licita\u00e7\u00f5es encontrado na \u00faltima sincroniza\u00e7\u00e3o"
+    },
+    "usuario_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio para quem esta busca foi configurada. Permite que um administrador configure a busca em nome de outro usu\u00e1rio (o dono real da busca, usado na sincroniza\u00e7\u00e3o e notifica\u00e7\u00f5es), diferente de created_by_id (quem efetivamente criou o registro)."
     }
   },
   "required": [
@@ -91,6 +95,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -105,6 +112,9 @@
           "created_by_id": "{{user.id}}"
         },
         {
+          "data.usuario_id": "{{user.id}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
@@ -115,6 +125,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {
