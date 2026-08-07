@@ -27,6 +27,7 @@ export default function Atualizacao() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [filtroUsuario, setFiltroUsuario] = useState("todos");
+  const [filtroOrigem, setFiltroOrigem] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -66,6 +67,7 @@ export default function Atualizacao() {
     return licitacoes.filter((l) => {
       if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+      if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
       if (busca) {
         const q = busca.toLowerCase();
         const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
@@ -73,7 +75,7 @@ export default function Atualizacao() {
       }
       return true;
     });
-  }, [licitacoes, filtroStatus, busca, filtroUsuario]);
+  }, [licitacoes, filtroStatus, busca, filtroUsuario, filtroOrigem]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
@@ -235,10 +237,21 @@ export default function Atualizacao() {
         {Object.keys(porBuscaOrigem).length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2 border-t">
             {Object.entries(porBuscaOrigem).map(([origem, count]) => (
-              <span key={origem} className="inline-flex items-center gap-1 text-xs bg-muted px-2.5 py-1 rounded-full">
+              <button
+                key={origem}
+                onClick={() => setFiltroOrigem((prev) => (prev === origem ? null : origem))}
+                className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
+                  filtroOrigem === origem ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
+                }`}
+              >
                 {origem}: <b>{count}</b>
-              </span>
+              </button>
             ))}
+            {filtroOrigem && (
+              <button onClick={() => setFiltroOrigem(null)} className="text-xs text-muted-foreground underline px-1">
+                Limpar filtro
+              </button>
+            )}
           </div>
         )}
       </div>
