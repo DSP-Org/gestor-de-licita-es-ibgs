@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight, FileDown, Sheet } from "lucide-react";
+import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight, FileDown, Sheet, RefreshCw, Mail } from "lucide-react";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
+import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import { toArray } from "@/lib/toArray";
-import { UFS } from "@/shared/alertaApi";
+import { UFS, MODALIDADES, buscarLicitacoes } from "@/shared/alertaApi";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
+
+const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
 export default function BancoLicitacoes() {
   const [licitacoes, setLicitacoes] = useState([]);
@@ -25,6 +28,18 @@ export default function BancoLicitacoes() {
   const [selecionada, setSelecionada] = useState(null);
   const [pagina, setPagina] = useState(1);
   const porPagina = 30;
+  const [buscandoApi, setBuscandoApi] = useState(false);
+  const [selecionados, setSelecionados] = useState(new Set());
+  const [enviarEmail, setEnviarEmail] = useState(false);
+
+  const toggleSelecao = (id, checked) => {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     (async () => {
@@ -122,6 +137,7 @@ export default function BancoLicitacoes() {
 
   useEffect(() => {
     setPagina(1);
+    setSelecionados(new Set());
   }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId]);
 
   useEffect(() => {
@@ -133,6 +149,44 @@ export default function BancoLicitacoes() {
     () => filtradas.slice((pagina - 1) * porPagina, pagina * porPagina),
     [filtradas, pagina]
   );
+
+  // Consulta a fonte externa por novas licitações e as incorpora ao banco —
+  // para o usuário isso é só "buscar", sem distinção entre cache e API.
+  const buscarNaApi = async () => {
+    const modalidadeCodigo = MODALIDADES.find((m) => m.nome === filtroModalidade)?.id || "";
+    if (!filtroUf && !busca.trim() && !modalidadeCodigo) {
+      setErro("Informe um estado, modalidade ou termo de busca para consultar novas licitações.");
+      return;
+    }
+    setErro("");
+    setBuscandoApi(true);
+    try {
+      const data = await buscarLicitacoes({
+        uf: filtroUf || undefined,
+        palavra_chave: busca.trim() || undefined,
+        modalidade: modalidadeCodigo || undefined,
+        data_insercao: hojeISO(),
+        pagina: 1,
+        licitacoesPorPagina: 50,
+      });
+      if (data.totalErros > 0) {
+        setErro(data.erros.map((e) => e.descricao).join("; "));
+      } else {
+        const novas = toArray(data.licitacoes);
+        setLicitacoes((prev) => {
+          const mapa = new Map(prev.map((l) => [l.id_licitacao, l]));
+          novas.forEach((l) => {
+            if (l?.id_licitacao) mapa.set(l.id_licitacao, l);
+          });
+          return Array.from(mapa.values());
+        });
+      }
+    } catch (e) {
+      setErro(e.message || "Erro ao consultar novas licitações.");
+    } finally {
+      setBuscandoApi(false);
+    }
+  };
 
   const salvar = async (lic) => {
     setSalvandoId(lic.id_licitacao);
@@ -187,14 +241,24 @@ export default function BancoLicitacoes() {
       </div>
 
       <div className="space-y-3">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por título, órgão, UF, município ou modalidade..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por título, órgão, UF, município ou modalidade..."
+              className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <button
+            onClick={buscarNaApi}
+            disabled={buscandoApi}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
+          >
+            {buscandoApi ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            {buscandoApi ? "Buscando..." : "Buscar novas licitações"}
+          </button>
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
@@ -245,6 +309,17 @@ export default function BancoLicitacoes() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {selecionados.size > 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                <span>{selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}</span>
+                <button
+                  onClick={() => setEnviarEmail(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
+                >
+                  <Mail className="w-4 h-4" /> <span className="hidden sm:inline">E-mail</span>
+                </button>
+              </div>
+            )}
             <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden">
               <button
                 onClick={() => setModo("cards")}
@@ -297,33 +372,48 @@ export default function BancoLicitacoes() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginadas.map((lic) => {
                 const jaSalva = salvasIds.has(lic.id_licitacao);
+                const sel = selecionados.has(lic.id_licitacao);
                 return (
-                  <LicitacaoCard
-                    key={lic.id_licitacao}
-                    licitacao={lic}
-                    onClick={() => setSelecionada(lic)}
-                    action={
-                      jaSalva ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                          <Check className="w-4 h-4" /> Salva
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => salvar(lic)}
-                          disabled={salvandoId === lic.id_licitacao}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
-                        </button>
-                      )
-                    }
-                  />
+                  <div key={lic.id_licitacao} className="relative">
+                    <label className="absolute top-2 left-2 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur px-2 py-1 rounded-md border text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sel}
+                        onChange={(e) => toggleSelecao(lic.id_licitacao, e.target.checked)}
+                        className="w-3.5 h-3.5 rounded cursor-pointer"
+                      />
+                    </label>
+                    <LicitacaoCard
+                      licitacao={lic}
+                      onClick={() => setSelecionada(lic)}
+                      action={
+                        jaSalva ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                            <Check className="w-4 h-4" /> Salva
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => salvar(lic)}
+                            disabled={salvandoId === lic.id_licitacao}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
+                          </button>
+                        )
+                      }
+                    />
+                  </div>
                 );
               })}
             </div>
           ) : (
-            <LicitacaoTable licitacoes={paginadas} onRowClick={setSelecionada} />
+            <LicitacaoTable
+              licitacoes={paginadas}
+              onRowClick={setSelecionada}
+              selecionados={selecionados}
+              onToggleSelecao={toggleSelecao}
+            />
           )}
 
           {totalPaginas > 1 && (
@@ -358,6 +448,14 @@ export default function BancoLicitacoes() {
             await salvar(dados);
             setSelecionada(null);
           }}
+        />
+      )}
+
+      {enviarEmail && (
+        <EmailResultsDialog
+          licitacoes={paginadas.filter((l) => selecionados.has(l.id_licitacao))}
+          origem="Banco de Licitação"
+          onClose={() => setEnviarEmail(false)}
         />
       )}
     </div>

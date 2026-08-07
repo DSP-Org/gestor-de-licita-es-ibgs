@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { FileText, Search, Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Database } from "lucide-react";
+import { FileText, Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Database } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
@@ -8,13 +8,12 @@ import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 const navItems = [
   { to: "/atualizacao", label: "Atualização", icon: RefreshCw },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
-  { to: "/explorar", label: "Explorar", icon: Search },
+  { to: "/banco-licitacoes", label: "Banco", icon: Database },
 ];
 const moreItems = [
   { to: "/", label: "Minhas", icon: FileText, end: true },
   { to: "/buscas", label: "Configuração", icon: Settings },
   { to: "/destinatarios", label: "Destinatários", icon: Mail },
-  { to: "/banco-licitacoes", label: "Banco de Licitação", icon: Database },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 

@@ -10,7 +10,6 @@ import AppErrorBoundary from '@/components/AppErrorBoundary';
 // Add page imports here
 import Layout from "@/components/Layout";
 import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
-import Explorar from "@/pages/Explorar";
 import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
 import Atualizacao from "@/pages/Atualizacao";
 import Destinatarios from "@/pages/Destinatarios";
@@ -92,7 +91,7 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<MinhasLicitacoes />} />
         <Route path="/atualizacao" element={<Atualizacao />} />
-        <Route path="/explorar" element={<Explorar />} />
+        <Route path="/explorar" element={<Navigate to="/banco-licitacoes" replace />} />
         <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/admin" element={<Administrador />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
