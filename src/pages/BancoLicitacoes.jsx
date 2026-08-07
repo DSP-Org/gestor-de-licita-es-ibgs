@@ -266,10 +266,21 @@ export default function BancoLicitacoes() {
     return modoPalavras === "todas" ? positivos.every((p) => texto.includes(p)) : positivos.some((p) => texto.includes(p));
   };
 
+  const ufsLivreSelecionadas = useMemo(
+    () => (filtroUf || "").split(",").map((s) => s.trim()).filter(Boolean),
+    [filtroUf]
+  );
+
   const cidadesDisponiveis = useMemo(() => {
-    const base = filtroUf ? acervo.filter((l) => l.uf === filtroUf) : acervo;
+    const base = ufsLivreSelecionadas.length ? acervo.filter((l) => ufsLivreSelecionadas.includes(l.uf)) : acervo;
     return Array.from(new Set(base.map((l) => l.municipio).filter(Boolean))).sort();
-  }, [acervo, filtroUf]);
+  }, [acervo, ufsLivreSelecionadas]);
+
+  const filtrosLivrePreenchidos =
+    (ufsLivreSelecionadas.length ? 1 : 0) +
+    (filtroCidade ? 1 : 0) +
+    (filtroModalidade ? 1 : 0) +
+    (filtroPalavraChaveLivre.trim() ? 1 : 0);
 
   const modalidadesDisponiveis = useMemo(() => {
     return Array.from(new Set(acervo.map((l) => l.tipo).filter(Boolean))).sort();
@@ -283,8 +294,8 @@ export default function BancoLicitacoes() {
         if (configFiltros.modalidades.length && !configFiltros.modalidades.includes(String(l.id_tipo))) return false;
         if (configFiltros.municipioIbge && l.municipio_IBGE !== configFiltros.municipioIbge) return false;
         if (!combinaComPalavraChave(l, configFiltros.palavraChave, configFiltros.modoPalavras)) return false;
-      } else if (filtroModoAcervo === "livre") {
-        if (filtroUf && l.uf !== filtroUf) return false;
+      } else if (filtroModoAcervo === "livre" && filtrosLivrePreenchidos >= 2) {
+        if (ufsLivreSelecionadas.length && !ufsLivreSelecionadas.includes(l.uf)) return false;
         if (filtroCidade && l.municipio !== filtroCidade) return false;
         if (filtroModalidade && l.tipo !== filtroModalidade) return false;
         if (!combinaComPalavraChave(l, filtroPalavraChaveLivre, filtroModoPalavrasLivre)) return false;
@@ -294,7 +305,7 @@ export default function BancoLicitacoes() {
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [acervo, busca, filtroUf, filtroCidade, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre]);
+  }, [acervo, busca, ufsLivreSelecionadas, filtroCidade, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos]);
 
   useEffect(() => {
     setPagina(1);

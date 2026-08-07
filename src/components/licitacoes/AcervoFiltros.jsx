@@ -1,4 +1,4 @@
-import { UFS } from "@/shared/alertaApi";
+import UfMultiSelect from "@/components/buscas/UfMultiSelect";
 import PalavrasChaveInput from "@/components/buscas/PalavrasChaveInput";
 
 // Filtros da aba "Acervo": ou seleciona uma configuração de busca salva,
@@ -11,6 +11,8 @@ export default function AcervoFiltros({
   filtroModalidade, onChangeModalidade, modalidadesDisponiveis,
   palavraChave, onChangePalavraChave, modoPalavras, onChangeModoPalavras,
 }) {
+  const filtrosPreenchidos =
+    (filtroUf ? 1 : 0) + (filtroCidade ? 1 : 0) + (filtroModalidade ? 1 : 0) + (palavraChave?.trim() ? 1 : 0);
   return (
     <div className="space-y-3">
       <div className="inline-flex items-center border rounded-md overflow-hidden bg-background shrink-0">
@@ -44,16 +46,7 @@ export default function AcervoFiltros({
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <select
-              value={filtroUf}
-              onChange={(e) => onChangeUf(e.target.value)}
-              className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos os estados</option>
-              {UFS.map((uf) => (
-                <option key={uf} value={uf}>{uf}</option>
-              ))}
-            </select>
+            <UfMultiSelect value={filtroUf} onChange={onChangeUf} />
             <select
               value={filtroCidade}
               onChange={(e) => onChangeCidade(e.target.value)}
@@ -84,6 +77,11 @@ export default function AcervoFiltros({
               onChangeModo={onChangeModoPalavras}
             />
           </div>
+          {filtrosPreenchidos < 2 && (
+            <p className="text-xs text-amber-600">
+              Selecione ao menos 2 filtros (estado, cidade, modalidade ou palavra-chave) para aplicar a busca livre.
+            </p>
+          )}
         </div>
       )}
     </div>
