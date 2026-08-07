@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { UFS, MODALIDADES } from "@/shared/alertaApi";
+import { MODALIDADES } from "@/shared/alertaApi";
 import { Mail, Users, Loader2 } from "lucide-react";
 import PalavrasChaveInput from "./PalavrasChaveInput";
+import UfMultiSelect from "./UfMultiSelect";
 
 export default function BuscaForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -123,18 +124,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Estado (UF)</label>
-          <input
-            list="uf-list"
-            value={form.uf || ""}
-            onChange={(e) => set("uf", e.target.value.toUpperCase())}
-            placeholder="Ex: PR,SC"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <datalist id="uf-list">
-            {UFS.map((uf) => (
-              <option key={uf} value={uf} />
-            ))}
-          </datalist>
+          <UfMultiSelect value={form.uf || ""} onChange={(v) => set("uf", v)} />
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">
