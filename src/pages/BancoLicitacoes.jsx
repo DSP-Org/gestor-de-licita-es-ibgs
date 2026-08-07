@@ -431,7 +431,7 @@ export default function BancoLicitacoes() {
           </button>
         </div>
 
-        {isAdmin && (
+        {isAdmin && aba === "novas" && (
           <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
             <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
             <select
