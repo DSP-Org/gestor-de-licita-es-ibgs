@@ -6,7 +6,19 @@ import { consultarAlertaLicitacao } from "./alertaApi.ts";
  * usarem os mesmos filtros e data, a segunda reaproveita o resultado da
  * primeira em vez de consumir a API novamente.
  */
-export async function consultarComCache(base44: any, filtros: any, ttlHoras = 24) {
+const hojeSP = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+/**
+ * Dias passados não recebem novas licitações — o resultado pode ser reaproveitado
+ * por muito tempo. O dia de hoje ainda recebe inserções, então revalida rápido.
+ */
+function ttlPadrao(dataInsercao?: string) {
+  if (!dataInsercao || dataInsercao >= hojeSP()) return 0.25; // 15 minutos
+  return 24 * 7; // 7 dias
+}
+
+export async function consultarComCache(base44: any, filtros: any, ttlHoras?: number) {
+  const ttl = ttlHoras ?? ttlPadrao(filtros.data_insercao);
   const chave = JSON.stringify({
     uf: filtros.uf || "",
     palavra_chave: filtros.palavra_chave || "",
@@ -23,8 +35,15 @@ export async function consultarComCache(base44: any, filtros: any, ttlHoras = 24
     return cache.resultado;
   }
 
-  const resultado = await consultarAlertaLicitacao(filtros);
-  const expira_em = new Date(Date.now() + ttlHoras * 3600000).toISOString();
+  let resultado;
+  try {
+    resultado = await consultarAlertaLicitacao(filtros);
+  } catch (e) {
+    // Falha na API: entrega o último resultado conhecido em vez de quebrar a listagem.
+    if (cache) return cache.resultado;
+    throw e;
+  }
+  const expira_em = new Date(Date.now() + ttl * 3600000).toISOString();
 
   try {
     if (cache) {
