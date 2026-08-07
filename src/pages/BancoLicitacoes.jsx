@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table } from "lucide-react";
+import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight } from "lucide-react";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
@@ -15,6 +15,8 @@ export default function BancoLicitacoes() {
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [salvandoId, setSalvandoId] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 30;
 
   useEffect(() => {
     (async () => {
@@ -54,6 +56,16 @@ export default function BancoLicitacoes() {
         .some((campo) => String(campo).toLowerCase().includes(termo))
     );
   }, [licitacoes, busca]);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [busca]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / porPagina));
+  const paginadas = useMemo(
+    () => filtradas.slice((pagina - 1) * porPagina, pagina * porPagina),
+    [filtradas, pagina]
+  );
 
   const salvar = async (lic) => {
     setSalvandoId(lic.id_licitacao);
@@ -154,7 +166,7 @@ export default function BancoLicitacoes() {
           </p>
           {modo === "cards" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtradas.map((lic) => {
+              {paginadas.map((lic) => {
                 const jaSalva = salvasIds.has(lic.id_licitacao);
                 return (
                   <LicitacaoCard
@@ -182,7 +194,29 @@ export default function BancoLicitacoes() {
               })}
             </div>
           ) : (
-            <LicitacaoTable licitacoes={filtradas} onRowClick={setSelecionada} />
+            <LicitacaoTable licitacoes={paginadas} onRowClick={setSelecionada} />
+          )}
+
+          {totalPaginas > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={pagina === 1}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" /> Anterior
+              </button>
+              <span className="text-sm text-muted-foreground">
+                Página <span className="font-medium text-foreground">{pagina}</span> de {totalPaginas}
+              </span>
+              <button
+                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                disabled={pagina === totalPaginas}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Próxima <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </>
       )}
