@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import {
-  Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight,
+  Search, Star, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight,
   FileDown, Sheet, RefreshCw, Mail, Zap, AlertCircle, Sparkles,
 } from "lucide-react";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
@@ -12,6 +12,7 @@ import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
+import FavoritasTab from "@/components/licitacoes/FavoritasTab";
 import { toArray } from "@/lib/toArray";
 import { MODALIDADES, buscarLicitacoes } from "@/shared/alertaApi";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
@@ -126,7 +127,7 @@ export default function BancoLicitacoes() {
   };
 
   const handleSaveManual = async (licitacao) => {
-    await base44.entities.Licitacao.update(licitacao.id, { salva_manualmente: true });
+    await base44.entities.Licitacao.update(licitacao.id, { salva_manualmente: true, favorito: true });
     setNovas((prev) => prev.filter((item) => item.id !== licitacao.id));
   };
 
@@ -161,7 +162,7 @@ export default function BancoLicitacoes() {
 
   const salvarSelecionadasNovas = async () => {
     const itens = itensSelecionadosNovas();
-    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, salva_manualmente: true })));
+    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, salva_manualmente: true, favorito: true })));
     setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
     setSelecionadasNovas(new Set());
   };
@@ -382,7 +383,7 @@ export default function BancoLicitacoes() {
         link: lic.link,
         link_externo: lic.linkExterno,
         status: "interessado",
-        favorito: false,
+        favorito: true,
         salva_manualmente: true,
       });
       setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
@@ -429,6 +430,12 @@ export default function BancoLicitacoes() {
           >
             <Database className="w-4 h-4" /> Acervo
           </button>
+          <button
+            onClick={() => setAba("favoritas")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l ${aba === "favoritas" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+          >
+            <Star className="w-4 h-4" /> Favoritas
+          </button>
         </div>
 
         {isAdmin && aba === "novas" && (
@@ -448,7 +455,9 @@ export default function BancoLicitacoes() {
         )}
       </div>
 
-      {aba === "novas" ? (
+      {aba === "favoritas" ? (
+        <FavoritasTab />
+      ) : aba === "novas" ? (
         <>
           {/* Painel de sincronização */}
           <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm space-y-3">
@@ -756,7 +765,7 @@ export default function BancoLicitacoes() {
                           action={
                             jaSalva ? (
                               <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                                <Check className="w-4 h-4" /> Salva
+                                <Check className="w-4 h-4" /> Favoritada
                               </span>
                             ) : (
                               <button
@@ -764,8 +773,8 @@ export default function BancoLicitacoes() {
                                 disabled={salvandoId === lic.id_licitacao}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
                               >
-                                <Plus className="w-3.5 h-3.5" />
-                                {salvandoId === lic.id_licitacao ? "Salvando..." : "Salvar"}
+                                <Star className="w-3.5 h-3.5" />
+                                {salvandoId === lic.id_licitacao ? "Favoritando..." : "Favoritar"}
                               </button>
                             )
                           }

@@ -9,7 +9,6 @@ import ScrollToTop from './components/ScrollToTop';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 // Add page imports here
 import Layout from "@/components/Layout";
-import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
 import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
 import Destinatarios from "@/pages/Destinatarios";
 import Administrador from "@/pages/Administrador";
@@ -88,15 +87,15 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* Add your page Route elements here */}
       <Route element={<Layout />}>
-        <Route path="/" element={<MinhasLicitacoes />} />
-        <Route path="/atualizacao" element={<Navigate to="/banco-licitacoes" replace />} />
-        <Route path="/explorar" element={<Navigate to="/banco-licitacoes" replace />} />
+        <Route path="/" element={<BancoLicitacoes />} />
+        <Route path="/atualizacao" element={<Navigate to="/" replace />} />
+        <Route path="/explorar" element={<Navigate to="/" replace />} />
+        <Route path="/banco-licitacoes" element={<Navigate to="/" replace />} />
         <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/admin" element={<Administrador />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
         <Route path="/destinatarios" element={<Destinatarios />} />
         <Route path="/assistente" element={<Assistente />} />
-        <Route path="/banco-licitacoes" element={<BancoLicitacoes />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

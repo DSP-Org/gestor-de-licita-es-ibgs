@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { FileText, Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Database } from "lucide-react";
+import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const navItems = [
-  { to: "/banco-licitacoes", label: "Atualização", icon: RefreshCw },
+  { to: "/", label: "Licitações", icon: RefreshCw, end: true },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
-  { to: "/", label: "Minhas", icon: FileText, end: true },
   { to: "/buscas", label: "Configuração", icon: Settings },
   { to: "/destinatarios", label: "Destinatários", icon: Mail },
 ];
@@ -37,9 +36,7 @@ export default function Layout() {
   const moreList = isAdmin ? [...moreItems, ...adminItems] : moreItems;
 
   // Verifica se alguma rota do menu "Mais" está ativa
-  const moreActive = moreList.some((item) =>
-    item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to)
-  );
+  const moreActive = moreList.some((item) => location.pathname.startsWith(item.to));
 
   return (
     <div className="min-h-screen flex bg-background">
