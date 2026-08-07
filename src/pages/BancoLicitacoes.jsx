@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight, FileDown, Sheet } from "lucide-react";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import { toArray } from "@/lib/toArray";
 import { UFS } from "@/shared/alertaApi";
+import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
+import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 
 export default function BancoLicitacoes() {
   const [licitacoes, setLicitacoes] = useState([]);
@@ -162,74 +164,95 @@ export default function BancoLicitacoes() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por título, órgão, UF, município ou modalidade..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por título, órgão, UF, município ou modalidade..."
+              className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden">
+              <button
+                onClick={() => setModo("cards")}
+                title="Visualização em cards"
+                className={`p-2.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setModo("tabela")}
+                title="Visualização em tabela"
+                className={`p-2.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              >
+                <Table className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={() => exportarLicitacoesPDF(filtradas, "Banco de Licitação")}
+              disabled={filtradas.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+            >
+              <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              onClick={() => exportarLicitacoesExcel(filtradas, "banco-licitacoes")}
+              disabled={filtradas.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+            >
+              <Sheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
+            </button>
+          </div>
         </div>
-        <select
-          value={filtroBuscaId}
-          onChange={(e) => setFiltroBuscaId(e.target.value)}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[12rem]"
-        >
-          <option value="">Filtrar por configuração salva...</option>
-          {buscasSalvas.map((b) => (
-            <option key={b.id} value={b.id}>{b.nome}</option>
-          ))}
-        </select>
-        <select
-          value={filtroUf}
-          onChange={(e) => setFiltroUf(e.target.value)}
-          disabled={!!configFiltros}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-        >
-          <option value="">Todos os estados</option>
-          {UFS.map((uf) => (
-            <option key={uf} value={uf}>{uf}</option>
-          ))}
-        </select>
-        <select
-          value={filtroCidade}
-          onChange={(e) => setFiltroCidade(e.target.value)}
-          disabled={!!configFiltros}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem] disabled:opacity-50"
-        >
-          <option value="">Todas as cidades</option>
-          {cidadesDisponiveis.map((cidade) => (
-            <option key={cidade} value={cidade}>{cidade}</option>
-          ))}
-        </select>
-        <select
-          value={filtroModalidade}
-          onChange={(e) => setFiltroModalidade(e.target.value)}
-          disabled={!!configFiltros}
-          className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[10rem] disabled:opacity-50"
-        >
-          <option value="">Todas as modalidades</option>
-          {modalidadesDisponiveis.map((modalidade) => (
-            <option key={modalidade} value={modalidade}>{modalidade}</option>
-          ))}
-        </select>
-        <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden shrink-0">
-          <button
-            onClick={() => setModo("cards")}
-            title="Visualização em cards"
-            className={`p-2 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <select
+            value={filtroBuscaId}
+            onChange={(e) => setFiltroBuscaId(e.target.value)}
+            className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setModo("tabela")}
-            title="Visualização em tabela"
-            className={`p-2 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            <option value="">Filtrar por configuração salva...</option>
+            {buscasSalvas.map((b) => (
+              <option key={b.id} value={b.id}>{b.nome}</option>
+            ))}
+          </select>
+          <select
+            value={filtroUf}
+            onChange={(e) => setFiltroUf(e.target.value)}
+            disabled={!!configFiltros}
+            className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           >
-            <Table className="w-4 h-4" />
-          </button>
+            <option value="">Todos os estados</option>
+            {UFS.map((uf) => (
+              <option key={uf} value={uf}>{uf}</option>
+            ))}
+          </select>
+          <select
+            value={filtroCidade}
+            onChange={(e) => setFiltroCidade(e.target.value)}
+            disabled={!!configFiltros}
+            className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          >
+            <option value="">Todas as cidades</option>
+            {cidadesDisponiveis.map((cidade) => (
+              <option key={cidade} value={cidade}>{cidade}</option>
+            ))}
+          </select>
+          <select
+            value={filtroModalidade}
+            onChange={(e) => setFiltroModalidade(e.target.value)}
+            disabled={!!configFiltros}
+            className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          >
+            <option value="">Todas as modalidades</option>
+            {modalidadesDisponiveis.map((modalidade) => (
+              <option key={modalidade} value={modalidade}>{modalidade}</option>
+            ))}
+          </select>
         </div>
       </div>
 
