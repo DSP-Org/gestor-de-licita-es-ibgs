@@ -11,8 +11,9 @@ import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
+import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
 import { toArray } from "@/lib/toArray";
-import { UFS, MODALIDADES, buscarLicitacoes } from "@/shared/alertaApi";
+import { MODALIDADES, buscarLicitacoes } from "@/shared/alertaApi";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 
@@ -184,6 +185,9 @@ export default function BancoLicitacoes() {
   const [filtroModalidade, setFiltroModalidade] = useState("");
   const [buscasSalvasAcervo, setBuscasSalvasAcervo] = useState([]);
   const [filtroBuscaId, setFiltroBuscaId] = useState("");
+  const [filtroModoAcervo, setFiltroModoAcervo] = useState("config"); // "config" (busca salva) ou "livre" (filtros manuais)
+  const [filtroPalavraChaveLivre, setFiltroPalavraChaveLivre] = useState("");
+  const [filtroModoPalavrasLivre, setFiltroModoPalavrasLivre] = useState("qualquer");
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [salvandoId, setSalvandoId] = useState(null);
   const [pagina, setPagina] = useState(1);
@@ -235,7 +239,7 @@ export default function BancoLicitacoes() {
   );
 
   const configFiltros = useMemo(() => {
-    if (!buscaSelecionada) return null;
+    if (filtroModoAcervo !== "config" || !buscaSelecionada) return null;
     return {
       ufs: (buscaSelecionada.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
       modalidades: (buscaSelecionada.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
@@ -243,7 +247,7 @@ export default function BancoLicitacoes() {
       palavraChave: buscaSelecionada.palavra_chave || "",
       modoPalavras: buscaSelecionada.modo_palavras || "qualquer",
     };
-  }, [buscaSelecionada]);
+  }, [buscaSelecionada, filtroModoAcervo]);
 
   const combinaComPalavraChave = (l, palavraChave, modoPalavras) => {
     const termos = (palavraChave || "").split(",").map((t) => t.trim()).filter(Boolean);
@@ -279,22 +283,23 @@ export default function BancoLicitacoes() {
         if (configFiltros.modalidades.length && !configFiltros.modalidades.includes(String(l.id_tipo))) return false;
         if (configFiltros.municipioIbge && l.municipio_IBGE !== configFiltros.municipioIbge) return false;
         if (!combinaComPalavraChave(l, configFiltros.palavraChave, configFiltros.modoPalavras)) return false;
-      } else {
+      } else if (filtroModoAcervo === "livre") {
         if (filtroUf && l.uf !== filtroUf) return false;
         if (filtroCidade && l.municipio !== filtroCidade) return false;
         if (filtroModalidade && l.tipo !== filtroModalidade) return false;
+        if (!combinaComPalavraChave(l, filtroPalavraChaveLivre, filtroModoPalavrasLivre)) return false;
       }
       if (!termo) return true;
       return [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [acervo, busca, filtroUf, filtroCidade, filtroModalidade, configFiltros]);
+  }, [acervo, busca, filtroUf, filtroCidade, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre]);
 
   useEffect(() => {
     setPagina(1);
     setSelecionadosAcervo(new Set());
-  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId]);
+  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre]);
 
   useEffect(() => {
     setFiltroCidade("");
@@ -631,51 +636,27 @@ export default function BancoLicitacoes() {
               </button>
             </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
-                <select
-                  value={filtroBuscaId}
-                  onChange={(e) => setFiltroBuscaId(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Filtrar por configuração salva...</option>
-                  {buscasSalvasAcervo.map((b) => (
-                    <option key={b.id} value={b.id}>{b.nome}</option>
-                  ))}
-                </select>
-                <select
-                  value={filtroUf}
-                  onChange={(e) => setFiltroUf(e.target.value)}
-                  disabled={!!configFiltros}
-                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                >
-                  <option value="">Todos os estados</option>
-                  {UFS.map((uf) => (
-                    <option key={uf} value={uf}>{uf}</option>
-                  ))}
-                </select>
-                <select
-                  value={filtroCidade}
-                  onChange={(e) => setFiltroCidade(e.target.value)}
-                  disabled={!!configFiltros}
-                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                >
-                  <option value="">Todas as cidades</option>
-                  {cidadesDisponiveis.map((cidade) => (
-                    <option key={cidade} value={cidade}>{cidade}</option>
-                  ))}
-                </select>
-                <select
-                  value={filtroModalidade}
-                  onChange={(e) => setFiltroModalidade(e.target.value)}
-                  disabled={!!configFiltros}
-                  className="w-full px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                >
-                  <option value="">Todas as modalidades</option>
-                  {modalidadesDisponiveis.map((modalidade) => (
-                    <option key={modalidade} value={modalidade}>{modalidade}</option>
-                  ))}
-                </select>
+            <div className="flex flex-col lg:flex-row lg:items-start gap-3">
+              <div className="flex-1">
+                <AcervoFiltros
+                  modo={filtroModoAcervo}
+                  onChangeModo={setFiltroModoAcervo}
+                  buscasSalvas={buscasSalvasAcervo}
+                  filtroBuscaId={filtroBuscaId}
+                  onChangeBuscaId={setFiltroBuscaId}
+                  filtroUf={filtroUf}
+                  onChangeUf={setFiltroUf}
+                  filtroCidade={filtroCidade}
+                  onChangeCidade={setFiltroCidade}
+                  cidadesDisponiveis={cidadesDisponiveis}
+                  filtroModalidade={filtroModalidade}
+                  onChangeModalidade={setFiltroModalidade}
+                  modalidadesDisponiveis={modalidadesDisponiveis}
+                  palavraChave={filtroPalavraChaveLivre}
+                  onChangePalavraChave={setFiltroPalavraChaveLivre}
+                  modoPalavras={filtroModoPalavrasLivre}
+                  onChangeModoPalavras={setFiltroModoPalavrasLivre}
+                />
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
