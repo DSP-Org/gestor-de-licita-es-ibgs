@@ -153,12 +153,14 @@ export default function Atualizacao() {
 
   const porBuscaOrigem = useMemo(() => {
     const grupos = {};
-    licitacoes.forEach((l) => {
-      const key = l.busca_origem || "Sem origem";
-      grupos[key] = (grupos[key] || 0) + 1;
-    });
+    licitacoes
+      .filter((l) => filtroUsuario === "todos" || l.created_by_id === filtroUsuario || l.usuario_id === filtroUsuario)
+      .forEach((l) => {
+        const key = l.busca_origem || "Sem origem";
+        grupos[key] = (grupos[key] || 0) + 1;
+      });
     return grupos;
-  }, [licitacoes]);
+  }, [licitacoes, filtroUsuario]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-7xl mx-auto">
