@@ -75,7 +75,7 @@ export default function BancoLicitacoes() {
   }, [buscasSalvas, filtroUsuario]);
 
   useEffect(() => {
-    setBuscasSelecionadas(buscasFiltradas.map((b) => b.id));
+    setBuscasSelecionadas([]);
   }, [buscasFiltradas]);
 
   const novasFiltradas = useMemo(() => {
