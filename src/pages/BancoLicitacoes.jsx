@@ -393,6 +393,11 @@ export default function BancoLicitacoes() {
     }
   };
 
+  const listaNavegacao = aba === "novas" ? novasFiltradas : aba === "acervo" ? paginadas : [];
+  const idxSelecionada = selecionada
+    ? listaNavegacao.findIndex((l) => l.id_licitacao === selecionada.id_licitacao)
+    : -1;
+
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -823,6 +828,8 @@ export default function BancoLicitacoes() {
           licitacao={selecionada}
           onClose={() => setSelecionada(null)}
           onSave={aba === "novas" ? handleSaveNova : async (dados) => { await salvar(dados); setSelecionada(null); }}
+          onPrev={idxSelecionada > 0 ? () => setSelecionada(listaNavegacao[idxSelecionada - 1]) : null}
+          onNext={idxSelecionada >= 0 && idxSelecionada < listaNavegacao.length - 1 ? () => setSelecionada(listaNavegacao[idxSelecionada + 1]) : null}
         />
       )}
 

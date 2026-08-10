@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { X, ExternalLink, Star, Save, FileDown, Share2 } from "lucide-react";
+import { X, ExternalLink, Star, Save, FileDown, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
-export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
+export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext }) {
   const [status, setStatus] = useState(licitacao?.status || "interessado");
   const [favorito, setFavorito] = useState(!!licitacao?.favorito);
   const [notas, setNotas] = useState(licitacao?.notas || "");
@@ -151,9 +151,21 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave }) {
             <StatusBadge status={status} />
             <span className="text-xs font-mono text-muted-foreground">{licitacao.id_licitacao}</span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {(onPrev !== undefined || onNext !== undefined) && (
+              <>
+                <button onClick={onPrev || undefined} disabled={!onPrev} title="Anterior" className="p-1.5 rounded-md hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={onNext || undefined} disabled={!onNext} title="Próxima" className="p-1.5 rounded-md hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="p-5 space-y-4">

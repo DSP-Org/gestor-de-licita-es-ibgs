@@ -1,4 +1,5 @@
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
+import ObjetoExpandivel from "./ObjetoExpandivel";
 
 export function StatusBadge({ status }) {
   const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
@@ -22,12 +23,13 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
       className="bg-card border rounded-2xl p-4 shadow-sm hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.98]"
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-mono text-muted-foreground truncate">{licitacao.id_licitacao}</span>
-        {licitacao.status && <StatusBadge status={licitacao.status} />}
-      </div>
+      {licitacao.status && (
+        <div className="flex items-start justify-end gap-2">
+          <StatusBadge status={licitacao.status} />
+        </div>
+      )}
       <h3 className="font-heading font-semibold text-[15px] leading-snug line-clamp-2">{licitacao.titulo}</h3>
-      <p className="text-xs text-muted-foreground line-clamp-2">{licitacao.objeto}</p>
+      <ObjetoExpandivel texto={licitacao.objeto} />
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
         <span className="font-medium text-foreground">{licitacao.uf} · {licitacao.municipio}</span>
         <span>·</span>

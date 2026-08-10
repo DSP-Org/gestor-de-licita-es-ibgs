@@ -1,5 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
+import ObjetoExpandivel from "./ObjetoExpandivel";
 
 export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, onToggleSelecao, onDelete, renderActions }) {
   const comSelecao = !!onToggleSelecao;
@@ -21,7 +22,6 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                   />
                 </th>
               )}
-              <th className="text-left font-medium px-3 py-2.5 w-20">ID</th>
               <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Busca</th>
               <th className="text-left font-medium px-3 py-2.5">Título</th>
               <th className="text-left font-medium px-3 py-2.5 w-20">Status</th>
@@ -51,11 +51,10 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                     />
                   </td>
                 )}
-                <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground truncate">{l.id_licitacao}</td>
                 <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.busca_origem || "—"}</td>
                 <td className="px-3 py-2.5">
                   <p className="font-medium line-clamp-1">{l.titulo}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-1">{l.objeto}</p>
+                  <ObjetoExpandivel texto={l.objeto} />
                 </td>
                 <td className="px-3 py-2.5">{l.status && <StatusBadge status={l.status} />}</td>
                 <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground">{l.orgao || "—"}</td>
@@ -101,12 +100,11 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                     className="w-4 h-4 rounded cursor-pointer shrink-0"
                   />
                 )}
-                <span className="text-xs font-mono text-muted-foreground truncate">{l.id_licitacao}</span>
               </div>
               {l.status && <StatusBadge status={l.status} />}
             </div>
             <h3 className="font-heading font-semibold text-sm leading-snug line-clamp-2 mt-1.5">{l.titulo}</h3>
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{l.objeto}</p>
+            <div className="mt-0.5"><ObjetoExpandivel texto={l.objeto} /></div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-2">
               {l.busca_origem && <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium">{l.busca_origem}</span>}
               <span className="font-medium text-foreground">{l.uf}{l.municipio ? ` · ${l.municipio}` : ""}</span>
