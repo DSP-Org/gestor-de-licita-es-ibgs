@@ -98,6 +98,10 @@
     "usuario_id": {
       "type": "string",
       "description": "Usu\u00e1rio propriet\u00e1rio do resultado de sincroniza\u00e7\u00e3o autom\u00e1tica"
+    },
+    "lista_favorita_id": {
+      "type": "string",
+      "description": "ID da lista de favoritos em que esta licita\u00e7\u00e3o est\u00e1 organizada"
     }
   },
   "required": [
