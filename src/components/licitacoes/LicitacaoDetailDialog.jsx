@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { X, ExternalLink, Star, Save, FileDown, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
+import { toArray } from "@/lib/toArray";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
@@ -10,6 +12,9 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
   const [favorito, setFavorito] = useState(!!licitacao?.favorito);
   const [notas, setNotas] = useState(licitacao?.notas || "");
   const [valorProposta, setValorProposta] = useState(licitacao?.valor_proposta || "");
+  const [listaVinculada, setListaVinculada] = useState(licitacao?.lista_favorita_id || "");
+  const [listas, setListas] = useState([]);
+  const [carregandoListas, setCarregandoListas] = useState(false);
   const [compartilhar, setCompartilhar] = useState(false);
 
   useEffect(() => {
@@ -18,8 +23,25 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       setFavorito(!!licitacao.favorito);
       setNotas(licitacao.notas || "");
       setValorProposta(licitacao.valor_proposta || "");
+      setListaVinculada(licitacao.lista_favorita_id || "");
     }
   }, [licitacao]);
+
+  useEffect(() => {
+    const carregarListas = async () => {
+      setCarregandoListas(true);
+      try {
+        const listasData = await base44.entities.FavoritaLista.list("ordem", 100);
+        setListas(toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
+      } catch (err) {
+        console.error("Erro ao carregar listas:", err);
+      } finally {
+        setCarregandoListas(false);
+      }
+    };
+
+    carregarListas();
+  }, []);
 
   if (!licitacao) return null;
 
@@ -30,6 +52,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       favorito,
       notas,
       valor_proposta: valorProposta === "" ? null : Number(valorProposta),
+      lista_favorita_id: listaVinculada || null,
     });
   };
 
@@ -205,6 +228,25 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Adicionar à lista</label>
+              <select
+                value={listaVinculada}
+                onChange={(e) => setListaVinculada(e.target.value)}
+                disabled={carregandoListas}
+                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Sem lista (favoritado solto)</option>
+                {listas.map((lista) => (
+                  <option key={lista.id} value={lista.id}>
+                    {lista.nome}
+                  </option>
+                ))}
+              </select>
+              {listas.length === 0 && !carregandoListas && (
+                <p className="text-xs text-muted-foreground mt-1">Nenhuma lista disponível. Crie uma na seção de favoritos.</p>
+              )}
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Valor da proposta (R$)</label>

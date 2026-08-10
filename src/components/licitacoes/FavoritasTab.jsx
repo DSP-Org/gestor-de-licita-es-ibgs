@@ -1,12 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Wallet, Plus, Folder, Edit2, Trash2, ChevronRight } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Wallet, Plus, Folder, Edit2, Trash2, ChevronRight, Download, GripVertical } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { toArray } from "@/lib/toArray";
+import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
+import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import ShareDialog from "@/components/licitacoes/ShareDialog";
+import ListaStatsCard from "@/components/licitacoes/ListaStatsCard";
 
 const CORES_LISTA = {
   blue: "bg-blue-50 text-blue-600 border-blue-200",
@@ -37,6 +41,8 @@ export default function FavoritasTab() {
   const [nomeLista, setNomeLista] = useState("");
   const [corLista, setCorLista] = useState("blue");
   const [editandoLista, setEditandoLista] = useState(null);
+  const [compartilharLista, setCompartilharLista] = useState(false);
+  const [exportandoLista, setExportandoLista] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -170,11 +176,55 @@ export default function FavoritasTab() {
     }
   };
 
+  const handleDragDropListas = async (result) => {
+    const { source, destination, draggableId } = result;
+
+    if (!destination) return;
+    if (source.index === destination.index) return;
+
+    // Reordenar array localmente
+    const novasListas = Array.from(listas);
+    const [movido] = novasListas.splice(source.index, 1);
+    novasListas.splice(destination.index, 0, movido);
+
+    // Atualizar UI imediatamente
+    setListas(novasListas);
+
+    // Atualizar ordem no backend
+    try {
+      for (let i = 0; i < novasListas.length; i++) {
+        await base44.entities.FavoritaLista.update(novasListas[i].id, {
+          ordem: i
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao reordenar listas:", err);
+      carregar();
+    }
+  };
+
+  const handleExportarLista = (formato) => {
+    if (!listaAtual) return;
+
+    const licAtual = filtradas;
+    if (licAtual.length === 0) {
+      alert("Nenhuma licitação para exportar nesta lista.");
+      return;
+    }
+
+    if (formato === "pdf") {
+      exportarLicitacoesPDF(licAtual, `Licitações — ${listaAtual.nome}`);
+    } else if (formato === "excel") {
+      exportarLicitacoesExcel(licAtual, `licitacoes-${listaAtual.nome.toLowerCase().replace(/\s+/g, "-")}`);
+    }
+    setExportandoLista(null);
+  };
+
   const listaAtual = listas.find((l) => l.id === listaSelecionada);
 
   return (
     <div className="space-y-5">
-      {/* Seção de Listas */}
+      {/* Seção de Listas com Drag & Drop */}
       <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -195,56 +245,106 @@ export default function FavoritasTab() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {listas.length === 0 ? (
-            <p className="text-xs text-muted-foreground w-full">Nenhuma lista criada. Crie a primeira!</p>
-          ) : (
-            listas.map((lista) => (
-              <div
-                key={lista.id}
-                onClick={() => setListaSelecionada(lista.id)}
-                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
-                  listaSelecionada === lista.id
-                    ? `${CORES_LISTA[lista.cor || "blue"]} border-current font-semibold`
-                    : "border-muted hover:border-foreground"
-                }`}
-              >
-                <span className="text-sm">
-                  {lista.nome}
-                  <span className="text-xs ml-1.5 opacity-60">
-                    ({licitacoes.filter((l) => l.lista_favorita_id === lista.id).length})
-                  </span>
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setNomeLista(lista.nome);
-                      setCorLista(lista.cor || "blue");
-                      setEditandoLista(lista);
-                      setModalNovaLista(true);
-                    }}
-                    className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded"
-                    title="Editar lista"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletarLista(lista.id);
-                    }}
-                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
-                    title="Deletar lista"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+        {listas.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhuma lista criada. Crie a primeira!</p>
+        ) : (
+          <DragDropContext onDragEnd={handleDragDropListas}>
+            <Droppable droppableId="listas" direction="vertical">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={`space-y-2 ${snapshot.isDraggingOver ? "bg-muted/30 rounded-lg p-2" : ""}`}
+                >
+                  {listas.map((lista, index) => (
+                    <Draggable key={lista.id} draggableId={lista.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                            listaSelecionada === lista.id
+                              ? `${CORES_LISTA[lista.cor || "blue"]} border-current font-semibold`
+                              : "border-muted hover:border-foreground"
+                          } ${snapshot.isDragging ? "shadow-lg scale-105 bg-background" : ""}`}
+                          onClick={() => setListaSelecionada(lista.id)}
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <div {...provided.dragHandleProps} className="p-1 opacity-0 group-hover:opacity-100">
+                              <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                            </div>
+                            <span className="text-sm">
+                              {lista.nome}
+                              <span className="text-xs ml-1.5 opacity-60">
+                                ({licitacoes.filter((l) => l.lista_favorita_id === lista.id).length})
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {listaSelecionada === lista.id && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExportandoLista(lista);
+                                  }}
+                                  className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+                                  title="Exportar lista"
+                                >
+                                  <Download className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCompartilharLista(true);
+                                  }}
+                                  className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+                                  title="Compartilhar lista"
+                                >
+                                  <Share2 className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNomeLista(lista.nome);
+                                setCorLista(lista.cor || "blue");
+                                setEditandoLista(lista);
+                                setModalNovaLista(true);
+                              }}
+                              className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+                              title="Editar lista"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletarLista(lista.id);
+                              }}
+                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                              title="Deletar lista"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
       </div>
+
+      {/* Dashboard de Estatísticas da Lista Selecionada */}
+      {listaAtual && filtradas.length > 0 && (
+        <ListaStatsCard licitacoes={filtradas} lista={listaAtual} />
+      )}
 
       <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm flex items-center gap-4">
         <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -382,6 +482,51 @@ export default function FavoritasTab() {
           origem={`Favoritas${listaAtual ? ` — ${listaAtual.nome}` : ""}${filtroStatus !== "todos" ? ` — ${filtroStatus}` : ""}`}
           onClose={() => setCompartilhar(false)}
         />
+      )}
+
+      {/* Modal: Compartilhar Lista */}
+      {compartilharLista && listaAtual && (
+        <ShareDialog
+          licitacoes={filtradas}
+          origem={listaAtual.nome}
+          onClose={() => setCompartilharLista(false)}
+        />
+      )}
+
+      {/* Modal: Exportar Lista */}
+      {exportandoLista && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-xl shadow-lg max-w-sm w-full p-6 space-y-4">
+            <h2 className="font-semibold text-lg">Exportar Lista</h2>
+            <p className="text-xs text-muted-foreground">
+              Exportar <strong>{filtradas.length}</strong> licitação(ões) da lista <strong>{exportandoLista.nome}</strong>
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleExportarLista("pdf")}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-lg hover:bg-muted"
+              >
+                <Download className="w-4 h-4" />
+                Exportar como PDF
+              </button>
+              <button
+                onClick={() => handleExportarLista("excel")}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-lg hover:bg-muted"
+              >
+                <Download className="w-4 h-4" />
+                Exportar como Excel (CSV)
+              </button>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setExportandoLista(null)}
+                className="px-3 py-2 border rounded-lg hover:bg-muted text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal: Nova/Editar Lista */}
