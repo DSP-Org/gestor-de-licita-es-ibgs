@@ -336,7 +336,13 @@ export default function Configuracao() {
               {buscasExibidas.map((b) => (
                 <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5">
                   <h3 className="font-semibold mb-4">{b.nome}</h3>
-                  <p className="text-xs text-muted-foreground">Notificações por e-mail configuradas aqui em breve.</p>
+                  <BuscaToggles
+                    busca={b}
+                    modo="alerta"
+                    onUpdated={(id, campo, valor) =>
+                      setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                    }
+                  />
                 </div>
               ))}
             </div>
@@ -435,14 +441,13 @@ export default function Configuracao() {
                       </div>
                     )}
 
-                    <div className="border-t pt-4 mt-4">
-                      <BuscaToggles
-                        busca={b}
-                        onUpdated={(id, campo, valor) =>
-                          setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                        }
-                      />
-                    </div>
+                    <BuscaToggles
+                      busca={b}
+                      modo="sincronizacao"
+                      onUpdated={(id, campo, valor) =>
+                        setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                      }
+                    />
                   </div>
                 );
               })}

@@ -21,7 +21,7 @@ function Toggle({ label, icon: Icon, checked, onChange, loading, description }) 
   );
 }
 
-export default function BuscaToggles({ busca, onUpdated }) {
+export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
   const [atualizando, setAtualizando] = useState(null);
   const [horario, setHorario] = useState(busca.horario_sincronizacao || "09:00");
 
@@ -39,39 +39,48 @@ export default function BuscaToggles({ busca, onUpdated }) {
     }
   };
 
+  const mostrarEmail = modo === "alerta";
+  const mostrarSync = modo === "sincronizacao";
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border/60">
-      <Toggle
-        label="Sincronização automática"
-        icon={RefreshCw}
-        checked={!!busca.ativa}
-        onChange={(v) => atualizarCampo("ativa", v)}
-        loading={atualizando === "ativa"}
-        description="Participa da sync diária"
-      />
-      <Toggle
-        label="Notificar por e-mail"
-        icon={Mail}
-        checked={busca.notificar_email !== false}
-        onChange={(v) => atualizarCampo("notificar_email", v)}
-        loading={atualizando === "notificar_email"}
-        description="Envia e-mail ao achar novas"
-      />
-      <label className="flex items-center gap-2.5 text-sm">
-        <Clock className="w-4 h-4 shrink-0 text-primary" />
-        <span className="min-w-0">
-          <span className="font-medium block leading-tight">Horário da busca</span>
-          <span className="text-[11px] text-muted-foreground">Execução diária</span>
-        </span>
-        <input
-          type="time"
-          value={horario}
-          disabled={atualizando === "horario_sincronizacao"}
-          onChange={(e) => setHorario(e.target.value)}
-          onBlur={() => atualizarCampo("horario_sincronizacao", horario)}
-          className="ml-auto w-24 px-2 py-1.5 text-xs border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+    <div className={`gap-4 pt-4 border-t border-border/60 ${mostrarEmail ? "grid grid-cols-1" : "grid grid-cols-1 sm:grid-cols-2"}`}>
+      {mostrarSync && (
+        <Toggle
+          label="Sincronização automática"
+          icon={RefreshCw}
+          checked={!!busca.ativa}
+          onChange={(v) => atualizarCampo("ativa", v)}
+          loading={atualizando === "ativa"}
+          description="Participa da sync diária"
         />
-      </label>
+      )}
+      {mostrarEmail && (
+        <Toggle
+          label="Notificar por e-mail"
+          icon={Mail}
+          checked={busca.notificar_email !== false}
+          onChange={(v) => atualizarCampo("notificar_email", v)}
+          loading={atualizando === "notificar_email"}
+          description="Envia e-mail ao achar novas"
+        />
+      )}
+      {mostrarSync && (
+        <label className="flex items-center gap-2.5 text-sm">
+          <Clock className="w-4 h-4 shrink-0 text-primary" />
+          <span className="min-w-0">
+            <span className="font-medium block leading-tight">Horário da busca</span>
+            <span className="text-[11px] text-muted-foreground">Execução diária</span>
+          </span>
+          <input
+            type="time"
+            value={horario}
+            disabled={atualizando === "horario_sincronizacao"}
+            onChange={(e) => setHorario(e.target.value)}
+            onBlur={() => atualizarCampo("horario_sincronizacao", horario)}
+            className="ml-auto w-24 px-2 py-1.5 text-xs border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          />
+        </label>
+      )}
     </div>
   );
 }
