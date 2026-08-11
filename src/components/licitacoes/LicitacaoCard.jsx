@@ -23,53 +23,70 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
   return (
     <div className="relative">
       {isNova && (
-        <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-          Nova
+        <div className="absolute -top-2.5 -right-2.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg z-10 border-2 border-card">
+          ✨ Nova
         </div>
       )}
       <div
-        className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.98] w-full"
+        className="bg-card border border-border/60 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer flex flex-col gap-3 active:scale-[0.98] w-full"
         onClick={onClick}
       >
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-heading font-semibold text-base leading-snug flex-1">{licitacao.titulo}</h3>
+        {/* Header com Título e Status */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h3 className="font-heading font-bold text-lg leading-tight text-foreground">{licitacao.titulo}</h3>
+          </div>
           {licitacao.status && (
-            <StatusBadge status={licitacao.status} />
+            <div className="shrink-0">
+              <StatusBadge status={licitacao.status} />
+            </div>
           )}
         </div>
 
-      {licitacao.objeto && (
-        <p className="text-xs text-muted-foreground leading-relaxed">{licitacao.objeto}</p>
-      )}
+        {/* Objeto */}
+        {licitacao.objeto && (
+          <div className="bg-muted/30 rounded-lg p-3 border border-border/40">
+            <p className="text-sm leading-relaxed text-foreground">{licitacao.objeto}</p>
+          </div>
+        )}
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{licitacao.uf} · {licitacao.municipio}</span>
-        <span>·</span>
-        <span>{licitacao.tipo}</span>
-      </div>
-
-      <div className="flex items-center justify-between gap-2 pt-2 mt-auto border-t text-xs">
-        <div className="flex gap-4">
+        {/* Local e Modalidade */}
+        <div className="flex flex-wrap gap-3 text-sm">
           <div>
-            <span className="text-muted-foreground">Publ: </span>
-            <span className="font-medium">{licitacao.data_sincronizacao ? new Date(licitacao.data_sincronizacao).toLocaleDateString("pt-BR") : "—"}</span>
+            <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold">Localização</span>
+            <p className="font-medium text-foreground">{licitacao.uf} • {licitacao.municipio}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">Abertura: </span>
-            <span className="font-medium">{licitacao.abertura || "—"}</span>
+            <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold">Modalidade</span>
+            <p className="font-medium text-foreground">{licitacao.tipo || "—"}</p>
           </div>
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-muted-foreground">Valor</div>
-          <div className="font-semibold">{formatValor(licitacao.valor)}</div>
-        </div>
-      </div>
 
-      {action && (
-        <div className="pt-2" onClick={(e) => e.stopPropagation()}>
-          {action}
+        {/* Divider */}
+        <div className="border-t border-border/40" />
+
+        {/* Footer com Datas e Valor */}
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Publicação</span>
+            <p className="font-semibold text-foreground">{licitacao.data_sincronizacao ? new Date(licitacao.data_sincronizacao).toLocaleDateString("pt-BR") : "—"}</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Abertura</span>
+            <p className="font-semibold text-foreground">{licitacao.abertura || "—"}</p>
+          </div>
+          <div className="text-right">
+            <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Valor</span>
+            <p className="font-bold text-lg text-primary">{formatValor(licitacao.valor)}</p>
+          </div>
         </div>
-      )}
+
+        {/* Ações */}
+        {action && (
+          <div className="pt-2 border-t border-border/40" onClick={(e) => e.stopPropagation()}>
+            {action}
+          </div>
+        )}
       </div>
     </div>
   );
