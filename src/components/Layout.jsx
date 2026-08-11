@@ -50,10 +50,11 @@ export default function Layout() {
   const userInitials = getInitials(usuarioLogado?.full_name || usuarioLogado?.email);
 
   return (
-    <div className="min-h-screen flex bg-[#F5F7FA]">
+    <>
       <InstalarAppPrompt />
-      {/* Sidebar - Navy Blue com Ícones */}
-      <aside className="hidden md:flex w-20 flex-col sticky top-0 h-screen shadow-lg" style={{ backgroundColor: "#0A1E3F", borderColor: "#1a2d52" }}>
+      <div className="min-h-screen flex bg-[#F5F7FA]">
+        {/* Sidebar - Navy Blue com Ícones */}
+        <aside className="hidden md:flex w-20 flex-col sticky top-0 h-screen shadow-lg" style={{ backgroundColor: "#0A1E3F", borderColor: "#1a2d52" }}>
         {/* Avatar do Usuário - Topo */}
         <div className="flex items-center justify-center py-4">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2" style={{ backgroundColor: "#0066FF", borderColor: "#1a2d52" }}>
@@ -223,9 +224,9 @@ export default function Layout() {
         )}
       </div>
     </div>
+    </>
   );
 }
-
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden h-16 flex items-center gap-3 px-4 sticky top-0 z-20 bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground shadow-md shadow-primary/20">
           <div className="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0 ring-1 ring-white/30">
