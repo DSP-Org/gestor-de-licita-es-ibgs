@@ -35,6 +35,7 @@ function getInitials(name) {
 export default function Layout() {
   const [menuAberto, setMenuAberto] = useState(false);
   const [sidebarFixado, setSidebarFixado] = useState(false);
+  const [sidebarExpandido, setSidebarExpandido] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
   const { isAdmin, filtroUsuario, setFiltroUsuario, usuarios, usuarioLogado } = useUserFilter();
@@ -54,7 +55,16 @@ export default function Layout() {
       <InstalarAppPrompt />
       <div className="min-h-screen flex bg-[#F5F7FA]">
         {/* Sidebar - Navy Blue com Ícones */}
-        <aside className="hidden md:flex w-20 flex-col sticky top-0 h-screen shadow-lg" style={{ backgroundColor: "#0A1E3F", borderColor: "#1a2d52" }}>
+        <aside
+          className="hidden md:flex flex-col sticky top-0 h-screen shadow-lg transition-all duration-300"
+          style={{
+            backgroundColor: "#0A1E3F",
+            borderColor: "#1a2d52",
+            width: sidebarExpandido ? "240px" : "80px"
+          }}
+          onMouseEnter={() => setSidebarExpandido(true)}
+          onMouseLeave={() => setSidebarExpandido(false)}
+        >
         {/* Avatar do Usuário - Topo */}
         <div className="flex items-center justify-center py-4">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2" style={{ backgroundColor: "#0066FF", borderColor: "#1a2d52" }}>
@@ -70,7 +80,9 @@ export default function Layout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `w-12 h-12 flex items-center justify-center rounded-full transition-all ${
+                `h-12 flex items-center justify-center rounded-full transition-all gap-3 ${
+                  sidebarExpandido ? "w-full px-4" : "w-12"
+                } ${
                   isActive
                     ? "text-white"
                     : "hover:text-white"
@@ -83,7 +95,8 @@ export default function Layout() {
               })}
               title={item.label}
             >
-              <item.icon className="w-5 h-5" />
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {sidebarExpandido && <span className="text-sm font-medium truncate">{item.label}</span>}
             </NavLink>
           ))}
         </nav>
@@ -93,13 +106,16 @@ export default function Layout() {
           {footerItems.map((item) => (
             <button
               key={item.to}
-              className="w-12 h-12 flex items-center justify-center rounded-full transition-all hover:text-white"
+              className={`h-12 flex items-center justify-center rounded-full transition-all hover:text-white gap-3 ${
+                sidebarExpandido ? "w-full px-4" : "w-12"
+              }`}
               style={{ color: "#7a8fa3", backgroundColor: "transparent" }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = "#1a2d52")}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1a2d52")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               title={item.label}
             >
-              <item.icon className="w-5 h-5" />
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {sidebarExpandido && <span className="text-sm font-medium truncate">{item.label}</span>}
             </button>
           ))}
         </div>
