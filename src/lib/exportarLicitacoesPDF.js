@@ -42,7 +42,7 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
   const tableX = margin;
 
   const drawTableHeader = () => {
-    // Cabeçalho
+    // Cabeçalho com bordas
     doc.setFillColor(240, 240, 240);
     doc.rect(tableX, y - 3, tableWidth, 5, "F");
     doc.setFont("helvetica", "bold");
@@ -55,9 +55,20 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
       x += col.width;
     });
 
+    // Bordas horizontais
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.2);
+    doc.line(tableX, y - 3, tableX + tableWidth, y - 3);
     doc.line(tableX, y + 1.5, tableX + tableWidth, y + 1.5);
+
+    // Bordas verticais
+    x = tableX;
+    colunas.forEach((col) => {
+      doc.line(x, y - 3, x, y + 1.5);
+      x += col.width;
+    });
+    doc.line(tableX + tableWidth, y - 3, tableX + tableWidth, y + 1.5);
+
     y += 6;
   };
 
@@ -94,9 +105,11 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
       drawTableHeader();
     }
 
-    // Renderizar linha
+    // Renderizar linha com bordas
     doc.setTextColor(40, 40, 40);
     let x = tableX;
+    const rowStartY = y;
+    const rowEndY = y + lineHeight - 1;
 
     // Coluna Objeto (com quebra de texto completo)
     doc.text(splitObjetoLines, x + 1, y);
@@ -111,10 +124,20 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
 
     doc.text(valor, x + colunas[3].width - 1, y, { maxWidth: colunas[3].width - 2, align: "right" });
 
-    // Linha divisória
-    doc.setDrawColor(235, 235, 235);
-    doc.setLineWidth(0.1);
-    doc.line(tableX, y + lineHeight - 1, tableX + tableWidth, y + lineHeight - 1);
+    // Bordas da linha
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.15);
+
+    // Borda horizontal inferior
+    doc.line(tableX, rowEndY, tableX + tableWidth, rowEndY);
+
+    // Bordas verticais
+    x = tableX;
+    colunas.forEach((col) => {
+      doc.line(x, rowStartY, x, rowEndY);
+      x += col.width;
+    });
+    doc.line(tableX + tableWidth, rowStartY, tableX + tableWidth, rowEndY);
 
     y += lineHeight;
   }
