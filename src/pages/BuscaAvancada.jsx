@@ -28,7 +28,7 @@ const MODALIDADES = [
 export default function BuscaAvancada() {
   const [filtros, setFiltros] = useState({
     ufs: [],
-    municipio: "",
+    municipios: [],
     modalidades: [],
     palavrasChave: [],
     dataAberturaInicio: "",
@@ -88,7 +88,6 @@ export default function BuscaAvancada() {
     try {
       const filtro = {};
 
-      if (filtros.municipio) filtro.municipio = filtros.municipio;
       if (filtros.status) filtro.status = filtros.status;
 
       const dados = await base44.entities.Licitacao.filter(
@@ -103,6 +102,11 @@ export default function BuscaAvancada() {
       // Filtrar por UFs
       if (filtros.ufs.length > 0) {
         resultado = resultado.filter(l => filtros.ufs.includes(l.uf));
+      }
+
+      // Filtrar por Municípios (só funciona com um único UF selecionado)
+      if (filtros.municipios.length > 0) {
+        resultado = resultado.filter(l => filtros.municipios.includes(l.municipio));
       }
 
       // Filtrar por Modalidades
@@ -172,7 +176,7 @@ export default function BuscaAvancada() {
   function limparFiltros() {
     setFiltros({
       ufs: [],
-      municipio: "",
+      municipios: [],
       modalidades: [],
       palavrasChave: [],
       dataAberturaInicio: "",
@@ -204,6 +208,15 @@ export default function BuscaAvancada() {
       modalidades: prev.modalidades.includes(modalidade)
         ? prev.modalidades.filter(m => m !== modalidade)
         : [...prev.modalidades, modalidade]
+    }));
+  }
+
+  function toggleMunicipio(municipio) {
+    setFiltros(prev => ({
+      ...prev,
+      municipios: prev.municipios.includes(municipio)
+        ? prev.municipios.filter(m => m !== municipio)
+        : [...prev.municipios, municipio]
     }));
   }
 
@@ -345,20 +358,31 @@ export default function BuscaAvancada() {
             </div>
           </div>
 
-          {/* Município */}
+          {/* Município - Checkboxes (apenas com um UF selecionado) */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-foreground mb-2">Município</label>
-            <select
-              value={filtros.municipio}
-              onChange={(e) => handleMudarFiltro("municipio", e.target.value)}
-              disabled={filtros.ufs.length === 0}
-              className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-            >
-              <option value="">Todos</option>
-              {municipios.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Município - Selecione um ou mais
+              {filtros.ufs.length > 1 && <span className="text-xs text-destructive ml-2">(Desabilitado com múltiplos UFs)</span>}
+            </label>
+            {filtros.ufs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Selecione um estado para ver os municípios</p>
+            ) : filtros.ufs.length > 1 ? (
+              <p className="text-sm text-destructive">Múltiplos estados selecionados. Selecione apenas um estado para filtrar por município.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {municipios.map(m => (
+                  <label key={m} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filtros.municipios.includes(m)}
+                      onChange={() => toggleMunicipio(m)}
+                      className="w-4 h-4 rounded cursor-pointer"
+                    />
+                    <span className="text-sm text-foreground">{m}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Modalidades - Checkboxes */}
