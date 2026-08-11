@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 import ObjetoExpandivel from "./ObjetoExpandivel";
+import MenuAcoes from "./MenuAcoes";
 
 const renderColunaLicitacao = (l) => (
   <div className="space-y-1">
@@ -93,7 +94,6 @@ export default function LicitacaoTable({
                   {col.label}
                 </th>
               ))}
-              {(onDelete || renderActions) && <th className="px-3 py-2.5 w-40">Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -113,32 +113,24 @@ export default function LicitacaoTable({
                     />
                   </td>
                 )}
-                {colunasExibidas.map((col) => (
+                {colunasExibidas.map((col, idx) => (
                   <td
                     key={col.id}
-                    className={`${col.className} ${
+                    className={`relative ${col.className} ${
                       col.id === "licitacao" ? "sticky left-10 bg-card z-10" : ""
                     }`}
                   >
                     {col.render(l)}
+                    {idx === colunasExibidas.length - 1 && (onDelete || renderActions) && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
+                        <MenuAcoes
+                          onSend={renderActions ? () => renderActions(l) : undefined}
+                          onDelete={onDelete ? () => onDelete(l) : undefined}
+                        />
+                      </div>
+                    )}
                   </td>
                 ))}
-                {(onDelete || renderActions) && (
-                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-2">
-                      {renderActions?.(l)}
-                      {onDelete && (
-                        <button
-                          onClick={() => onDelete(l)}
-                          title="Descartar da lista"
-                          className="p-1.5 rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>
