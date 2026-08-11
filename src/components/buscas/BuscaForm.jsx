@@ -202,48 +202,6 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           Enviar e-mail ao encontrar novas licitações
         </label>
 
-        {form.notificar_email && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Users className="w-3 h-3" /> Destinatários do e-mail (selecione um ou mais)
-              </label>
-              {usuarios.length > 0 && (
-                <div className="flex gap-2 text-xs">
-                  <button type="button" onClick={() => set("destinatarios_email", usuarios.map((u) => u.id))} className="text-primary hover:underline">
-                    Selecionar todos
-                  </button>
-                  <button type="button" onClick={() => set("destinatarios_email", [])} className="text-muted-foreground hover:underline">
-                    Limpar
-                  </button>
-                </div>
-              )}
-            </div>
-            {carregandoUsers ? (
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Carregando usuários...</p>
-            ) : usuarios.length === 0 ? (
-              <p className="text-xs text-muted-foreground mt-1">Nenhum usuário cadastrado. O e-mail será enviado ao dono da busca.</p>
-            ) : (
-              <div className="mt-1 max-h-32 overflow-auto border rounded-md p-2 space-y-1">
-                {usuarios.map((u) => (
-                  <label key={u.id} className="flex items-center gap-2 text-sm py-0.5 cursor-pointer hover:bg-muted rounded px-1">
-                    <input
-                      type="checkbox"
-                      checked={(form.destinatarios_email || []).includes(u.id)}
-                      onChange={() => toggleDestinatario(u.id)}
-                      className="w-4 h-4"
-                    />
-                    <span className="min-w-0 truncate">{u.full_name || u.email}</span>
-                    {u.email && <span className="text-xs text-muted-foreground truncate">· {u.email}</span>}
-                  </label>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">
-              {(form.destinatarios_email || []).length} selecionado(s). Se nenhum for escolhido, avisa o dono da busca.
-            </p>
-          </div>
-        )}
 
         {form.notificar_email && (
           <div>

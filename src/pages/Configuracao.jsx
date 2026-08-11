@@ -5,6 +5,7 @@ import { useUserFilter } from "@/lib/UserFilterContext";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
+import SeletorDestinatarios from "@/components/buscas/SeletorDestinatarios";
 import DestinatarioForm from "@/components/destinatarios/DestinatarioForm";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import { toArray } from "@/lib/toArray";
@@ -334,15 +335,27 @@ export default function Configuracao() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {buscasExibidas.map((b) => (
-                <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5">
-                  <h3 className="font-semibold mb-4">{b.nome}</h3>
-                  <BuscaToggles
-                    busca={b}
-                    modo="alerta"
-                    onUpdated={(id, campo, valor) =>
-                      setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                    }
-                  />
+                <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5 space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-4">{b.nome}</h3>
+                    <BuscaToggles
+                      busca={b}
+                      modo="alerta"
+                      onUpdated={(id, campo, valor) =>
+                        setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                      }
+                    />
+                  </div>
+                  {b.notificar_email !== false && (
+                    <div className="border-t pt-4">
+                      <SeletorDestinatarios
+                        busca={b}
+                        onUpdated={(id, campo, valor) =>
+                          setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
