@@ -57,7 +57,7 @@ export default function BuscaAvancada() {
   async function carregarMunicipios(uf) {
     try {
       const dados = await base44.entities.Licitacao.filter(
-        { uf, usuario_id: filtroUsuario },
+        { uf },
         "-created_date",
         500
       );
@@ -74,7 +74,7 @@ export default function BuscaAvancada() {
     setErro("");
 
     try {
-      const filtro = { usuario_id: filtroUsuario };
+      const filtro = {};
 
       if (filtros.uf) filtro.uf = filtros.uf;
       if (filtros.municipio) filtro.municipio = filtros.municipio;
