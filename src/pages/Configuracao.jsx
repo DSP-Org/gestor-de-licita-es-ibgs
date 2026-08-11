@@ -321,7 +321,7 @@ export default function Configuracao() {
           <div>
             <h2 className="text-lg font-semibold mb-4">Alertas</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Configure alertas, notificações e horários de execução para suas buscas.
+              Configure notificações por e-mail para suas buscas salvas.
             </p>
           </div>
 
@@ -336,13 +336,7 @@ export default function Configuracao() {
               {buscasExibidas.map((b) => (
                 <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5">
                   <h3 className="font-semibold mb-4">{b.nome}</h3>
-
-                  <BuscaToggles
-                    busca={b}
-                    onUpdated={(id, campo, valor) =>
-                      setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                    }
-                  />
+                  <p className="text-xs text-muted-foreground">Notificações por e-mail configuradas aqui em breve.</p>
                 </div>
               ))}
             </div>
@@ -436,10 +430,19 @@ export default function Configuracao() {
                     </div>
 
                     {res && (
-                      <div className={`text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg ${res.erro ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+                      <div className={`text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg mb-4 ${res.erro ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
                         {res.erro ? `Erro: ${res.erro}` : <><Check className="w-3.5 h-3.5" /> {res.novas} novas importadas de {res.total} encontradas</>}
                       </div>
                     )}
+
+                    <div className="border-t pt-4 mt-4">
+                      <BuscaToggles
+                        busca={b}
+                        onUpdated={(id, campo, valor) =>
+                          setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                        }
+                      />
+                    </div>
                   </div>
                 );
               })}
