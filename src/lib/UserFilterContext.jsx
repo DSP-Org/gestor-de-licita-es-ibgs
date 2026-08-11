@@ -19,15 +19,24 @@ export function UserFilterProvider({ children }) {
       if (isMaster) {
         // Master: começa com "todos", pode selecionar qualquer um
         setFiltroUsuario("todos");
-        base44.entities.User.list().then((res) => {
-          const lista = Array.isArray(res) ? res : [res];
-          setUsuarios(lista.filter(u => u && u.id));
-        });
+        base44.entities.User.list()
+          .then((res) => {
+            const lista = Array.isArray(res) ? res : (res ? [res] : []);
+            const usuariosValidos = lista.filter(u => u && u.id);
+            setUsuarios(usuariosValidos);
+          })
+          .catch((err) => {
+            console.error("Erro ao carregar usuários:", err);
+            setUsuarios([]);
+          });
       } else {
         // Usuário normal: sempre filtrado para si mesmo (OBRIGATÓRIO)
         setFiltroUsuario(u?.id);
         setUsuarios([]);
       }
+      setLoading(false);
+    }).catch((err) => {
+      console.error("Erro ao carregar usuário:", err);
       setLoading(false);
     });
   }, []);

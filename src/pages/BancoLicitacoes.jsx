@@ -448,23 +448,6 @@ export default function BancoLicitacoes() {
           </button>
         </div>
 
-        {isAdmin && aba === "novas" && (
-          <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
-            <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Usuário:</label>
-            <select
-              value={filtroUsuario}
-              onChange={(e) => setFiltroUsuario(e.target.value)}
-              className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="todos">Todos os usuários</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
       {aba === "favoritas" ? (
         <FavoritasTab />
       ) : aba === "novas" ? (
