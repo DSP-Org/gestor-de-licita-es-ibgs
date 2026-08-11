@@ -7,7 +7,7 @@ import { toArray } from "@/lib/toArray";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
-export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext }) {
+export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext, onMarcarLeitura }) {
   const [status, setStatus] = useState(licitacao?.status || "interessado");
   const [favorito, setFavorito] = useState(!!licitacao?.favorito);
   const [notas, setNotas] = useState(licitacao?.notas || "");
@@ -16,6 +16,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
   const [listas, setListas] = useState([]);
   const [carregandoListas, setCarregandoListas] = useState(false);
   const [compartilhar, setCompartilhar] = useState(false);
+  const [statusLeitura, setStatusLeitura] = useState(licitacao?.status_leitura || "nova");
 
   useEffect(() => {
     if (licitacao) {
@@ -24,6 +25,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       setNotas(licitacao.notas || "");
       setValorProposta(licitacao.valor_proposta || "");
       setListaVinculada(licitacao.lista_favorita_id || "");
+      setStatusLeitura(licitacao.status_leitura || "nova");
     }
   }, [licitacao]);
 
@@ -228,6 +230,32 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Status de leitura</label>
+              <div className="mt-1 flex gap-2">
+                {["nova", "vista", "lida"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setStatusLeitura(s);
+                      if (onMarcarLeitura) onMarcarLeitura(licitacao.id, s);
+                    }}
+                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border transition-colors ${
+                      statusLeitura === s
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+              {licitacao.data_sincronizacao && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Sincronizado em: {new Date(licitacao.data_sincronizacao).toLocaleDateString("pt-BR")}
+                </p>
+              )}
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Adicionar à lista</label>

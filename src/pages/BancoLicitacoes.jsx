@@ -828,6 +828,7 @@ export default function BancoLicitacoes() {
           onSave={aba === "novas" ? handleSaveNova : async (dados) => { await salvar(dados); setSelecionada(null); }}
           onPrev={idxSelecionada > 0 ? () => setSelecionada(listaNavegacao[idxSelecionada - 1]) : null}
           onNext={idxSelecionada >= 0 && idxSelecionada < listaNavegacao.length - 1 ? () => setSelecionada(listaNavegacao[idxSelecionada + 1]) : null}
+          onMarcarLeitura={aba === "novas" ? marcarLeitura : null}
         />
       )}
 
