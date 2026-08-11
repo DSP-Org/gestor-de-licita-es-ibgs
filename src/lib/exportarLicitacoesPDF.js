@@ -32,7 +32,7 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
 
   // Colunas principais focando no objeto
   const colunas = [
-    { key: "titulo", label: "Objeto", width: 100, align: "left" },
+    { key: "objeto", label: "Objeto", width: 100, align: "left" },
     { key: "local", label: "Local", width: 30, align: "left" },
     { key: "abertura", label: "Abertura", width: 25, align: "center" },
     { key: "valor", label: "Valor", width: 25, align: "right" },
@@ -83,7 +83,7 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
 
     const local = [l.uf, l.municipio].filter(Boolean).join(" · ") || "—";
     const rowData = [
-      esc(l.titulo),
+      esc(l.objeto),
       esc(local),
       esc(l.aberturaComHora || l.abertura || "—"),
       formatValor(l.valor),
