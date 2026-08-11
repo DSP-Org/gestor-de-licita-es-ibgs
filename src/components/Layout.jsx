@@ -170,6 +170,7 @@ export default function Layout() {
             {/* Menu "Mais" */}
             <button
               onClick={() => setMenuAberto((v) => !v)}
+              onMouseEnter={() => setMenuAberto(true)}
               className={`flex-1 flex flex-col items-center gap-1 py-1 text-[10px] font-semibold transition-colors active:scale-95 ${
                 menuAberto || moreActive ? "text-[#0066FF]" : "text-[#7a8fa3]"
               }`}
