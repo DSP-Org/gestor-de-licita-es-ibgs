@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, Mail, Clock } from "lucide-react";
+import { RefreshCw, Mail, Clock, Plus, Trash2 } from "lucide-react";
 
 function Toggle({ label, icon: Icon, checked, onChange, loading, description }) {
   return (
@@ -23,10 +23,16 @@ function Toggle({ label, icon: Icon, checked, onChange, loading, description }) 
 
 export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
   const [atualizando, setAtualizando] = useState(null);
-  const [horario, setHorario] = useState(busca.horario_sincronizacao || "09:00");
+  const horarios = Array.isArray(busca.horario_sincronizacao)
+    ? busca.horario_sincronizacao
+    : (busca.horario_sincronizacao ? [busca.horario_sincronizacao] : ["09:00"]);
+  const [horariosLocais, setHorariosLocais] = useState(horarios);
 
   useEffect(() => {
-    setHorario(busca.horario_sincronizacao || "09:00");
+    const novosHorarios = Array.isArray(busca.horario_sincronizacao)
+      ? busca.horario_sincronizacao
+      : (busca.horario_sincronizacao ? [busca.horario_sincronizacao] : ["09:00"]);
+    setHorariosLocais(novosHorarios);
   }, [busca.horario_sincronizacao]);
 
   const atualizarCampo = async (campo, valor) => {
@@ -37,6 +43,33 @@ export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
     } finally {
       setAtualizando(null);
     }
+  };
+
+  const salvarHorarios = async (novosHorarios) => {
+    setHorariosLocais(novosHorarios);
+    await atualizarCampo("horario_sincronizacao", novosHorarios);
+  };
+
+  const adicionarHorario = () => {
+    const novo = [...horariosLocais, "09:00"];
+    salvarHorarios(novo);
+  };
+
+  const removerHorario = (index) => {
+    if (horariosLocais.length > 1) {
+      const novo = horariosLocais.filter((_, i) => i !== index);
+      salvarHorarios(novo);
+    }
+  };
+
+  const alterarHorario = (index, valor) => {
+    const novo = [...horariosLocais];
+    novo[index] = valor;
+    setHorariosLocais(novo);
+  };
+
+  const finalizarEdicao = async (index) => {
+    await salvarHorarios(horariosLocais);
   };
 
   const mostrarEmail = modo === "alerta";
@@ -65,21 +98,46 @@ export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
         />
       )}
       {mostrarSync && (
-        <label className="flex items-center gap-2.5 text-sm">
-          <Clock className="w-4 h-4 shrink-0 text-primary" />
-          <span className="min-w-0">
-            <span className="font-medium block leading-tight">Horário da busca</span>
-            <span className="text-[11px] text-muted-foreground">Execução diária</span>
-          </span>
-          <input
-            type="time"
-            value={horario}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2.5 text-sm">
+            <Clock className="w-4 h-4 shrink-0 text-primary" />
+            <span className="min-w-0">
+              <span className="font-medium block leading-tight">Horários da busca</span>
+              <span className="text-[11px] text-muted-foreground">Execução diária</span>
+            </span>
+          </div>
+          <div className="space-y-2 ml-6">
+            {horariosLocais.map((horario, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={horario}
+                  disabled={atualizando === "horario_sincronizacao"}
+                  onChange={(e) => alterarHorario(index, e.target.value)}
+                  onBlur={() => finalizarEdicao(index)}
+                  className="w-20 px-2 py-1.5 text-xs border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                />
+                {horariosLocais.length > 1 && (
+                  <button
+                    onClick={() => removerHorario(index)}
+                    disabled={atualizando === "horario_sincronizacao"}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    title="Remover horário"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={adicionarHorario}
             disabled={atualizando === "horario_sincronizacao"}
-            onChange={(e) => setHorario(e.target.value)}
-            onBlur={() => atualizarCampo("horario_sincronizacao", horario)}
-            className="ml-auto w-24 px-2 py-1.5 text-xs border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-          />
-        </label>
+            className="ml-6 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50"
+          >
+            <Plus className="w-3.5 h-3.5" /> Adicionar horário
+          </button>
+        </div>
       )}
     </div>
   );
