@@ -43,19 +43,28 @@ export default function BancoLicitacoes() {
   const carregarNovas = async () => {
     setNovasLoading(true);
     try {
-      // Se é admin vendo "todos", carrega tudo. Senão, filtra no backend
+      // Filtra APENAS licitações com status_leitura = "nova"
       const filtro = isAdmin && filtroUsuario === "todos"
-        ? {}
-        : { usuario_id: filtroUsuario };
+        ? { status_leitura: "nova" }
+        : { status_leitura: "nova", usuario_id: filtroUsuario };
 
       const lista = await base44.entities.Licitacao.filter(
         filtro,
         "-created_date",
         500
       );
-      setNovas(toArray(lista).filter((item) => item.salva_manualmente !== true && item.busca_origem));
+      setNovas(toArray(lista));
     } finally {
       setNovasLoading(false);
+    }
+  };
+
+  const marcarLeitura = async (licId, novoStatus) => {
+    try {
+      await base44.entities.Licitacao.update(licId, { status_leitura: novoStatus });
+      carregarNovas(); // Recarrega para remover se marcou como vista/lida
+    } catch (e) {
+      console.error("Erro ao marcar leitura:", e);
     }
   };
 
