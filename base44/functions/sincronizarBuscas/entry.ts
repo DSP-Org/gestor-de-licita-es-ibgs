@@ -72,6 +72,8 @@ export default async function(req) {
         const existentes = await base44.asServiceRole.entities.Licitacao.filter({ usuario_id: donoId });
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
+        const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
         const novas = resultados
           .filter((l) => !existIds.has(l.id_licitacao))
           .map((l) => ({
@@ -94,6 +96,8 @@ export default async function(req) {
             busca_origem: busca.nome,
             usuario_id: donoId,
             salva_manualmente: false,
+            data_sincronizacao: hoje,
+            status_leitura: "nova",
           }));
 
         if (novas.length > 0) {
