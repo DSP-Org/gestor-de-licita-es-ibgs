@@ -18,17 +18,25 @@ export function formatValor(valor) {
 }
 
 export default function LicitacaoCard({ licitacao, onClick, action }) {
+  const isNova = licitacao.status_leitura === "nova";
+
   return (
-    <div
-      className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.98] w-full"
-      onClick={onClick}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-heading font-semibold text-sm leading-snug flex-1">{licitacao.titulo}</h3>
-        {licitacao.status && (
-          <StatusBadge status={licitacao.status} />
-        )}
-      </div>
+    <div className="relative">
+      {isNova && (
+        <div className="absolute -top-3 -right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+          Nova
+        </div>
+      )}
+      <div
+        className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer flex flex-col gap-2 active:scale-[0.98] w-full"
+        onClick={onClick}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-heading font-semibold text-base leading-snug flex-1">{licitacao.titulo}</h3>
+          {licitacao.status && (
+            <StatusBadge status={licitacao.status} />
+          )}
+        </div>
 
       {licitacao.objeto && (
         <p className="text-xs text-muted-foreground leading-relaxed">{licitacao.objeto}</p>
@@ -62,6 +70,7 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
           {action}
         </div>
       )}
+      </div>
     </div>
   );
 }
