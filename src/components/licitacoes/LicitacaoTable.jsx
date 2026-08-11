@@ -22,9 +22,8 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                   />
                 </th>
               )}
-              <th className="text-left font-medium px-3 py-2.5">Título</th>
+              <th className="text-left font-medium px-3 py-2.5">Licitação</th>
               <th className="text-left font-medium px-3 py-2.5 w-20">Status</th>
-              <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Órgão</th>
               <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Local</th>
               <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Modalidade</th>
               <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Abertura</th>
@@ -50,11 +49,13 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                   </td>
                 )}
                 <td className="px-3 py-2.5">
-                  <p className="font-medium line-clamp-1">{l.titulo}</p>
-                  <ObjetoExpandivel texto={l.objeto} />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm">{l.titulo}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{l.objeto}</p>
+                    <p className="text-xs font-medium text-foreground">{l.orgao || "—"}</p>
+                  </div>
                 </td>
                 <td className="px-3 py-2.5">{l.status && <StatusBadge status={l.status} />}</td>
-                <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground">{l.orgao || "—"}</td>
                 <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground whitespace-nowrap">{l.uf}{l.municipio ? ` · ${l.municipio}` : ""}</td>
                 <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.tipo || "—"}</td>
                 <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground whitespace-nowrap">{l.aberturaComHora || l.abertura || "—"}</td>
