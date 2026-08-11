@@ -67,8 +67,27 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
 
   // Processar dados
   for (const l of licitacoes) {
+    const local = [l.uf, l.municipio].filter(Boolean).join(" · ") || "—";
+
+    // Truncar objeto para primeira linha (máx 150 caracteres)
+    const objetoTruncado = esc(l.objeto).substring(0, 150) + (esc(l.objeto).length > 150 ? "..." : "");
+
+    const rowData = [
+      objetoTruncado,
+      esc(local),
+      esc(l.aberturaComHora || l.abertura || "—"),
+      formatValor(l.valor),
+    ];
+
+    // Calcular altura necessária
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    const splitObjetoLines = doc.splitTextToSize(rowData[0], colunas[0].width - 2);
+    const linhasNecessarias = Math.max(splitObjetoLines.length, 1);
+    const lineHeight = 3.5 * linhasNecessarias + 1;
+
     // Verificar espaço
-    if (y > pageH - 12) {
+    if (y + lineHeight > pageH - 12) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6);
       doc.setTextColor(150, 150, 150);
@@ -81,25 +100,19 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
       drawTableHeader();
     }
 
-    const local = [l.uf, l.municipio].filter(Boolean).join(" · ") || "—";
-    const rowData = [
-      esc(l.objeto),
-      esc(local),
-      esc(l.aberturaComHora || l.abertura || "—"),
-      formatValor(l.valor),
-    ];
-
-    // Renderizar linha com quebra de texto para objeto longo
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    // Renderizar linha
     doc.setTextColor(40, 40, 40);
-
     let x = tableX;
-    const lineHeight = 4;
-    const startY = y;
 
-    colunas.forEach((col, idx) => {
-      const val = rowData[idx];
+    // Coluna Objeto (com quebra)
+    const splitText = doc.splitTextToSize(rowData[0], colunas[0].width - 2);
+    doc.text(splitText, x + 1, y, { maxWidth: colunas[0].width - 2 });
+    x += colunas[0].width;
+
+    // Outras colunas (alinhadas ao topo)
+    for (let i = 1; i < colunas.length; i++) {
+      const val = rowData[i];
+      const col = colunas[i];
       const align = col.align;
 
       if (align === "right") {
@@ -107,17 +120,15 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
       } else if (align === "center") {
         doc.text(val, x + col.width / 2, y, { maxWidth: col.width - 2, align: "center" });
       } else {
-        // Para a coluna de Objeto, permitir quebra de linhas
-        const splitText = doc.splitTextToSize(val, col.width - 2);
-        doc.text(splitText, x + 1, y, { maxWidth: col.width - 2 });
+        doc.text(val, x + 1, y, { maxWidth: col.width - 2 });
       }
       x += col.width;
-    });
+    }
 
     // Linha divisória
     doc.setDrawColor(235, 235, 235);
     doc.setLineWidth(0.1);
-    doc.line(tableX, y + 2, tableX + tableWidth, y + 2);
+    doc.line(tableX, y + lineHeight - 1, tableX + tableWidth, y + lineHeight - 1);
 
     y += lineHeight;
   }
