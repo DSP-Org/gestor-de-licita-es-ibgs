@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Sliders, Home, MessageSquare, Heart, HelpCircle, ChevronRight } from "lucide-react";
+import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Sliders, Home, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUserFilter } from "@/lib/UserFilterContext";
@@ -15,11 +15,7 @@ const moreItems = [
   { to: "/buscas", label: "Configuração", icon: Settings },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
-const footerItems = [
-  { to: "#", label: "Sugestões", icon: MessageSquare },
-  { to: "#", label: "Favoritos", icon: Heart },
-  { to: "#", label: "Ajuda", icon: HelpCircle },
-];
+const footerItems = [];
 
 function getInitials(name) {
   if (!name) return "NA";
