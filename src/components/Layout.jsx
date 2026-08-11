@@ -13,7 +13,6 @@ const mainItems = [
 const moreItems = [
   { to: "/busca-avancada", label: "Busca Avançada", icon: Sliders },
   { to: "/buscas", label: "Configuração", icon: Settings },
-  { to: "/destinatarios", label: "Destinatários", icon: Mail },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 const footerItems = [

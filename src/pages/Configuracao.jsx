@@ -10,7 +10,7 @@ import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import { toArray } from "@/lib/toArray";
 
 export default function Configuracao() {
-  const [aba, setAba] = useState("filtro"); // "filtro" | "destinatarios" | "sincronizacao"
+  const [aba, setAba] = useState("filtro"); // "filtro" | "alerta" | "sincronizacao" | "destinatarios"
 
   // Estado de Buscas
   const [buscas, setBuscas] = useState([]);
@@ -178,8 +178,9 @@ export default function Configuracao() {
 
   const abas = [
     { id: "filtro", label: "Filtro / Busca" },
-    { id: "destinatarios", label: "Destinatários" },
+    { id: "alerta", label: "Alerta" },
     { id: "sincronizacao", label: "Sincronização" },
+    { id: "destinatarios", label: "Destinatários" },
   ];
 
   return (
@@ -252,22 +253,6 @@ export default function Configuracao() {
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button
-                          onClick={() => sincronizar(b)}
-                          disabled={sincronizando === b.id}
-                          title="Sincronizar agora"
-                          className="p-2 rounded-lg border border-border/70 hover:bg-primary hover:text-primary-foreground hover:border-primary disabled:opacity-50 transition-colors"
-                        >
-                          {sincronizando === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => enviarEmail(b)}
-                          disabled={carregandoEmail === b.id}
-                          title="Enviar resultados por e-mail"
-                          className="p-2 rounded-lg border border-border/70 hover:bg-primary hover:text-primary-foreground hover:border-primary disabled:opacity-50 transition-colors"
-                        >
-                          {carregandoEmail === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                        </button>
-                        <button
                           onClick={() => { setEditando(b); setMostrarForm(true); }}
                           title="Editar"
                           className="p-2 rounded-lg border border-border/70 hover:bg-muted transition-colors"
@@ -323,22 +308,43 @@ export default function Configuracao() {
                       </div>
                     </div>
 
-                    <BuscaToggles
-                      busca={b}
-                      onUpdated={(id, campo, valor) =>
-                        setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                      }
-                    />
-
-                    {/* Resultado da sync */}
-                    {res && (
-                      <div className={`mt-3 text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg ${res.erro ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
-                        {res.erro ? `Erro: ${res.erro}` : <><Check className="w-3.5 h-3.5" /> {res.novas} novas importadas de {res.total} encontradas</>}
-                      </div>
-                    )}
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {aba === "alerta" && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Alertas</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Configure alertas, notificações e horários de execução para suas buscas.
+            </p>
+          </div>
+
+          {loadingBuscas ? (
+            <div className="text-center py-20 text-muted-foreground">Carregando buscas...</div>
+          ) : buscasExibidas.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Nenhuma busca salva para configurar alertas.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {buscasExibidas.map((b) => (
+                <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5">
+                  <h3 className="font-semibold mb-4">{b.nome}</h3>
+
+                  <BuscaToggles
+                    busca={b}
+                    onUpdated={(id, campo, valor) =>
+                      setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+                    }
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>
