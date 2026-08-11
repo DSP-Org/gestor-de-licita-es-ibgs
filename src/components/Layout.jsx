@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Sliders } from "lucide-react";
+import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Sliders, Home, MessageSquare, Heart, HelpCircle, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUserFilter } from "@/lib/UserFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
-const navItems = [
+const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
@@ -16,80 +16,207 @@ const moreItems = [
   { to: "/destinatarios", label: "Destinatários", icon: Mail },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
+const footerItems = [
+  { to: "#", label: "Sugestões", icon: MessageSquare },
+  { to: "#", label: "Favoritos", icon: Heart },
+  { to: "#", label: "Ajuda", icon: HelpCircle },
+];
+
+function getInitials(name) {
+  if (!name) return "NA";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export default function Layout() {
   const [menuAberto, setMenuAberto] = useState(false);
+  const [sidebarFixado, setSidebarFixado] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
   const { isAdmin, filtroUsuario, setFiltroUsuario, usuarios, usuarioLogado } = useUserFilter();
 
-  // Fecha o menu ao navegar
   useEffect(() => {
     setMenuAberto(false);
   }, [location.pathname]);
 
-  const allItems = isAdmin ? [...navItems, ...moreItems, ...adminItems] : [...navItems, ...moreItems];
+  const allItems = isAdmin ? [...mainItems, ...moreItems, ...adminItems] : [...mainItems, ...moreItems];
   const moreList = isAdmin ? [...moreItems, ...adminItems] : moreItems;
-
-  // Verifica se alguma rota do menu "Mais" está ativa
   const moreActive = moreList.some((item) => location.pathname.startsWith(item.to));
 
+  const userInitials = getInitials(usuarioLogado?.full_name || usuarioLogado?.email);
+
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-[#F5F7FA]">
       <InstalarAppPrompt />
-      <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar sticky top-0 h-screen">
-        <div className="h-16 flex items-center gap-2.5 px-5 border-b">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
-            <Bell className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-heading font-semibold leading-tight truncate">Licitalerta360</p>
-            <p className="text-xs text-muted-foreground">Gestão de licitações</p>
+      {/* Sidebar - Navy Blue com Ícones */}
+      <aside className="hidden md:flex w-20 flex-col bg-[#0A1E3F] sticky top-0 h-screen border-r border-[#1a2d52] shadow-lg">
+        {/* Avatar do Usuário - Topo */}
+        <div className="flex items-center justify-center py-4">
+          <div className="w-12 h-12 rounded-full bg-[#0066FF] flex items-center justify-center text-white font-bold text-sm ring-2 ring-[#1a2d52]">
+            {userInitials}
           </div>
         </div>
 
-        {isAdmin && (
-          <div className="px-5 py-3 border-b bg-sidebar-accent/30">
-            <label className="text-xs font-semibold text-muted-foreground block mb-2">Visualizando como:</label>
-            <select
-              value={filtroUsuario}
-              onChange={(e) => setFiltroUsuario(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-background border border-input text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="todos">👨‍💼 Todos os usuários</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.email}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        <nav className="flex-1 p-3 space-y-1">
+        {/* Navegação Principal */}
+        <nav className="flex-1 flex flex-col items-center gap-2 py-4 px-2">
           {allItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                `w-12 h-12 flex items-center justify-center rounded-full transition-all ${
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    ? "bg-[#0066FF] text-white shadow-lg shadow-[#0066FF]/30"
+                    : "text-[#7a8fa3] hover:text-white hover:bg-[#1a2d52]"
                 }`
               }
+              title={item.label}
             >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {item.label}
+              <item.icon className="w-5 h-5" />
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t text-xs text-muted-foreground space-y-0.5">
-          <p>Fonte: alertalicitacao.com.br</p>
-          <p className="font-medium text-foreground/70">Desenvolvido por Data5 Tecnologia</p>
-          <p>Todos os direitos reservados © {new Date().getFullYear()}</p>
+
+        {/* Menu Inferior */}
+        <div className="flex flex-col items-center gap-2 py-4 px-2 border-t border-[#1a2d52]">
+          {footerItems.map((item) => (
+            <button
+              key={item.to}
+              className="w-12 h-12 flex items-center justify-center rounded-full text-[#7a8fa3] hover:text-white hover:bg-[#1a2d52] transition-all"
+              title={item.label}
+            >
+              <item.icon className="w-5 h-5" />
+            </button>
+          ))}
+        </div>
+
+        {/* Usuário na Base */}
+        <div className="flex items-center justify-center pb-4 pt-2 border-t border-[#1a2d52]">
+          <div className="w-10 h-10 rounded-full bg-[#0066FF] flex items-center justify-center text-white font-bold text-xs">
+            {userInitials}
+          </div>
         </div>
       </aside>
+
+      {/* Painel Principal */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header Mobile */}
+        <header className="md:hidden h-16 flex items-center gap-3 px-4 sticky top-0 z-20 bg-[#0A1E3F] text-white shadow-md">
+          <div className="w-9 h-9 rounded-full bg-[#0066FF] flex items-center justify-center shrink-0 font-bold text-xs">
+            {userInitials}
+          </div>
+          <div className="min-w-0 leading-tight flex-1">
+            <p className="font-bold text-sm truncate">Licitalerta360</p>
+          </div>
+          {permissao !== "granted" && permissao !== "unsupported" && (
+            <button
+              onClick={solicitarPermissao}
+              title="Ativar notificações"
+              className="p-2 rounded-lg hover:bg-[#1a2d52] transition-colors"
+            >
+              <BellRing className="w-5 h-5" />
+            </button>
+          )}
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 pb-20 md:pb-0">
+          <Outlet />
+        </main>
+
+        {/* Bottom Navigation - Mobile */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-white/95 backdrop-blur-xl shadow-[0_-4px_20px_-6px_rgba(0,0,0,0.12)] pb-[env(safe-area-inset-bottom)]">
+          <div className="flex items-stretch px-1 pt-1.5 pb-1">
+            {mainItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex-1 flex flex-col items-center gap-1 py-1 text-[10px] font-semibold transition-colors active:scale-95 ${
+                    isActive ? "text-[#0066FF]" : "text-[#7a8fa3]"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`flex items-center justify-center h-8 w-12 rounded-full transition-all ${
+                        isActive ? "bg-[#E8F0FF] text-[#0066FF] shadow-sm" : ""
+                      }`}
+                    >
+                      <item.icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2.4 : 2} />
+                    </span>
+                    <span className="truncate max-w-full leading-none">{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+
+            {/* Menu "Mais" */}
+            <button
+              onClick={() => setMenuAberto((v) => !v)}
+              className={`flex-1 flex flex-col items-center gap-1 py-1 text-[10px] font-semibold transition-colors active:scale-95 ${
+                menuAberto || moreActive ? "text-[#0066FF]" : "text-[#7a8fa3]"
+              }`}
+            >
+              <span
+                className={`flex items-center justify-center h-8 w-12 rounded-full transition-all ${
+                  menuAberto || moreActive ? "bg-[#E8F0FF] text-[#0066FF] shadow-sm" : ""
+                }`}
+              >
+                {menuAberto ? <X className="w-[18px] h-[18px]" /> : <MoreHorizontal className="w-[18px] h-[18px]" />}
+              </span>
+              <span className="leading-none">Mais</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* Menu "Mais" - Drawer Mobile */}
+        {menuAberto && (
+          <>
+            <div
+              className="md:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-150"
+              onClick={() => setMenuAberto(false)}
+            />
+            <div className="md:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] inset-x-0 z-40 bg-white border-t rounded-t-3xl shadow-2xl pb-3 animate-in slide-in-from-bottom duration-200">
+              <div className="flex justify-center pt-2.5 pb-1">
+                <span className="h-1 w-10 rounded-full bg-[#7a8fa3]/25" />
+              </div>
+              <div className="px-5 pb-1">
+                <p className="text-[11px] font-semibold text-[#7a8fa3] uppercase tracking-wider">Mais opções</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 p-3">
+                {moreList.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `flex flex-col items-center gap-2 py-4 px-2 rounded-2xl text-xs font-semibold transition-all active:scale-95 ${
+                        isActive
+                          ? "bg-[#E8F0FF] text-[#0066FF] ring-1 ring-[#0066FF]/20"
+                          : "bg-[#F5F7FA] text-[#7a8fa3] hover:bg-[#E8F0FF]"
+                      }`
+                    }
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden h-16 flex items-center gap-3 px-4 sticky top-0 z-20 bg-gradient-to-r from-primary to-emerald-600 text-primary-foreground shadow-md shadow-primary/20">
