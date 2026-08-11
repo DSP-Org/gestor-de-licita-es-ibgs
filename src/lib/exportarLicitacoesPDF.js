@@ -65,28 +65,22 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
 
   const esc = (s) => String(s ?? "").replace(/[^\x20-\x7EÀ-ÿ]/g, " ").trim();
 
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+
   // Processar dados
   for (const l of licitacoes) {
     const local = [l.uf, l.municipio].filter(Boolean).join(" · ") || "—";
+    const objeto = esc(l.objeto);
+    const abertura = esc(l.aberturaComHora || l.abertura || "—");
+    const valor = formatValor(l.valor);
 
-    // Truncar objeto para primeira linha (máx 150 caracteres)
-    const objetoTruncado = esc(l.objeto).substring(0, 150) + (esc(l.objeto).length > 150 ? "..." : "");
-
-    const rowData = [
-      objetoTruncado,
-      esc(local),
-      esc(l.aberturaComHora || l.abertura || "—"),
-      formatValor(l.valor),
-    ];
-
-    // Calcular altura necessária
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    const splitObjetoLines = doc.splitTextToSize(rowData[0], colunas[0].width - 2);
+    // Calcular altura necessária baseada no número de linhas do objeto
+    const splitObjetoLines = doc.splitTextToSize(objeto, colunas[0].width - 2);
     const linhasNecessarias = Math.max(splitObjetoLines.length, 1);
     const lineHeight = 3.5 * linhasNecessarias + 1;
 
-    // Verificar espaço
+    // Verificar espaço e quebrar página se necessário
     if (y + lineHeight > pageH - 12) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6);
@@ -104,26 +98,18 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
     doc.setTextColor(40, 40, 40);
     let x = tableX;
 
-    // Coluna Objeto (com quebra)
-    const splitText = doc.splitTextToSize(rowData[0], colunas[0].width - 2);
-    doc.text(splitText, x + 1, y, { maxWidth: colunas[0].width - 2 });
+    // Coluna Objeto (com quebra de texto completo)
+    doc.text(splitObjetoLines, x + 1, y);
     x += colunas[0].width;
 
     // Outras colunas (alinhadas ao topo)
-    for (let i = 1; i < colunas.length; i++) {
-      const val = rowData[i];
-      const col = colunas[i];
-      const align = col.align;
+    doc.text(local, x + 1, y, { maxWidth: colunas[1].width - 2 });
+    x += colunas[1].width;
 
-      if (align === "right") {
-        doc.text(val, x + col.width - 1, y, { maxWidth: col.width - 2, align: "right" });
-      } else if (align === "center") {
-        doc.text(val, x + col.width / 2, y, { maxWidth: col.width - 2, align: "center" });
-      } else {
-        doc.text(val, x + 1, y, { maxWidth: col.width - 2 });
-      }
-      x += col.width;
-    }
+    doc.text(abertura, x + colunas[2].width / 2, y, { maxWidth: colunas[2].width - 2, align: "center" });
+    x += colunas[2].width;
+
+    doc.text(valor, x + colunas[3].width - 1, y, { maxWidth: colunas[3].width - 2, align: "right" });
 
     // Linha divisória
     doc.setDrawColor(235, 235, 235);
