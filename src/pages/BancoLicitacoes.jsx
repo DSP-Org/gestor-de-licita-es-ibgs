@@ -667,23 +667,9 @@ export default function BancoLicitacoes() {
             <div className="flex flex-col lg:flex-row lg:items-start gap-3">
               <div className="flex-1">
                 <AcervoFiltros
-                  modo={filtroModoAcervo}
-                  onChangeModo={setFiltroModoAcervo}
                   buscasSalvas={buscasSalvasAcervo}
                   filtroBuscaId={filtroBuscaId}
                   onChangeBuscaId={setFiltroBuscaId}
-                  filtroUf={filtroUf}
-                  onChangeUf={setFiltroUf}
-                  filtroCidade={filtroCidade}
-                  onChangeCidade={setFiltroCidade}
-                  cidadesDisponiveis={cidadesDisponiveis}
-                  filtroModalidade={filtroModalidade}
-                  onChangeModalidade={setFiltroModalidade}
-                  modalidadesDisponiveis={modalidadesDisponiveis}
-                  palavraChave={filtroPalavraChaveLivre}
-                  onChangePalavraChave={setFiltroPalavraChaveLivre}
-                  modoPalavras={filtroModoPalavrasLivre}
-                  onChangeModoPalavras={setFiltroModoPalavrasLivre}
                 />
               </div>
 
