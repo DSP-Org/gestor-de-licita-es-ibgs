@@ -53,10 +53,10 @@ export default function Layout() {
     <div className="min-h-screen flex bg-[#F5F7FA]">
       <InstalarAppPrompt />
       {/* Sidebar - Navy Blue com Ícones */}
-      <aside className="hidden md:flex w-20 flex-col bg-[#0A1E3F] sticky top-0 h-screen border-r border-[#1a2d52] shadow-lg">
+      <aside className="hidden md:flex w-20 flex-col sticky top-0 h-screen shadow-lg" style={{ backgroundColor: "#0A1E3F", borderColor: "#1a2d52" }}>
         {/* Avatar do Usuário - Topo */}
         <div className="flex items-center justify-center py-4">
-          <div className="w-12 h-12 rounded-full bg-[#0066FF] flex items-center justify-center text-white font-bold text-sm ring-2 ring-[#1a2d52]">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2" style={{ backgroundColor: "#0066FF", borderColor: "#1a2d52" }}>
             {userInitials}
           </div>
         </div>
@@ -71,10 +71,15 @@ export default function Layout() {
               className={({ isActive }) =>
                 `w-12 h-12 flex items-center justify-center rounded-full transition-all ${
                   isActive
-                    ? "bg-[#0066FF] text-white shadow-lg shadow-[#0066FF]/30"
-                    : "text-[#7a8fa3] hover:text-white hover:bg-[#1a2d52]"
+                    ? "text-white"
+                    : "hover:text-white"
                 }`
               }
+              style={({ isActive }) => ({
+                backgroundColor: isActive ? "#0066FF" : "transparent",
+                color: isActive ? "white" : "#7a8fa3",
+                boxShadow: isActive ? "0 10px 25px -5px rgba(0, 102, 255, 0.3)" : "none"
+              })}
               title={item.label}
             >
               <item.icon className="w-5 h-5" />
@@ -83,11 +88,14 @@ export default function Layout() {
         </nav>
 
         {/* Menu Inferior */}
-        <div className="flex flex-col items-center gap-2 py-4 px-2 border-t border-[#1a2d52]">
+        <div className="flex flex-col items-center gap-2 py-4 px-2" style={{ borderColor: "#1a2d52" }}>
           {footerItems.map((item) => (
             <button
               key={item.to}
-              className="w-12 h-12 flex items-center justify-center rounded-full text-[#7a8fa3] hover:text-white hover:bg-[#1a2d52] transition-all"
+              className="w-12 h-12 flex items-center justify-center rounded-full transition-all hover:text-white"
+              style={{ color: "#7a8fa3", backgroundColor: "transparent" }}
+              onMouseEnter={(e) => (e.target.style.backgroundColor = "#1a2d52")}
+              onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
               title={item.label}
             >
               <item.icon className="w-5 h-5" />
@@ -96,8 +104,8 @@ export default function Layout() {
         </div>
 
         {/* Usuário na Base */}
-        <div className="flex items-center justify-center pb-4 pt-2 border-t border-[#1a2d52]">
-          <div className="w-10 h-10 rounded-full bg-[#0066FF] flex items-center justify-center text-white font-bold text-xs">
+        <div className="flex items-center justify-center pb-4 pt-2" style={{ borderColor: "#1a2d52" }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: "#0066FF" }}>
             {userInitials}
           </div>
         </div>
@@ -106,8 +114,8 @@ export default function Layout() {
       {/* Painel Principal */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header Mobile */}
-        <header className="md:hidden h-16 flex items-center gap-3 px-4 sticky top-0 z-20 bg-[#0A1E3F] text-white shadow-md">
-          <div className="w-9 h-9 rounded-full bg-[#0066FF] flex items-center justify-center shrink-0 font-bold text-xs">
+        <header className="md:hidden h-16 flex items-center gap-3 px-4 sticky top-0 z-20 text-white shadow-md" style={{ backgroundColor: "#0A1E3F" }}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-xs text-white" style={{ backgroundColor: "#0066FF" }}>
             {userInitials}
           </div>
           <div className="min-w-0 leading-tight flex-1">
