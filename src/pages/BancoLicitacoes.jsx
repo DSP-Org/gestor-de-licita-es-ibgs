@@ -447,6 +447,7 @@ export default function BancoLicitacoes() {
             <Star className="w-4 h-4" /> Favoritas
           </button>
         </div>
+      </div>
 
       {aba === "favoritas" ? (
         <FavoritasTab />

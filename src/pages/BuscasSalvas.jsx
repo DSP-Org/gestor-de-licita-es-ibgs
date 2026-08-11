@@ -18,6 +18,7 @@ export default function BuscasSalvas() {
   const [emailBusca, setEmailBusca] = useState(null);
   const [emailLics, setEmailLics] = useState([]);
   const [carregandoEmail, setCarregandoEmail] = useState(null);
+  const [usuarios, setUsuarios] = useState([]);
   const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
 
   const carregar = async () => {
