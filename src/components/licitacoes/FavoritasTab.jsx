@@ -43,13 +43,14 @@ export default function FavoritasTab() {
   const [editandoLista, setEditandoLista] = useState(null);
   const [compartilharLista, setCompartilharLista] = useState(false);
   const [exportandoLista, setExportandoLista] = useState(null);
+  const [usuarioLogado, setUsuarioLogado] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
     try {
       const [licData, listasData] = await Promise.all([
         base44.entities.Licitacao.filter({ favorito: true }, "-updated_date", 500),
-        base44.entities.FavoritaLista.list("ordem", 100)
+        base44.entities.FavoritaLista.filter({}, "ordem", 100)
       ]);
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
@@ -63,8 +64,16 @@ export default function FavoritasTab() {
   };
 
   useEffect(() => {
-    carregar();
+    base44.auth.me().then((u) => {
+      setUsuarioLogado(u);
+    });
   }, []);
+
+  useEffect(() => {
+    if (usuarioLogado) {
+      carregar();
+    }
+  }, [usuarioLogado]);
 
   const filtradas = useMemo(() => {
     let resultado = licitacoes;

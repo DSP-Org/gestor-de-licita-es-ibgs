@@ -28,12 +28,18 @@ export default function BancoLicitacoes() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [filtroUsuario, setFiltroUsuario] = useState("todos");
+  const [usuarioLogado, setUsuarioLogado] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then((u) => {
-      if (u?.role === "admin") {
-        setIsAdmin(true);
+      setUsuarioLogado(u);
+      const isMaster = u?.email === "nailton.alsampaio@gmail.com";
+      setIsAdmin(isMaster);
+      if (isMaster) {
         base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
+      } else {
+        // Usuário normal: sempre filtra para si mesmo
+        setFiltroUsuario(u?.id);
       }
     });
   }, []);
@@ -53,7 +59,16 @@ export default function BancoLicitacoes() {
   const carregarNovas = async () => {
     setNovasLoading(true);
     try {
-      const lista = await base44.entities.Licitacao.list("-created_date", 500);
+      // Se é admin vendo "todos", carrega tudo. Senão, filtra no backend
+      const filtro = isAdmin && filtroUsuario === "todos"
+        ? {}
+        : { usuario_id: filtroUsuario };
+
+      const lista = await base44.entities.Licitacao.filter(
+        filtro,
+        "-created_date",
+        500
+      );
       setNovas(toArray(lista).filter((item) => item.salva_manualmente !== true && item.busca_origem));
     } finally {
       setNovasLoading(false);
@@ -61,13 +76,21 @@ export default function BancoLicitacoes() {
   };
 
   useEffect(() => {
+    if (!usuarioLogado) return; // Espera carregar usuário
+
     carregarNovas();
-    base44.entities.BuscaSalva.filter({ ativa: true }, "nome", 100).then((res) => {
+
+    // Filtra buscas por usuário
+    const filtroBuscas = isAdmin && filtroUsuario === "todos"
+      ? { ativa: true }
+      : { ativa: true, $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
+
+    base44.entities.BuscaSalva.filter(filtroBuscas, "nome", 100).then((res) => {
       const lista = toArray(res);
       setBuscasSalvas(lista);
       setBuscasSelecionadas(lista.map((item) => item.id));
     });
-  }, []);
+  }, [filtroUsuario, isAdmin, usuarioLogado]);
 
   const buscasFiltradas = useMemo(() => {
     if (filtroUsuario === "todos") return buscasSalvas;

@@ -97,11 +97,11 @@
           "created_by_id": "{{user.id}}"
         },
         {
-          "data.usuario_id": "{{user.id}}"
+          "usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]
@@ -112,11 +112,11 @@
           "created_by_id": "{{user.id}}"
         },
         {
-          "data.usuario_id": "{{user.id}}"
+          "usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]
@@ -127,11 +127,11 @@
           "created_by_id": "{{user.id}}"
         },
         {
-          "data.usuario_id": "{{user.id}}"
+          "usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]

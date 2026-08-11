@@ -20,11 +20,16 @@ export default function BuscasSalvas() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState("todos");
+  const [usuarioLogado, setUsuarioLogado] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
     try {
-      const lista = await base44.entities.BuscaSalva.list("-updated_date", 100);
+      const filtro = isAdmin && usuarioSelecionado === "todos"
+        ? {}
+        : { $or: [{ usuario_id: usuarioSelecionado }, { created_by_id: usuarioSelecionado }] };
+
+      const lista = await base44.entities.BuscaSalva.filter(filtro, "-updated_date", 100);
       setBuscas(toArray(lista));
     } finally {
       setLoading(false);
@@ -32,14 +37,23 @@ export default function BuscasSalvas() {
   };
 
   useEffect(() => {
-    carregar();
     base44.auth.me().then((u) => {
-      if (u?.role === "admin") {
-        setIsAdmin(true);
+      setUsuarioLogado(u);
+      const isMaster = u?.email === "nailton.alsampaio@gmail.com";
+      setIsAdmin(isMaster);
+      if (isMaster) {
         base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
+      } else {
+        setUsuarioSelecionado(u?.id);
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (usuarioLogado) {
+      carregar();
+    }
+  }, [usuarioSelecionado, isAdmin, usuarioLogado]);
 
   const buscasExibidas = useMemo(() => {
     if (!isAdmin || usuarioSelecionado === "todos") return buscas;
