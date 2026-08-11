@@ -38,6 +38,9 @@ export default function BuscaAvancada() {
     status: "",
   });
   const [inputPalavraChave, setInputPalavraChave] = useState("");
+  const [buscarAPI, setBuscarAPI] = useState(false);
+  const [dataPublicacaoAPIInicio, setDataPublicacaoAPIInicio] = useState("");
+  const [dataPublicacaoAPIFim, setDataPublicacaoAPIFim] = useState("");
 
   const [licitacoes, setLicitacoes] = useState([]);
   const [carregando, setCarregando] = useState(false);
@@ -151,6 +154,14 @@ export default function BuscaAvancada() {
       }
 
       setLicitacoes(resultado);
+
+      // TODO: Adicionar busca na API quando buscarAPI estiver ativado
+      if (buscarAPI) {
+        console.log("Busca na API ativada");
+        console.log("Data publicação início:", dataPublicacaoAPIInicio);
+        console.log("Data publicação fim:", dataPublicacaoAPIFim);
+        // Aqui será adicionada a lógica de chamada à API de alertalicitacao.com.br
+      }
     } catch (err) {
       setErro("Erro ao executar busca: " + err.message);
     } finally {
@@ -171,6 +182,9 @@ export default function BuscaAvancada() {
       status: "",
     });
     setInputPalavraChave("");
+    setBuscarAPI(false);
+    setDataPublicacaoAPIInicio("");
+    setDataPublicacaoAPIFim("");
     setLicitacoes([]);
     setErro("");
   }
@@ -427,6 +441,46 @@ export default function BuscaAvancada() {
                 className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
+          </div>
+
+          {/* Busca na API */}
+          <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-muted">
+            <div className="flex items-center gap-3 mb-4">
+              <input
+                type="checkbox"
+                id="buscarAPI"
+                checked={buscarAPI}
+                onChange={(e) => setBuscarAPI(e.target.checked)}
+                className="w-4 h-4 rounded cursor-pointer"
+              />
+              <label htmlFor="buscarAPI" className="text-sm font-medium text-foreground cursor-pointer">
+                Buscar também na API (alertalicitacao.com.br)
+              </label>
+            </div>
+
+            {buscarAPI && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Publicação na API - Início</label>
+                  <input
+                    type="date"
+                    value={dataPublicacaoAPIInicio}
+                    onChange={(e) => setDataPublicacaoAPIInicio(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Publicação na API - Fim</label>
+                  <input
+                    type="date"
+                    value={dataPublicacaoAPIFim}
+                    onChange={(e) => setDataPublicacaoAPIFim(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Botões de Ação */}
