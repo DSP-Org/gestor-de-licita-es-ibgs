@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles } from "lucide-react";
+import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Sliders } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUserFilter } from "@/lib/UserFilterContext";
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
+  { to: "/busca-avancada", label: "Busca Avançada", icon: Sliders },
   { to: "/buscas", label: "Configuração", icon: Settings },
   { to: "/destinatarios", label: "Destinatários", icon: Mail },
 ];

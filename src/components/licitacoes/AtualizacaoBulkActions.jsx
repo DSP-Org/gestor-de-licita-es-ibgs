@@ -10,7 +10,7 @@ export default function AtualizacaoBulkActions({ quantidade, onSend, onSave, onD
         <Star className="h-4 w-4" /> <span className="hidden sm:inline">Favoritar</span> ({quantidade})
       </button>
       <button onClick={onDelete} className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-2.5 sm:px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90">
-        <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir</span> ({quantidade})
+        <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Descartar</span> ({quantidade})
       </button>
     </div>
   );

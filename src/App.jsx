@@ -22,6 +22,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import LandingPage from "@/pages/LandingPage";
 import Assistente from "@/pages/Assistente";
 import BancoLicitacoes from "@/pages/BancoLicitacoes";
+import BuscaAvancada from "@/pages/BuscaAvancada";
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
         <Route path="/atualizacao" element={<Navigate to="/" replace />} />
         <Route path="/explorar" element={<Navigate to="/" replace />} />
         <Route path="/banco-licitacoes" element={<Navigate to="/" replace />} />
+        <Route path="/busca-avancada" element={<BuscaAvancada />} />
         <Route path="/buscas" element={<BuscasEAutomacao />} />
         <Route path="/admin" element={<Administrador />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />

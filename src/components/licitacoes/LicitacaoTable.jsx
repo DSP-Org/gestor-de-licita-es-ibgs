@@ -65,7 +65,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                     <div className="flex items-center gap-2">
                       {renderActions?.(l)}
                       {onDelete && (
-                        <button onClick={() => onDelete(l)} title="Excluir da lista" className="p-1.5 rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600">
+                        <button onClick={() => onDelete(l)} title="Descartar da lista" className="p-1.5 rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -121,7 +121,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                 {renderActions?.(l)}
                 {onDelete && (
                   <button onClick={() => onDelete(l)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-600">
-                    <Trash2 className="w-3.5 h-3.5" /> Excluir
+                    <Trash2 className="w-3.5 h-3.5" /> Descartar
                   </button>
                 )}
               </div>
