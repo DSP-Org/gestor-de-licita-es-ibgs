@@ -10,8 +10,7 @@ import ScrollToTop from './components/ScrollToTop';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 // Add page imports here
 import Layout from "@/components/Layout";
-import BuscasEAutomacao from "@/pages/BuscasEAutomacao";
-import Destinatarios from "@/pages/Destinatarios";
+import Configuracao from "@/pages/Configuracao";
 import Administrador from "@/pages/Administrador";
 import LicitacaoDetalhe from "@/pages/LicitacaoDetalhe";
 import ResultadoCompartilhado from "@/pages/ResultadoCompartilhado";
@@ -94,10 +93,10 @@ const AuthenticatedApp = () => {
         <Route path="/explorar" element={<Navigate to="/" replace />} />
         <Route path="/banco-licitacoes" element={<Navigate to="/" replace />} />
         <Route path="/busca-avancada" element={<BuscaAvancada />} />
-        <Route path="/buscas" element={<BuscasEAutomacao />} />
+        <Route path="/buscas" element={<Configuracao />} />
         <Route path="/admin" element={<Administrador />} />
         <Route path="/licitacao/:idLicitacao" element={<LicitacaoDetalhe />} />
-        <Route path="/destinatarios" element={<Destinatarios />} />
+        <Route path="/destinatarios" element={<Configuracao />} />
         <Route path="/assistente" element={<Assistente />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
