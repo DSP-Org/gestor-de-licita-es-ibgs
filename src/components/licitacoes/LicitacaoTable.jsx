@@ -1,6 +1,5 @@
 import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
-import ObjetoExpandivel from "./ObjetoExpandivel";
 import MenuAcoes from "./MenuAcoes";
 
 const renderColunaLicitacao = (l) => (
@@ -159,9 +158,10 @@ export default function LicitacaoTable({
               </div>
               {l.status && <StatusBadge status={l.status} />}
             </div>
-            <h3 className="font-heading font-semibold text-sm leading-snug line-clamp-2 mt-1.5">{l.titulo}</h3>
-            <div className="mt-0.5"><ObjetoExpandivel texto={l.objeto} /></div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-2">
+            <h3 className="font-heading font-semibold text-sm leading-snug mt-1.5">{l.objeto}</h3>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1.5">
+              {l.titulo && <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium">{l.titulo}</span>}
+              {l.orgao && <span className="font-medium text-foreground">{l.orgao}</span>}
               {l.busca_origem && <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium">{l.busca_origem}</span>}
               <span className="font-medium text-foreground">{l.uf}{l.municipio ? ` · ${l.municipio}` : ""}</span>
             </div>
