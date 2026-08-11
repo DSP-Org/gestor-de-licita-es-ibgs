@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import LicitacaoCard, { formatValor } from "@/components/licitacoes/LicitacaoCard";
-import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
+import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import { toArray } from "@/lib/toArray";
 import { Search, Filter, Trash2, X } from "lucide-react";
@@ -45,7 +44,7 @@ export default function BuscaAvancada() {
   const [licitacoes, setLicitacoes] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
-  const [visualizacao, setVisualizacao] = useState("cards");
+  const [selecionados, setSelecionados] = useState([]);
   const { filtroUsuario } = useUserFilter();
   const [municipios, setMunicipios] = useState([]);
 
@@ -283,6 +282,14 @@ export default function BuscaAvancada() {
       console.error("Erro ao favoritar:", err);
       alert("Erro ao favoritar licitação");
     }
+  }
+
+  function handleToggleSelecao(licId) {
+    setSelecionados(prev =>
+      prev.includes(licId)
+        ? prev.filter(id => id !== licId)
+        : [...prev, licId]
+    );
   }
 
   return (
@@ -540,65 +547,22 @@ export default function BuscaAvancada() {
 
         {/* Resultados */}
         {licitacoes.length > 0 && (
-          <div>
-            {/* Toggle Visualização */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
-                onClick={() => setVisualizacao("cards")}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  visualizacao === "cards"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground hover:bg-muted/80"
-                }`}
-              >
-                Cards
-              </button>
-              <button
-                onClick={() => setVisualizacao("table")}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  visualizacao === "table"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground hover:bg-muted/80"
-                }`}
-              >
-                Tabela
-              </button>
-            </div>
-
-            {/* Visualização de Cards */}
-            {visualizacao === "cards" && (
-              <div className="grid grid-cols-1 gap-4">
-                {licitacoes.map(lic => (
-                  <LicitacaoCard
-                    key={lic.id_licitacao}
-                    licitacao={lic}
-                    action={
-                      <AtualizacaoActions
-                        onSend={() => handleEnviarLicitacao(lic)}
-                        onSave={() => handleFavoritarLicitacao(lic)}
-                        onDelete={() => handleDelete(lic)}
-                      />
-                    }
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Visualização de Tabela */}
-            {visualizacao === "table" && (
-              <LicitacaoTable
-                licitacoes={licitacoes}
-                onDelete={handleDelete}
-                renderActions={(lic) => (
-                  <AtualizacaoActions
-                    onSend={() => handleEnviarLicitacao(lic)}
-                    onSave={() => handleFavoritarLicitacao(lic)}
-                    onDelete={() => handleDelete(lic)}
-                  />
-                )}
+          <LicitacoesVisualizacao
+            licitacoes={licitacoes}
+            loading={carregando}
+            vazio={licitacoes.length === 0}
+            onRowClick={(lic) => {}}
+            selecionados={selecionados}
+            onToggleSelecao={handleToggleSelecao}
+            onDelete={handleDelete}
+            renderActions={(lic) => (
+              <AtualizacaoActions
+                onSend={() => handleEnviarLicitacao(lic)}
+                onSave={() => handleFavoritarLicitacao(lic)}
+                onDelete={() => handleDelete(lic)}
               />
             )}
-          </div>
+          />
         )}
 
         {!carregando && licitacoes.length === 0 && !erro && (

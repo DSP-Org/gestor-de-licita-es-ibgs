@@ -2,15 +2,14 @@ import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useUserFilter } from "@/lib/UserFilterContext";
 import {
-  Search, Star, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight,
+  Search, Star, Check, Loader2, Database, ChevronLeft, ChevronRight,
   FileDown, Sheet, RefreshCw, Mail, Zap, AlertCircle, Sparkles,
 } from "lucide-react";
-import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
-import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
+import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
@@ -23,7 +22,6 @@ const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "Americ
 
 export default function BancoLicitacoes() {
   const [aba, setAba] = useState("novas");
-  const [modo, setModo] = useState("cards");
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState(null);
   const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
@@ -560,22 +558,6 @@ export default function BancoLicitacoes() {
               <option value="perdida">Perdida</option>
               <option value="descartada">Descartada</option>
             </select>
-            <div className="hidden md:inline-flex items-center border rounded-lg overflow-hidden shrink-0">
-              <button
-                onClick={() => setModo("cards")}
-                title="Visualização em cards"
-                className={`p-2 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setModo("tabela")}
-                title="Visualização em tabela"
-                className={`p-2 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-              >
-                <Table className="w-4 h-4" />
-              </button>
-            </div>
           </div>
 
           {!novasLoading && novasFiltradas.length > 0 && (
@@ -599,47 +581,16 @@ export default function BancoLicitacoes() {
             </div>
           )}
 
-          {novasLoading ? (
-            <div className="text-center py-16 text-muted-foreground">Carregando licitações...</div>
-          ) : novasFiltradas.length === 0 ? (
-            <div className="text-center py-16 space-y-2">
-              <p className="text-muted-foreground">Nenhuma licitação encontrada na última sincronização.</p>
-              <button onClick={sincronizarAgora} disabled={sincronizando} className="inline-block text-sm text-primary underline">
-                Executar sincronização agora →
-              </button>
-            </div>
-          ) : modo === "cards" ? (
-            <div className="grid grid-cols-1 gap-4">
-              {novasFiltradas.map((l) => (
-                <LicitacaoCard
-                  key={l.id}
-                  licitacao={l}
-                  onClick={() => setSelecionada(l)}
-                  action={
-                    <div className="flex items-center justify-between gap-3">
-                      <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                        <input
-                          type="checkbox"
-                          checked={selecionadasNovas.has(l.id_licitacao)}
-                          onChange={(e) => toggleSelecaoNova(l.id_licitacao, e.target.checked)}
-                        />
-                        Selecionar
-                      </label>
-                      {renderActionsNova(l)}
-                    </div>
-                  }
-                />
-              ))}
-            </div>
-          ) : (
-            <LicitacaoTable
-              licitacoes={novasFiltradas}
-              onRowClick={setSelecionada}
-              selecionados={selecionadasNovas}
-              onToggleSelecao={toggleSelecaoNova}
-              renderActions={renderActionsNova}
-            />
-          )}
+          <LicitacoesVisualizacao
+            licitacoes={novasFiltradas}
+            loading={novasLoading}
+            vazio={novasFiltradas.length === 0}
+            onRowClick={setSelecionada}
+            selecionados={selecionadasNovas}
+            onToggleSelecao={toggleSelecaoNova}
+            onDelete={handleDeleteNova}
+            renderActions={renderActionsNova}
+          />
         </>
       ) : (
         <>
@@ -685,22 +636,6 @@ export default function BancoLicitacoes() {
                     </button>
                   </div>
                 )}
-                <div className="hidden md:inline-flex items-center border rounded-md overflow-hidden">
-                  <button
-                    onClick={() => setModo("cards")}
-                    title="Visualização em cards"
-                    className={`p-2.5 ${modo === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setModo("tabela")}
-                    title="Visualização em tabela"
-                    className={`p-2.5 border-l ${modo === "tabela" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                  >
-                    <Table className="w-4 h-4" />
-                  </button>
-                </div>
                 <button
                   onClick={() => exportarLicitacoesPDF(acervoFiltrado, "Banco de Licitação")}
                   disabled={acervoFiltrado.length === 0}
@@ -723,86 +658,52 @@ export default function BancoLicitacoes() {
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{erro}</div>
           )}
 
-          {acervoLoading ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-              <Loader2 className="w-5 h-5 animate-spin" /> Carregando banco de licitações...
-            </div>
-          ) : acervoFiltrado.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground text-sm">
-              Nenhuma licitação encontrada ainda. Use "Buscar novas licitações" para popular o acervo.
-            </div>
-          ) : (
-            <>
-              {modo === "cards" ? (
-                <div className="grid grid-cols-1 gap-4">
-                  {paginadas.map((lic) => {
-                    const jaSalva = salvasIds.has(lic.id_licitacao);
-                    const sel = selecionadosAcervo.has(lic.id_licitacao);
-                    return (
-                      <div key={lic.id_licitacao} className="relative">
-                        <label className="absolute top-2 left-2 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur px-2 py-1 rounded-md border text-xs cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={sel}
-                            onChange={(e) => toggleSelecaoAcervo(lic.id_licitacao, e.target.checked)}
-                            className="w-3.5 h-3.5 rounded cursor-pointer"
-                          />
-                        </label>
-                        <LicitacaoCard
-                          licitacao={lic}
-                          onClick={() => setSelecionada(lic)}
-                          action={
-                            jaSalva ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
-                                <Check className="w-4 h-4" /> Favoritada
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => salvar(lic)}
-                                disabled={salvandoId === lic.id_licitacao}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
-                              >
-                                <Star className="w-3.5 h-3.5" />
-                                {salvandoId === lic.id_licitacao ? "Favoritando..." : "Favoritar"}
-                              </button>
-                            )
-                          }
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+          <LicitacoesVisualizacao
+            licitacoes={paginadas}
+            loading={acervoLoading}
+            vazio={acervoFiltrado.length === 0}
+            onRowClick={setSelecionada}
+            selecionados={selecionadosAcervo}
+            onToggleSelecao={toggleSelecaoAcervo}
+            renderActions={(lic) => {
+              const jaSalva = salvasIds.has(lic.id_licitacao);
+              return jaSalva ? (
+                <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                  <Check className="w-4 h-4" /> Favoritada
+                </span>
               ) : (
-                <LicitacaoTable
-                  licitacoes={paginadas}
-                  onRowClick={setSelecionada}
-                  selecionados={selecionadosAcervo}
-                  onToggleSelecao={toggleSelecaoAcervo}
-                />
-              )}
+                <button
+                  onClick={() => salvar(lic)}
+                  disabled={salvandoId === lic.id_licitacao}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  {salvandoId === lic.id_licitacao ? "Favoritando..." : "Favoritar"}
+                </button>
+              );
+            }}
+          />
 
-              {totalPaginas > 1 && (
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                    disabled={pagina === 1}
-                    className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4" /> Anterior
-                  </button>
-                  <span className="text-sm text-muted-foreground">
-                    Página <span className="font-medium text-foreground">{pagina}</span> de {totalPaginas}
-                  </span>
-                  <button
-                    onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                    disabled={pagina === totalPaginas}
-                    className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Próxima <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </>
+          {totalPaginas > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={pagina === 1}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" /> Anterior
+              </button>
+              <span className="text-sm text-muted-foreground">
+                Página <span className="font-medium text-foreground">{pagina}</span> de {totalPaginas}
+              </span>
+              <button
+                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                disabled={pagina === totalPaginas}
+                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Próxima <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </>
       )}
