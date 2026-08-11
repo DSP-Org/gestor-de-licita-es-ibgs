@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, ChevronDown } from "lucide-react";
 
 export default function SeletorDestinatarios({ busca, onUpdated }) {
   const [usuarios, setUsuarios] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [selecionados, setSelecionados] = useState(busca.destinatarios_email || []);
+  const [expandido, setExpandido] = useState(false);
 
   useEffect(() => {
     carregarUsuarios();
@@ -59,69 +60,83 @@ export default function SeletorDestinatarios({ busca, onUpdated }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => setExpandido(!expandido)}
+        className="w-full flex items-center justify-between text-left text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span className="flex items-center gap-1">
           <Users className="w-3 h-3" /> Destinatários do e-mail
-        </label>
-        {usuarios.length > 0 && (
-          <div className="flex gap-2 text-xs">
-            <button
-              type="button"
-              onClick={selecionarTodos}
-              disabled={atualizando}
-              className="text-primary hover:underline disabled:opacity-50"
-            >
-              Selecionar todos
-            </button>
-            <button
-              type="button"
-              onClick={limpar}
-              disabled={atualizando}
-              className="text-muted-foreground hover:underline disabled:opacity-50"
-            >
-              Limpar
-            </button>
-          </div>
-        )}
-      </div>
-
-      {carregando ? (
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Loader2 className="w-3 h-3 animate-spin" /> Carregando usuários...
-        </p>
-      ) : usuarios.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          Nenhum usuário cadastrado. O e-mail será enviado ao dono da busca.
-        </p>
-      ) : (
-        <div className="max-h-32 overflow-auto border rounded-md p-2 space-y-1">
-          {usuarios.map((u) => (
-            <label
-              key={u.id}
-              className="flex items-center gap-2 text-sm py-0.5 cursor-pointer hover:bg-muted rounded px-1"
-            >
-              <input
-                type="checkbox"
-                checked={selecionados.includes(u.id)}
-                onChange={() => toggleDestinatario(u.id)}
-                disabled={atualizando}
-                className="w-4 h-4"
-              />
-              <span className="min-w-0 truncate">{u.full_name || u.email}</span>
-              {u.email && (
-                <span className="text-xs text-muted-foreground truncate">
-                  · {u.email}
-                </span>
-              )}
-            </label>
-          ))}
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs">{selecionados.length} selecionado(s)</span>
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              expandido ? "rotate-180" : ""
+            }`}
+          />
         </div>
-      )}
+      </button>
 
-      <p className="text-xs text-muted-foreground">
-        {selecionados.length} selecionado(s). Se nenhum for escolhido, avisa o
-        dono da busca.
-      </p>
+      {expandido && (
+        <>
+          {usuarios.length > 0 && (
+            <div className="flex gap-2 text-xs ml-4">
+              <button
+                type="button"
+                onClick={selecionarTodos}
+                disabled={atualizando}
+                className="text-primary hover:underline disabled:opacity-50"
+              >
+                Selecionar todos
+              </button>
+              <button
+                type="button"
+                onClick={limpar}
+                disabled={atualizando}
+                className="text-muted-foreground hover:underline disabled:opacity-50"
+              >
+                Limpar
+              </button>
+            </div>
+          )}
+
+          {carregando ? (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 ml-4">
+              <Loader2 className="w-3 h-3 animate-spin" /> Carregando usuários...
+            </p>
+          ) : usuarios.length === 0 ? (
+            <p className="text-xs text-muted-foreground ml-4">
+              Nenhum usuário cadastrado. O e-mail será enviado ao dono da busca.
+            </p>
+          ) : (
+            <div className="ml-4 max-h-40 overflow-auto border rounded-md p-2 space-y-1">
+              {usuarios.map((u) => (
+                <label
+                  key={u.id}
+                  className="flex items-center gap-2 text-sm py-0.5 cursor-pointer hover:bg-muted rounded px-1"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selecionados.includes(u.id)}
+                    onChange={() => toggleDestinatario(u.id)}
+                    disabled={atualizando}
+                    className="w-4 h-4"
+                  />
+                  <span className="min-w-0 truncate">
+                    {u.full_name || u.email}
+                  </span>
+                  {u.email && (
+                    <span className="text-xs text-muted-foreground truncate">
+                      · {u.email}
+                    </span>
+                  )}
+                </label>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
