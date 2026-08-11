@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
+import { useUserFilter } from "@/lib/UserFilterContext";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
@@ -17,17 +18,14 @@ export default function BuscasSalvas() {
   const [emailBusca, setEmailBusca] = useState(null);
   const [emailLics, setEmailLics] = useState([]);
   const [carregandoEmail, setCarregandoEmail] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [usuarios, setUsuarios] = useState([]);
-  const [usuarioSelecionado, setUsuarioSelecionado] = useState("todos");
-  const [usuarioLogado, setUsuarioLogado] = useState(null);
+  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
 
   const carregar = async () => {
     setLoading(true);
     try {
-      const filtro = isAdmin && usuarioSelecionado === "todos"
+      const filtro = isAdmin && filtroUsuario === "todos"
         ? {}
-        : { $or: [{ usuario_id: usuarioSelecionado }, { created_by_id: usuarioSelecionado }] };
+        : { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
 
       const lista = await base44.entities.BuscaSalva.filter(filtro, "-updated_date", 100);
       setBuscas(toArray(lista));
@@ -37,31 +35,18 @@ export default function BuscasSalvas() {
   };
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUsuarioLogado(u);
-      const isMaster = u?.email === "nailton.alsampaio@gmail.com";
-      setIsAdmin(isMaster);
-      if (isMaster) {
-        base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
-      } else {
-        setUsuarioSelecionado(u?.id);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
     if (usuarioLogado) {
       carregar();
     }
-  }, [usuarioSelecionado, isAdmin, usuarioLogado]);
+  }, [filtroUsuario, isAdmin, usuarioLogado]);
 
   const buscasExibidas = useMemo(() => {
-    if (!isAdmin || usuarioSelecionado === "todos") return buscas;
-    return buscas.filter((b) => b.created_by_id === usuarioSelecionado || b.usuario_id === usuarioSelecionado);
-  }, [buscas, isAdmin, usuarioSelecionado]);
+    if (!isAdmin || filtroUsuario === "todos") return buscas;
+    return buscas.filter((b) => b.created_by_id === filtroUsuario || b.usuario_id === filtroUsuario);
+  }, [buscas, isAdmin, filtroUsuario]);
 
   const salvar = async (form) => {
-    const dados = isAdmin && usuarioSelecionado !== "todos" ? { ...form, usuario_id: usuarioSelecionado } : form;
+    const dados = isAdmin && filtroUsuario !== "todos" ? { ...form, usuario_id: filtroUsuario } : form;
     if (editando?.id) {
       await base44.entities.BuscaSalva.update(editando.id, dados);
     } else {
@@ -173,22 +158,6 @@ export default function BuscasSalvas() {
           <span className="sm:hidden">Nova</span>
         </button>
       </div>
-
-      {isAdmin && (
-        <div className="flex items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
-          <label className="text-xs font-medium text-muted-foreground pl-1 shrink-0">Configurar para:</label>
-          <select
-            value={usuarioSelecionado}
-            onChange={(e) => setUsuarioSelecionado(e.target.value)}
-            className="flex-1 sm:flex-none min-w-[10rem] px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="todos">Todos os usuários</option>
-            {usuarios.map((u) => (
-              <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {mostrarForm && (
         <BuscaForm

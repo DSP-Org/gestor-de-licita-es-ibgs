@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { useUserFilter } from "@/lib/UserFilterContext";
 import {
   Search, Star, Check, Loader2, Database, LayoutGrid, Table, ChevronLeft, ChevronRight,
   FileDown, Sheet, RefreshCw, Mail, Zap, AlertCircle, Sparkles,
@@ -25,24 +26,7 @@ export default function BancoLicitacoes() {
   const [modo, setModo] = useState("cards");
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [usuarios, setUsuarios] = useState([]);
-  const [filtroUsuario, setFiltroUsuario] = useState("todos");
-  const [usuarioLogado, setUsuarioLogado] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUsuarioLogado(u);
-      const isMaster = u?.email === "nailton.alsampaio@gmail.com";
-      setIsAdmin(isMaster);
-      if (isMaster) {
-        base44.entities.User.list().then((res) => setUsuarios(toArray(res)));
-      } else {
-        // Usuário normal: sempre filtra para si mesmo
-        setFiltroUsuario(u?.id);
-      }
-    });
-  }, []);
+  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
 
   // ---------- Aba "Novas" (sincronização automática) ----------
   const [novas, setNovas] = useState([]);
@@ -76,11 +60,9 @@ export default function BancoLicitacoes() {
   };
 
   useEffect(() => {
-    if (!usuarioLogado) return; // Espera carregar usuário
-
+    if (!usuarioLogado) return;
     carregarNovas();
 
-    // Filtra buscas por usuário
     const filtroBuscas = isAdmin && filtroUsuario === "todos"
       ? { ativa: true }
       : { ativa: true, $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };

@@ -4,6 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { UserFilterProvider } from '@/lib/UserFilterContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
@@ -108,13 +109,15 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AppErrorBoundary>
-            <AuthenticatedApp />
-          </AppErrorBoundary>
-        </Router>
-        <Toaster />
+        <UserFilterProvider>
+          <Router>
+            <ScrollToTop />
+            <AppErrorBoundary>
+              <AuthenticatedApp />
+            </AppErrorBoundary>
+          </Router>
+          <Toaster />
+        </UserFilterProvider>
       </QueryClientProvider>
     </AuthProvider>
   )

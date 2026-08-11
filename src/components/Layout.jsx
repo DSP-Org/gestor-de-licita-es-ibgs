@@ -3,6 +3,7 @@ import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
+import { useUserFilter } from "@/lib/UserFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const navItems = [
@@ -16,16 +17,10 @@ const moreItems = [
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 
 export default function Layout() {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
-
-  useEffect(() => {
-    base44.auth.me()
-      .then((u) => setIsAdmin(u?.role === "admin"))
-      .catch(() => setIsAdmin(false));
-  }, []);
+  const { isAdmin, filtroUsuario, setFiltroUsuario, usuarios, usuarioLogado } = useUserFilter();
 
   // Fecha o menu ao navegar
   useEffect(() => {
@@ -51,6 +46,24 @@ export default function Layout() {
             <p className="text-xs text-muted-foreground">Gestão de licitações</p>
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="px-5 py-3 border-b bg-sidebar-accent/30">
+            <label className="text-xs font-semibold text-muted-foreground block mb-2">Visualizando como:</label>
+            <select
+              value={filtroUsuario}
+              onChange={(e) => setFiltroUsuario(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-background border border-input text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="todos">👨‍💼 Todos os usuários</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <nav className="flex-1 p-3 space-y-1">
           {allItems.map((item) => (
             <NavLink
