@@ -6,7 +6,7 @@ import LicitacaoCard, { formatValor } from "@/components/licitacoes/LicitacaoCar
 import LicitacaoTable from "@/components/licitacoes/LicitacaoTable";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import { toArray } from "@/lib/toArray";
-import { Search, Filter, Trash2 } from "lucide-react";
+import { Search, Filter, Trash2, X } from "lucide-react";
 
 const ESTADOS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
@@ -27,16 +27,17 @@ const MODALIDADES = [
 
 export default function BuscaAvancada() {
   const [filtros, setFiltros] = useState({
-    titulo: "",
-    uf: "",
+    ufs: [],
     municipio: "",
-    modalidade: "",
+    modalidades: [],
+    palavrasChave: [],
     dataAberturaInicio: "",
     dataAberturaFim: "",
     valorMinimo: "",
     valorMaximo: "",
     status: "",
   });
+  const [inputPalavraChave, setInputPalavraChave] = useState("");
 
   const [licitacoes, setLicitacoes] = useState([]);
   const [carregando, setCarregando] = useState(false);
@@ -45,24 +46,32 @@ export default function BuscaAvancada() {
   const { filtroUsuario } = useUserFilter();
   const [municipios, setMunicipios] = useState([]);
 
-  // Carrega municípios quando UF muda
+  // Carrega municípios quando UFs mudam
   useEffect(() => {
-    if (filtros.uf) {
-      carregarMunicipios(filtros.uf);
+    if (filtros.ufs.length > 0) {
+      carregarMunicipios(filtros.ufs);
     } else {
       setMunicipios([]);
     }
-  }, [filtros.uf]);
+  }, [filtros.ufs]);
 
-  async function carregarMunicipios(uf) {
+  async function carregarMunicipios(ufs) {
     try {
-      const dados = await base44.entities.Licitacao.filter(
-        { uf },
-        "-created_date",
-        500
-      );
-      const lista = toArray(dados);
-      const municipiosUnicos = [...new Set(lista.map(l => l.municipio))].filter(Boolean).sort();
+      const allMunicipios = new Set();
+
+      for (const uf of ufs) {
+        const dados = await base44.entities.Licitacao.filter(
+          { uf },
+          "-created_date",
+          500
+        );
+        const lista = toArray(dados);
+        lista.forEach(l => {
+          if (l.municipio) allMunicipios.add(l.municipio);
+        });
+      }
+
+      const municipiosUnicos = Array.from(allMunicipios).sort();
       setMunicipios(municipiosUnicos);
     } catch (err) {
       console.error("Erro ao carregar municípios:", err);
@@ -76,26 +85,36 @@ export default function BuscaAvancada() {
     try {
       const filtro = {};
 
-      if (filtros.uf) filtro.uf = filtros.uf;
       if (filtros.municipio) filtro.municipio = filtros.municipio;
-      if (filtros.modalidade) filtro.tipo = filtros.modalidade;
       if (filtros.status) filtro.status = filtros.status;
 
       const dados = await base44.entities.Licitacao.filter(
         filtro,
         "-created_date",
-        500
+        1000
       );
 
-      // Filtros adicionais no cliente (range de datas, valores e palavra-chave)
+      // Filtros adicionais no cliente (UFs, modalidades, datas, valores e palavras-chave)
       let resultado = toArray(dados);
 
-      if (filtros.titulo) {
-        const termo = filtros.titulo.toLowerCase();
-        resultado = resultado.filter(l =>
-          (l.titulo && l.titulo.toLowerCase().includes(termo)) ||
-          (l.objeto && l.objeto.toLowerCase().includes(termo))
-        );
+      // Filtrar por UFs
+      if (filtros.ufs.length > 0) {
+        resultado = resultado.filter(l => filtros.ufs.includes(l.uf));
+      }
+
+      // Filtrar por Modalidades
+      if (filtros.modalidades.length > 0) {
+        resultado = resultado.filter(l => filtros.modalidades.includes(l.tipo));
+      }
+
+      // Filtrar por Palavras-chave (buscar todos os termos no título ou objeto)
+      if (filtros.palavrasChave.length > 0) {
+        resultado = resultado.filter(l => {
+          const textoCompleto = `${l.titulo || ''} ${l.objeto || ''}`.toLowerCase();
+          return filtros.palavrasChave.every(palavra =>
+            textoCompleto.includes(palavra.toLowerCase())
+          );
+        });
       }
 
       if (filtros.dataAberturaInicio) {
@@ -141,25 +160,60 @@ export default function BuscaAvancada() {
 
   function limparFiltros() {
     setFiltros({
-      titulo: "",
-      uf: "",
+      ufs: [],
       municipio: "",
-      modalidade: "",
+      modalidades: [],
+      palavrasChave: [],
       dataAberturaInicio: "",
       dataAberturaFim: "",
       valorMinimo: "",
       valorMaximo: "",
       status: "",
     });
+    setInputPalavraChave("");
     setLicitacoes([]);
     setErro("");
+  }
+
+  function toggleUF(uf) {
+    setFiltros(prev => {
+      const novasUFs = prev.ufs.includes(uf)
+        ? prev.ufs.filter(u => u !== uf)
+        : [...prev.ufs, uf];
+      return { ...prev, ufs: novasUFs, municipio: "" };
+    });
+  }
+
+  function toggleModalidade(modalidade) {
+    setFiltros(prev => ({
+      ...prev,
+      modalidades: prev.modalidades.includes(modalidade)
+        ? prev.modalidades.filter(m => m !== modalidade)
+        : [...prev.modalidades, modalidade]
+    }));
+  }
+
+  function adicionarPalavraChave() {
+    if (inputPalavraChave.trim()) {
+      setFiltros(prev => ({
+        ...prev,
+        palavrasChave: [...prev.palavrasChave, inputPalavraChave.trim()]
+      }));
+      setInputPalavraChave("");
+    }
+  }
+
+  function removerPalavraChave(palavra) {
+    setFiltros(prev => ({
+      ...prev,
+      palavrasChave: prev.palavrasChave.filter(p => p !== palavra)
+    }));
   }
 
   function handleMudarFiltro(campo, valor) {
     setFiltros(prev => ({
       ...prev,
-      [campo]: valor,
-      ...(campo === "uf" && { municipio: "" }) // Reseta município ao mudar UF
+      [campo]: valor
     }));
   }
 
@@ -220,79 +274,110 @@ export default function BuscaAvancada() {
             <h2 className="text-lg font-semibold">Filtros</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Palavra-chave */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Palavra-chave</label>
+          {/* Palavras-chave */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Palavras-chave</label>
+            <div className="flex gap-2 mb-2">
               <input
                 type="text"
-                placeholder="Título ou objeto"
-                value={filtros.titulo}
-                onChange={(e) => handleMudarFiltro("titulo", e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Digite e pressione Enter ou clique em Adicionar"
+                value={inputPalavraChave}
+                onChange={(e) => setInputPalavraChave(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && adicionarPalavraChave()}
+                className="flex-1 px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
-            </div>
-
-            {/* UF */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Estado (UF)</label>
-              <select
-                value={filtros.uf}
-                onChange={(e) => handleMudarFiltro("uf", e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              <button
+                onClick={adicionarPalavraChave}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90"
               >
-                <option value="">Todos</option>
-                {ESTADOS.map(uf => (
-                  <option key={uf} value={uf}>{uf}</option>
-                ))}
-              </select>
+                Adicionar
+              </button>
             </div>
+            {filtros.palavrasChave.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {filtros.palavrasChave.map(palavra => (
+                  <div
+                    key={palavra}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-sm"
+                  >
+                    <span>{palavra}</span>
+                    <button
+                      onClick={() => removerPalavraChave(palavra)}
+                      className="hover:opacity-70"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Município */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Município</label>
-              <select
-                value={filtros.municipio}
-                onChange={(e) => handleMudarFiltro("municipio", e.target.value)}
-                disabled={!filtros.uf}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-              >
-                <option value="">Todos</option>
-                {municipios.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+          {/* Estados (UF) - Checkboxes */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Estados (UF) - Selecione um ou mais</label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2">
+              {ESTADOS.map(uf => (
+                <label key={uf} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filtros.ufs.includes(uf)}
+                    onChange={() => toggleUF(uf)}
+                    className="w-4 h-4 rounded cursor-pointer"
+                  />
+                  <span className="text-sm text-foreground">{uf}</span>
+                </label>
+              ))}
             </div>
+          </div>
 
-            {/* Modalidade */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Modalidade</label>
-              <select
-                value={filtros.modalidade}
-                onChange={(e) => handleMudarFiltro("modalidade", e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Todas</option>
-                {MODALIDADES.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
+          {/* Município */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Município</label>
+            <select
+              value={filtros.municipio}
+              onChange={(e) => handleMudarFiltro("municipio", e.target.value)}
+              disabled={filtros.ufs.length === 0}
+              className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            >
+              <option value="">Todos</option>
+              {municipios.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
 
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Status de Gestão</label>
-              <select
-                value={filtros.status}
-                onChange={(e) => handleMudarFiltro("status", e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Todos</option>
-                {STATUS_OPTIONS.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
+          {/* Modalidades - Checkboxes */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Modalidades - Selecione uma ou mais</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              {MODALIDADES.map(m => (
+                <label key={m} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filtros.modalidades.includes(m)}
+                    onChange={() => toggleModalidade(m)}
+                    className="w-4 h-4 rounded cursor-pointer"
+                  />
+                  <span className="text-sm text-foreground">{m}</span>
+                </label>
+              ))}
             </div>
+          </div>
+
+          {/* Status */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-foreground mb-2">Status de Gestão</label>
+            <select
+              value={filtros.status}
+              onChange={(e) => handleMudarFiltro("status", e.target.value)}
+              className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Todos</option>
+              {STATUS_OPTIONS.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Filtros de Data e Valor */}
