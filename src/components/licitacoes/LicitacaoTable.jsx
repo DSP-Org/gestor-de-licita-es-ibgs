@@ -2,18 +2,79 @@ import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
 import ObjetoExpandivel from "./ObjetoExpandivel";
 
-export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, onToggleSelecao, onDelete, renderActions }) {
+const renderColunaLicitacao = (l) => (
+  <div className="space-y-1">
+    <p className="font-semibold text-sm">{l.titulo}</p>
+    <p className="text-xs text-muted-foreground leading-relaxed">{l.objeto}</p>
+    <p className="text-xs font-medium text-foreground">{l.orgao || "—"}</p>
+  </div>
+);
+
+export default function LicitacaoTable({
+  licitacoes,
+  onRowClick,
+  selecionados,
+  onToggleSelecao,
+  onDelete,
+  renderActions,
+  colunasVisiveis,
+}) {
   const comSelecao = !!onToggleSelecao;
+
+  // Define as colunas e seu conteúdo
+  const colunas = [
+    {
+      id: "licitacao",
+      label: "Licitação",
+      render: (l) => renderColunaLicitacao(l),
+      className: "px-3 py-2.5 min-w-96",
+    },
+    {
+      id: "status",
+      label: "Status",
+      render: (l) => l.status && <StatusBadge status={l.status} />,
+      className: "px-3 py-2.5 w-24",
+    },
+    {
+      id: "local",
+      label: "Local",
+      render: (l) => `${l.uf}${l.municipio ? ` · ${l.municipio}` : ""}`,
+      className: "px-3 py-2.5 text-muted-foreground whitespace-nowrap",
+    },
+    {
+      id: "modalidade",
+      label: "Modalidade",
+      render: (l) => l.tipo || "—",
+      className: "px-3 py-2.5 text-muted-foreground",
+    },
+    {
+      id: "abertura",
+      label: "Abertura",
+      render: (l) => l.aberturaComHora || l.abertura || "—",
+      className: "px-3 py-2.5 text-muted-foreground whitespace-nowrap",
+    },
+    {
+      id: "valor",
+      label: "Valor",
+      render: (l) => formatValor(l.valor),
+      className: "px-3 py-2.5 text-right font-semibold whitespace-nowrap w-24",
+    },
+  ];
+
+  // Filtra colunas visíveis (Licitação sempre visível)
+  const colunasExibidas = colunas.filter(
+    (col) => col.id === "licitacao" || colunasVisiveis?.has(col.id)
+  );
 
   return (
     <>
       {/* Tabela — desktop */}
-      <div className="hidden md:block bg-card border rounded-lg overflow-hidden">
-        <table className="w-full text-sm table-fixed">
+      <div className="hidden md:block bg-card border rounded-lg overflow-x-auto">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
               {comSelecao && (
-                <th className="text-left font-medium px-3 py-2.5 w-10">
+                <th className="text-left font-medium px-3 py-2.5 w-10 sticky left-0 bg-muted/40">
                   <input
                     type="checkbox"
                     checked={selecionados?.size === licitacoes.length && licitacoes.length > 0}
@@ -22,12 +83,16 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                   />
                 </th>
               )}
-              <th className="text-left font-medium px-3 py-2.5">Licitação</th>
-              <th className="text-left font-medium px-3 py-2.5 w-20">Status</th>
-              <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Local</th>
-              <th className="text-left font-medium px-3 py-2.5 hidden lg:table-cell">Modalidade</th>
-              <th className="text-left font-medium px-3 py-2.5 hidden md:table-cell">Abertura</th>
-              <th className="text-right font-medium px-3 py-2.5 w-24">Valor</th>
+              {colunasExibidas.map((col) => (
+                <th
+                  key={col.id}
+                  className={`text-left font-medium ${col.className} ${
+                    col.id === "licitacao" ? "sticky left-10 bg-muted/40 z-10" : ""
+                  }`}
+                >
+                  {col.label}
+                </th>
+              ))}
               {(onDelete || renderActions) && <th className="px-3 py-2.5 w-40">Ações</th>}
             </tr>
           </thead>
@@ -39,7 +104,7 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                 className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
               >
                 {comSelecao && (
-                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3 py-2.5 sticky left-0 bg-card z-10" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selecionados?.has(l.id_licitacao) || false}
@@ -48,24 +113,26 @@ export default function LicitacaoTable({ licitacoes, onRowClick, selecionados, o
                     />
                   </td>
                 )}
-                <td className="px-3 py-2.5">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-sm">{l.titulo}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{l.objeto}</p>
-                    <p className="text-xs font-medium text-foreground">{l.orgao || "—"}</p>
-                  </div>
-                </td>
-                <td className="px-3 py-2.5">{l.status && <StatusBadge status={l.status} />}</td>
-                <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground whitespace-nowrap">{l.uf}{l.municipio ? ` · ${l.municipio}` : ""}</td>
-                <td className="px-3 py-2.5 hidden lg:table-cell text-muted-foreground">{l.tipo || "—"}</td>
-                <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground whitespace-nowrap">{l.aberturaComHora || l.abertura || "—"}</td>
-                <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{formatValor(l.valor)}</td>
+                {colunasExibidas.map((col) => (
+                  <td
+                    key={col.id}
+                    className={`${col.className} ${
+                      col.id === "licitacao" ? "sticky left-10 bg-card z-10" : ""
+                    }`}
+                  >
+                    {col.render(l)}
+                  </td>
+                ))}
                 {(onDelete || renderActions) && (
                   <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
                       {renderActions?.(l)}
                       {onDelete && (
-                        <button onClick={() => onDelete(l)} title="Descartar da lista" className="p-1.5 rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600">
+                        <button
+                          onClick={() => onDelete(l)}
+                          title="Descartar da lista"
+                          className="p-1.5 rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
