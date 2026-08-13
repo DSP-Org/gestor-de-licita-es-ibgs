@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
+import { escopoUsuario } from "@/lib/escopoUsuario";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import { toArray } from "@/lib/toArray";
@@ -89,10 +90,7 @@ export default function BuscaAvancada() {
 
       if (filtros.status) filtro.status = filtros.status;
 
-      // Master com "todos" vê tudo; qualquer outro caso é restrito ao usuário selecionado.
-      if (!(isAdmin && filtroUsuario === "todos")) {
-        filtro.$or = [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }];
-      }
+      Object.assign(filtro, escopoUsuario(isAdmin, filtroUsuario));
 
       const dados = await base44.entities.Licitacao.filter(
         filtro,

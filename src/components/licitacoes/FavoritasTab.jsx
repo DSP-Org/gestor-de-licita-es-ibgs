@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Wallet, Plus, Folder, Edit2, Trash2, ChevronRight, Download, GripVertical } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
+import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
@@ -49,17 +50,14 @@ export default function FavoritasTab() {
   const carregar = async () => {
     setLoading(true);
     try {
-      // O RLS já restringe ambas as entidades ao dono. Estes filtros servem ao master,
-      // que enxerga tudo e precisa estreitar para o usuário escolhido no seletor.
-      const restrito = !(isAdmin && filtroUsuario === "todos");
       // Licitacao tem usuario_id e created_by_id; FavoritaLista só tem created_by_id.
-      const escopoLicitacao = restrito
-        ? { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] }
-        : {};
-      const escopoLista = restrito ? { created_by_id: filtroUsuario } : {};
       const [licData, listasData] = await Promise.all([
-        base44.entities.Licitacao.filter({ favorito: true, ...escopoLicitacao }, "-updated_date", 500),
-        base44.entities.FavoritaLista.filter(escopoLista, "ordem", 100)
+        base44.entities.Licitacao.filter(
+          { favorito: true, ...escopoUsuario(isAdmin, filtroUsuario) },
+          "-updated_date",
+          500,
+        ),
+        base44.entities.FavoritaLista.filter(escopoPorCriador(isAdmin, filtroUsuario), "ordem", 100)
       ]);
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));

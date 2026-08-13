@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useUserFilter } from "@/lib/UserFilterContext";
+import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
 import {
   Search, Star, Check, Loader2, Database, ChevronLeft, ChevronRight,
   FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles,
@@ -10,6 +11,7 @@ import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
+import GestaoRapida from "@/components/licitacoes/GestaoRapida";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
@@ -37,14 +39,15 @@ export default function BancoLicitacoes() {
   const [compartilhar, setCompartilhar] = useState(null);
   const [selecionadasNovas, setSelecionadasNovas] = useState(new Set());
   const [filtroOrigem, setFiltroOrigem] = useState(null);
+  // Carregadas uma vez e compartilhadas por todos os cards, para o seletor de
+  // lista não disparar uma consulta por licitação.
+  const [listasFavoritas, setListasFavoritas] = useState([]);
 
   const carregarNovas = async () => {
     setNovasLoading(true);
     try {
       // Filtra APENAS licitações com status_leitura = "nova"
-      const filtro = isAdmin && filtroUsuario === "todos"
-        ? { status_leitura: "nova" }
-        : { status_leitura: "nova", usuario_id: filtroUsuario };
+      const filtro = { status_leitura: "nova", ...escopoUsuario(isAdmin, filtroUsuario) };
 
       const lista = await base44.entities.Licitacao.filter(
         filtro,
@@ -70,15 +73,19 @@ export default function BancoLicitacoes() {
     if (!usuarioLogado) return;
     carregarNovas();
 
-    const filtroBuscas = isAdmin && filtroUsuario === "todos"
-      ? { ativa: true }
-      : { ativa: true, $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
+    const filtroBuscas = { ativa: true, ...escopoUsuario(isAdmin, filtroUsuario) };
 
     base44.entities.BuscaSalva.filter(filtroBuscas, "nome", 100).then((res) => {
       const lista = toArray(res);
       setBuscasSalvas(lista);
       setBuscasSelecionadas(lista.map((item) => item.id));
     });
+
+    // FavoritaLista só tem created_by_id como campo de dono.
+    base44.entities.FavoritaLista
+      .filter(escopoPorCriador(isAdmin, filtroUsuario), "ordem", 100)
+      .then((res) => setListasFavoritas(toArray(res).sort((a, b) => (a.ordem || 0) - (b.ordem || 0))))
+      .catch(() => setListasFavoritas([]));
   }, [filtroUsuario, isAdmin, usuarioLogado]);
 
   const buscasFiltradas = useMemo(() => {
@@ -189,6 +196,18 @@ export default function BancoLicitacoes() {
     />
   );
 
+  // Triagem direto no card: lista de favoritos, status de gestão e leitura.
+  // A licitação some da aba só na próxima carga, para dar chance de desfazer.
+  const renderGestaoNova = (licitacao) => (
+    <GestaoRapida
+      licitacao={licitacao}
+      listas={listasFavoritas}
+      onUpdated={(id, campo, valor) =>
+        setNovas((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)))
+      }
+    />
+  );
+
   // ---------- Aba "Acervo" (banco global consolidado) ----------
   const [acervo, setAcervo] = useState([]);
   const [acervoLoading, setAcervoLoading] = useState(true);
@@ -219,11 +238,23 @@ export default function BancoLicitacoes() {
   };
 
   useEffect(() => {
+    // Espera o contexto resolver quem é o usuário; sem isso a primeira execução
+    // consultaria com um escopo ainda indefinido e a lista piscaria vazia.
+    if (!usuarioLogado) return;
     (async () => {
       try {
         const [cachesList, salvasList] = await Promise.all([
+          // O acervo é o banco global consolidado (ConsultaCache): compartilhado
+          // entre usuários de propósito, para economizar chamadas à API.
           base44.entities.ConsultaCache.list("-updated_date", 500),
-          base44.entities.Licitacao.list("-updated_date", 500),
+          // Já as licitações salvas marcam o que ESTE usuário favoritou, então
+          // precisam respeitar o seletor — senão o master vê "Favoritada" em
+          // itens que outra pessoa favoritou.
+          base44.entities.Licitacao.filter(
+            escopoUsuario(isAdmin, filtroUsuario),
+            "-updated_date",
+            500,
+          ),
         ]);
         setSalvasIds(new Set(toArray(salvasList).map((l) => l.id_licitacao)));
 
@@ -243,8 +274,14 @@ export default function BancoLicitacoes() {
         setAcervoLoading(false);
       }
     })();
-    base44.entities.BuscaSalva.list("nome", 100).then((res) => setBuscasSalvasAcervo(toArray(res)));
-  }, []);
+    base44.entities.BuscaSalva
+      .filter(escopoUsuario(isAdmin, filtroUsuario), "nome", 100)
+      .then((res) => setBuscasSalvasAcervo(toArray(res)));
+    // A busca escolhida pode pertencer ao usuário anterior.
+    setFiltroBuscaId("");
+    // Recarrega ao trocar de usuário no seletor: sem estas dependências a lista
+    // ficava congelada no que foi carregado na primeira montagem.
+  }, [isAdmin, filtroUsuario, usuarioLogado]);
 
   const buscaSelecionada = useMemo(
     () => buscasSalvasAcervo.find((b) => b.id === filtroBuscaId) || null,
@@ -593,6 +630,7 @@ export default function BancoLicitacoes() {
             onToggleSelecao={toggleSelecaoNova}
             onDelete={handleDeleteNova}
             renderActions={renderActionsNova}
+            renderGestao={renderGestaoNova}
           />
         </>
       ) : (

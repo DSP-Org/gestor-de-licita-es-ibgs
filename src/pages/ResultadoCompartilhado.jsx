@@ -64,8 +64,15 @@ export default function ResultadoCompartilhado() {
         navigate(`/login?returnTo=${encodeURIComponent(`/compartilhar/${codigo}`)}`);
         return;
       }
-      // Evita duplicar licitações já salvas pelo usuário
-      const minhas = await base44.entities.Licitacao.list("-updated_date", 500);
+      // Evita duplicar licitações já salvas pelo usuário. Precisa ser filtrado:
+      // com .list() o master via as licitações de todos e deixava de importar
+      // itens que na verdade pertenciam a outra pessoa.
+      const eu = await base44.auth.me().catch(() => null);
+      const minhas = await base44.entities.Licitacao.filter(
+        eu?.id ? { $or: [{ usuario_id: eu.id }, { created_by_id: eu.id }] } : {},
+        "-updated_date",
+        500,
+      );
       const existIds = new Set(minhas.map((l) => l.id_licitacao));
       const novas = licitacoes
         .filter((l) => !existIds.has(l.id_licitacao))

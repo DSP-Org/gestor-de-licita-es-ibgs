@@ -26,7 +26,16 @@ export function formatDataBr(dataStr) {
   return texto;
 }
 
-export default function LicitacaoCard({ licitacao, onClick, action }) {
+export default function LicitacaoCard({
+  licitacao,
+  onClick,
+  action,
+  // Opcionais: usados pelo LicitacoesVisualizacao. FavoritasTab passa só
+  // licitacao/onClick/action e continua funcionando sem eles.
+  selecionado,
+  onToggleSelecao,
+  gestao,
+}) {
   const isNova = licitacao.status_leitura === "nova";
 
   return (
@@ -42,6 +51,15 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
       >
         {/* Header com Título e Status */}
         <div className="flex items-start justify-between gap-3">
+          {onToggleSelecao && (
+            <input
+              type="checkbox"
+              checked={!!selecionado}
+              onChange={(e) => onToggleSelecao(licitacao.id_licitacao, e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-4 h-4 mt-1 rounded cursor-pointer shrink-0"
+            />
+          )}
           <div className="flex-1">
             <h3 className="font-heading font-bold text-lg leading-tight text-foreground">{licitacao.titulo}</h3>
           </div>
@@ -89,6 +107,9 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
             <p className="font-bold text-lg text-primary">{formatValor(licitacao.valor)}</p>
           </div>
         </div>
+
+        {/* Gestão rápida: lista, status e leitura */}
+        {gestao && <div className="pt-2 border-t border-border/40">{gestao}</div>}
 
         {/* Ações */}
         {action && (

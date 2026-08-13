@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
+import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
@@ -35,10 +36,11 @@ export default function Configuracao() {
   const carregarBuscas = async () => {
     setLoadingBuscas(true);
     try {
-      const filtro = isAdmin && filtroUsuario === "todos"
-        ? {}
-        : { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
-      const lista = await base44.entities.BuscaSalva.filter(filtro, "-updated_date", 100);
+      const lista = await base44.entities.BuscaSalva.filter(
+        escopoUsuario(isAdmin, filtroUsuario),
+        "-updated_date",
+        100,
+      );
       setBuscas(toArray(lista));
     } finally {
       setLoadingBuscas(false);
@@ -49,11 +51,12 @@ export default function Configuracao() {
   const carregarDestinatarios = async () => {
     setLoadingDestinatarios(true);
     try {
-      // Destinatario não tem usuario_id; o dono é created_by_id (já garantido por RLS).
-      const escopo = isAdmin && filtroUsuario === "todos"
-        ? {}
-        : { created_by_id: filtroUsuario };
-      const res = await base44.entities.Destinatario.filter(escopo, "-created_date", 200);
+      // Destinatario não tem usuario_id; o dono é created_by_id.
+      const res = await base44.entities.Destinatario.filter(
+        escopoPorCriador(isAdmin, filtroUsuario),
+        "-created_date",
+        200,
+      );
       setDestinatarios(toArray(res));
     } finally {
       setLoadingDestinatarios(false);

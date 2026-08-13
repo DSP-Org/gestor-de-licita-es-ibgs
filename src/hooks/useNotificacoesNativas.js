@@ -37,7 +37,17 @@ export function useNotificacoesNativas() {
     if (permissao !== "granted") return;
     setVerificando(true);
     try {
-      const lista = await base44.entities.Licitacao.list("-created_date", 500);
+      // Escopo é sempre o usuário logado, nunca o seletor do master: a notificação
+      // é pessoal, e o contador de referência (ibgs_ultimo_total) é único. Se o
+      // total oscilasse ao trocar de usuário no seletor, o master receberia
+      // avisos de "novas licitações" que são apenas a troca de visão.
+      const eu = await base44.auth.me().catch(() => null);
+      if (!eu?.id) return;
+      const lista = await base44.entities.Licitacao.filter(
+        { $or: [{ usuario_id: eu.id }, { created_by_id: eu.id }] },
+        "-created_date",
+        500,
+      );
       const total = lista.length;
       const armazenado = Number(localStorage.getItem("ibgs_ultimo_total") || 0);
 

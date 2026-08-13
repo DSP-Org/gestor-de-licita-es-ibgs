@@ -18,6 +18,7 @@ export default function LicitacaoTable({
   onToggleSelecao,
   onDelete,
   renderActions,
+  renderGestao,
   colunasVisiveis,
 }) {
   const comSelecao = !!onToggleSelecao;
@@ -109,7 +110,7 @@ export default function LicitacaoTable({
                   {col.label}
                 </th>
               ))}
-              {(onDelete || renderActions) && <th className="w-10 px-1 py-2.5" />}
+              {(onDelete || renderActions || renderGestao) && <th className="w-10 px-1 py-2.5" />}
             </tr>
           </thead>
           <tbody>
@@ -139,9 +140,12 @@ export default function LicitacaoTable({
                     {col.render(l)}
                   </td>
                 ))}
-                {(onDelete || renderActions) && (
+                {(onDelete || renderActions || renderGestao) && (
                   <td className="w-10 px-1 py-2.5 align-top" onClick={(e) => e.stopPropagation()}>
                     <MenuAcoes onDelete={onDelete ? () => onDelete(l) : undefined}>
+                      {renderGestao && (
+                        <div className="px-1 pb-2 mb-1 border-b w-56">{renderGestao(l)}</div>
+                      )}
                       {renderActions?.(l)}
                     </MenuAcoes>
                   </td>
@@ -197,6 +201,9 @@ export default function LicitacaoTable({
                 <span className="text-sm font-semibold">{formatValor(l.valor)}</span>
               </div>
             </div>
+            {renderGestao && (
+              <div className="pt-2 mt-2 border-t">{renderGestao(l)}</div>
+            )}
             {(onDelete || renderActions) && (
               <div className="flex items-center gap-2 pt-2 mt-2 border-t" onClick={(e) => e.stopPropagation()}>
                 {renderActions?.(l)}

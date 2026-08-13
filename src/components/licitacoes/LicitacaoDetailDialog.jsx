@@ -4,10 +4,13 @@ import { X, ExternalLink, Star, Save, FileDown, Share2, ChevronLeft, ChevronRigh
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { toArray } from "@/lib/toArray";
+import { useUserFilter } from "@/lib/UserFilterContext";
+import { escopoPorCriador } from "@/lib/escopoUsuario";
 import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
 export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext, onMarcarLeitura }) {
+  const { isAdmin, filtroUsuario } = useUserFilter();
   const [status, setStatus] = useState(licitacao?.status || "interessado");
   const [favorito, setFavorito] = useState(!!licitacao?.favorito);
   const [notas, setNotas] = useState(licitacao?.notas || "");
@@ -33,7 +36,12 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
     const carregarListas = async () => {
       setCarregandoListas(true);
       try {
-        const listasData = await base44.entities.FavoritaLista.list("ordem", 100);
+        // FavoritaLista só tem created_by_id como campo de dono.
+        const listasData = await base44.entities.FavoritaLista.filter(
+          escopoPorCriador(isAdmin, filtroUsuario),
+          "ordem",
+          100,
+        );
         setListas(toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
       } catch (err) {
         console.error("Erro ao carregar listas:", err);
@@ -43,7 +51,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
     };
 
     carregarListas();
-  }, []);
+  }, [isAdmin, filtroUsuario]);
 
   if (!licitacao) return null;
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Table } from "lucide-react";
+import { LayoutGrid, Table, Trash2 } from "lucide-react";
 import LicitacaoCard from "./LicitacaoCard";
 import LicitacaoTable from "./LicitacaoTable";
 import SeletorColunas from "./SeletorColunas";
@@ -12,6 +12,8 @@ export default function LicitacoesVisualizacao({
   onToggleSelecao,
   onDelete,
   renderActions,
+  // Controles de estado (lista, status, leitura) exibidos no corpo do card.
+  renderGestao,
   loading,
   vazio,
 }) {
@@ -71,14 +73,30 @@ export default function LicitacoesVisualizacao({
       {modo === "cards" ? (
         <div className="space-y-3">
           {licitacoes.map((l) => (
+            // LicitacaoCard espera onClick/action/selecionado — passar onRowClick
+            // e renderActions crus deixava o card sem clique e sem ações.
             <LicitacaoCard
               key={l.id || l.id_licitacao}
               licitacao={l}
-              onRowClick={onRowClick}
-              selecionados={selecionados}
+              onClick={() => onRowClick?.(l)}
+              selecionado={selecionados?.has(l.id_licitacao)}
               onToggleSelecao={onToggleSelecao}
-              onDelete={onDelete}
-              renderActions={renderActions}
+              gestao={renderGestao?.(l)}
+              action={
+                (renderActions || onDelete) && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    {renderActions?.(l)}
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(l)}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-600"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Descartar
+                      </button>
+                    )}
+                  </div>
+                )
+              }
             />
           ))}
         </div>
@@ -90,6 +108,7 @@ export default function LicitacoesVisualizacao({
           onToggleSelecao={onToggleSelecao}
           onDelete={onDelete}
           renderActions={renderActions}
+          renderGestao={renderGestao}
           colunasVisiveis={colunasVisiveis}
         />
       )}
