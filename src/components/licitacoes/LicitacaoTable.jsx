@@ -51,7 +51,16 @@ export default function LicitacaoTable({
     {
       id: "publicacao",
       label: "Publicação",
-      render: (l) => formatDataBr(l.data_publicacao || l.data_sincronizacao),
+      // Sem fallback: registros importados antes deste campo existir mostram "—"
+      // em vez de fingir que a data de importação é a de publicação.
+      render: (l) => formatDataBr(l.data_publicacao),
+      className: "px-3 py-2.5 text-muted-foreground whitespace-nowrap",
+    },
+    {
+      id: "sincronizacao",
+      label: "Sincronização",
+      // created_date cobre o histórico anterior ao campo data_sincronizacao.
+      render: (l) => formatDataBr(l.data_sincronizacao || l.created_date),
       className: "px-3 py-2.5 text-muted-foreground whitespace-nowrap",
     },
     {

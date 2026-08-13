@@ -112,7 +112,8 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       ["Modalidade", licitacao.tipo],
       ["Município", `${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`],
       ["Código IBGE", licitacao.municipio_ibge],
-      ["Publicação", formatDataBr(licitacao.data_publicacao || licitacao.data_sincronizacao)],
+      ["Publicação", formatDataBr(licitacao.data_publicacao)],
+      ["Sincronização", formatDataBr(licitacao.data_sincronizacao || licitacao.created_date)],
       ["Abertura", licitacao.aberturaComHora || licitacao.abertura],
       ["Valor estimado", formatValor(licitacao.valor)],
       ["Valor da proposta", valorProposta ? `R$ ${Number(valorProposta).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"],
@@ -215,7 +216,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
             <Info label="Município" value={`${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`} />
             <Info label="Modalidade" value={licitacao.tipo} />
             <Info label="Valor estimado" value={formatValor(licitacao.valor)} />
-            <Info label="Publicação" value={formatDataBr(licitacao.data_publicacao || licitacao.data_sincronizacao)} />
+            <Info label="Publicação" value={formatDataBr(licitacao.data_publicacao)} />
             <Info label="Abertura" value={licitacao.aberturaComHora || licitacao.abertura} />
             <Info label="Código IBGE" value={licitacao.municipio_ibge} />
           </div>
@@ -253,9 +254,9 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
                   </button>
                 ))}
               </div>
-              {licitacao.data_sincronizacao && (
+              {(licitacao.data_sincronizacao || licitacao.created_date) && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Sincronizado em: {formatDataBr(licitacao.data_sincronizacao)}
+                  Sincronizado em: {formatDataBr(licitacao.data_sincronizacao || licitacao.created_date)}
                 </p>
               )}
             </div>

@@ -111,56 +111,29 @@ export default function Configuracao() {
     carregarBuscas();
   };
 
+  // Delega para a mesma função que o workflow agendado usa. Antes esta tela
+  // reimplementava a sincronização no cliente, o que deixava de gravar
+  // data_sincronizacao e data_publicacao e deduplicava contra apenas as 500
+  // licitações mais recentes — recriando duplicatas de tudo fora dessa janela.
   const sincronizar = async (busca) => {
     setSincronizando(busca.id);
     setResultadoSync((r) => ({ ...r, [busca.id]: null }));
     try {
-      const data = await buscarLicitacoes({
-        uf: busca.uf,
-        palavra_chave: busca.palavra_chave,
-        modalidade: busca.modalidade,
-        municipio_ibge: busca.municipio_ibge,
-        pagina: 1,
-        licitacoesPorPagina: busca.licitacoes_por_pagina || 50,
+      const res = await base44.functions.invoke("sincronizarBuscas", {
+        buscaIds: [busca.id],
+        force: true,
       });
-      if (data.totalErros > 0) {
-        setResultadoSync((r) => ({ ...r, [busca.id]: { erro: data.erros.map((e) => e.descricao).join("; ") } }));
+      if (res.data?.error) throw new Error(res.data.error);
+
+      // Pedimos uma única busca, então o resumo traz no máximo um item.
+      const item = toArray(res.data?.resumo)[0];
+      if (item?.erro) {
+        setResultadoSync((r) => ({ ...r, [busca.id]: { erro: item.erro } }));
         return;
       }
-      const lics = toArray(data.licitacoes);
-      const existentes = await base44.entities.Licitacao.list("-updated_date", 500);
-      const existIds = new Set(toArray(existentes).map((l) => l.id_licitacao));
-      const novas = lics
-        .filter((l) => !existIds.has(l.id_licitacao))
-        .map((l) => ({
-          id_licitacao: l.id_licitacao,
-          titulo: l.titulo,
-          objeto: l.objeto,
-          uf: l.uf,
-          municipio: l.municipio,
-          municipio_ibge: l.municipio_IBGE,
-          orgao: l.orgao,
-          abertura_datetime: l.abertura_datetime,
-          abertura: l.abertura,
-          tipo: l.tipo,
-          id_tipo: l.id_tipo,
-          valor: l.valor,
-          link: l.link,
-          link_externo: l.linkExterno,
-          status: "interessado",
-          favorito: false,
-          busca_origem: busca.nome,
-        }));
-      if (novas.length > 0) {
-        await base44.entities.Licitacao.bulkCreate(novas);
-      }
-      await base44.entities.BuscaSalva.update(busca.id, {
-        ultima_sincronizacao: new Date().toISOString(),
-        total_encontrado: Number(data.totalLicitacoes) || 0,
-      });
       setResultadoSync((r) => ({
         ...r,
-        [busca.id]: { novas: novas.length, total: Number(data.totalLicitacoes) || 0 },
+        [busca.id]: { novas: item?.novas ?? 0, total: item?.total ?? 0 },
       }));
       carregarBuscas();
     } catch (e) {

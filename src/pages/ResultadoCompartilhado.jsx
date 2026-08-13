@@ -85,6 +85,9 @@ export default function ResultadoCompartilhado() {
           status: "interessado",
           favorito: false,
           busca_origem: resultado?.busca_nome || "compartilhado",
+          // Data em que entrou na lista deste usuário. A publicação original não
+          // trafega no resultado compartilhado.
+          data_sincronizacao: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
         }));
       if (novas.length === 0) {
         setImportado(true);

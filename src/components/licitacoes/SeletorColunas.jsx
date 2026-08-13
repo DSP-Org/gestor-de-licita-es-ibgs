@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const COLUNAS_DISPONIVEIS = [
   { id: "licitacao", label: "Licitação", obrigatoria: true },
@@ -7,46 +7,85 @@ const COLUNAS_DISPONIVEIS = [
   { id: "local", label: "Local" },
   { id: "modalidade", label: "Modalidade" },
   { id: "publicacao", label: "Publicação" },
+  { id: "sincronizacao", label: "Sincronização" },
   { id: "abertura", label: "Abertura" },
   { id: "valor", label: "Valor" },
 ];
 
+const CHAVE = "licitacoes-colunas-visiveis";
+
+// Colunas que existiam antes de a preferência passar a registrar quais eram
+// conhecidas. Preferências no formato antigo (um array simples) são lidas como
+// se conhecessem apenas estas.
+const COLUNAS_FORMATO_ANTIGO = ["licitacao", "status", "local", "modalidade", "abertura", "valor"];
+
+const TODAS = COLUNAS_DISPONIVEIS.map((c) => c.id);
+
+// Guardamos as visíveis e também as colunas que existiam no momento de salvar.
+// Sem isso não dá para distinguir "o usuário escondeu" de "a coluna nem existia",
+// e toda coluna nova nasceria invisível para quem já tinha mexido nas preferências.
+function carregarPreferencia() {
+  const bruto = localStorage.getItem(CHAVE);
+  if (!bruto) return new Set(TODAS);
+
+  try {
+    const dados = JSON.parse(bruto);
+    const visiveis = Array.isArray(dados) ? dados : dados.visiveis;
+    const conhecidas = Array.isArray(dados) ? COLUNAS_FORMATO_ANTIGO : dados.conhecidas;
+    if (!Array.isArray(visiveis) || !Array.isArray(conhecidas)) return new Set(TODAS);
+
+    const escolhidas = visiveis.filter((id) => TODAS.includes(id));
+    const ineditas = TODAS.filter((id) => !conhecidas.includes(id));
+    return new Set([...escolhidas, ...ineditas]);
+  } catch {
+    return new Set(TODAS);
+  }
+}
+
+function salvarPreferencia(visiveis) {
+  localStorage.setItem(
+    CHAVE,
+    JSON.stringify({ visiveis: Array.from(visiveis), conhecidas: TODAS }),
+  );
+}
+
 export default function SeletorColunas({ onChangeVisibilidade }) {
   const [aberto, setAberto] = useState(false);
-  const [colunasVisiveis, setColunasVisiveis] = useState(
-    new Set(COLUNAS_DISPONIVEIS.map(c => c.id))
-  );
+  const [colunasVisiveis, setColunasVisiveis] = useState(() => new Set(TODAS));
+  const ref = useRef(null);
 
   useEffect(() => {
-    const salvo = localStorage.getItem("licitacoes-colunas-visiveis");
-    if (salvo) {
-      try {
-        const parsed = JSON.parse(salvo);
-        setColunasVisiveis(new Set(parsed));
-        onChangeVisibilidade(new Set(parsed));
-      } catch (e) {
-        console.error("Erro ao carregar colunas salvas:", e);
-      }
-    }
+    const efetivas = carregarPreferencia();
+    setColunasVisiveis(efetivas);
+    onChangeVisibilidade(efetivas);
+    // Regrava já no formato novo para que a próxima coluna adicionada
+    // também apareça sozinha.
+    salvarPreferencia(efetivas);
   }, []);
 
+  useEffect(() => {
+    if (!aberto) return;
+    const fechar = (e) => {
+      if (!ref.current?.contains(e.target)) setAberto(false);
+    };
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, [aberto]);
+
   const toggleColuna = (colunaId) => {
-    if (COLUNAS_DISPONIVEIS.find(c => c.id === colunaId)?.obrigatoria) return;
+    if (COLUNAS_DISPONIVEIS.find((c) => c.id === colunaId)?.obrigatoria) return;
 
     const novasVisiveis = new Set(colunasVisiveis);
-    if (novasVisiveis.has(colunaId)) {
-      novasVisiveis.delete(colunaId);
-    } else {
-      novasVisiveis.add(colunaId);
-    }
+    if (novasVisiveis.has(colunaId)) novasVisiveis.delete(colunaId);
+    else novasVisiveis.add(colunaId);
 
     setColunasVisiveis(novasVisiveis);
     onChangeVisibilidade(novasVisiveis);
-    localStorage.setItem("licitacoes-colunas-visiveis", JSON.stringify(Array.from(novasVisiveis)));
+    salvarPreferencia(novasVisiveis);
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         onClick={() => setAberto(!aberto)}
         title="Configurar colunas"

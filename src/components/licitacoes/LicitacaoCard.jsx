@@ -1,5 +1,4 @@
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
-import ObjetoExpandivel from "./ObjetoExpandivel";
 
 export function StatusBadge({ status }) {
   const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
@@ -19,11 +18,12 @@ export function formatValor(valor) {
 
 export function formatDataBr(dataStr) {
   if (!dataStr) return "—";
-  if (dataStr.includes("/")) return dataStr;
-  const apenasData = dataStr.split("T")[0];
-  const partes = apenasData.split("-");
+  // Aceita "dd/mm/aaaa", "aaaa-mm-dd" e timestamps ISO completos (created_date).
+  const texto = String(dataStr);
+  if (texto.includes("/")) return texto;
+  const partes = texto.split("T")[0].split("-");
   if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
-  return dataStr;
+  return texto;
 }
 
 export default function LicitacaoCard({ licitacao, onClick, action }) {
@@ -78,7 +78,7 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
             <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Publicação</span>
-            <p className="font-semibold text-foreground">{formatDataBr(licitacao.data_publicacao || licitacao.data_sincronizacao)}</p>
+            <p className="font-semibold text-foreground">{formatDataBr(licitacao.data_publicacao)}</p>
           </div>
           <div>
             <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Abertura</span>

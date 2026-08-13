@@ -83,7 +83,10 @@ export default async function(req) {
               erroBusca = data.erros.map((e) => e.descricao).join("; ");
               break;
             }
-            lics.push(...(data.licitacoes || []));
+            // A resposta da API não traz data de publicação. Como a consulta é
+            // feita por data de inserção, a data que pedimos é justamente o dia
+            // em que a licitação entrou — carimbamos aqui para não perder isso.
+            lics.push(...(data.licitacoes || []).map((l) => ({ ...l, _dataInsercao: data_insercao })));
             if (pagina >= (Number(data.paginas) || 1)) break;
           }
           if (erroBusca) break;
@@ -133,7 +136,7 @@ export default async function(req) {
             usuario_id: donoId,
             salva_manualmente: false,
             data_sincronizacao: hoje,
-            data_publicacao: l.data_insercao || l.data_publicacao || l.data || hoje,
+            data_publicacao: l._dataInsercao || hoje,
             status_leitura: "nova",
           }));
 

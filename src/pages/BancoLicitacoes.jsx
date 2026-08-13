@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useUserFilter } from "@/lib/UserFilterContext";
 import {
   Search, Star, Check, Loader2, Database, ChevronLeft, ChevronRight,
-  FileDown, Sheet, RefreshCw, Mail, Zap, AlertCircle, Sparkles,
+  FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles,
 } from "lucide-react";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
@@ -397,6 +397,9 @@ export default function BancoLicitacoes() {
         status: "interessado",
         favorito: true,
         salva_manualmente: true,
+        // Sem isso a licitação entra no banco sem nenhuma data e a coluna de
+        // sincronização fica vazia. A publicação não vem da API neste caminho.
+        data_sincronizacao: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
       });
       setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
       base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {});

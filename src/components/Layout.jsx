@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Bell, Users, Settings, BellRing, RefreshCw, MoreHorizontal, Mail, X, Sparkles, Sliders, Home, ChevronRight } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Sliders } from "lucide-react";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUserFilter } from "@/lib/UserFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
