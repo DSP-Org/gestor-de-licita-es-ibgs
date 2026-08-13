@@ -52,10 +52,10 @@ export default function Configuracao() {
   const carregarDestinatarios = async () => {
     setLoadingDestinatarios(true);
     try {
-      // Master com "todos" vê tudo; qualquer outro caso é restrito ao usuário selecionado.
+      // Destinatario não tem usuario_id; o dono é created_by_id (já garantido por RLS).
       const escopo = isAdmin && filtroUsuario === "todos"
         ? {}
-        : { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
+        : { created_by_id: filtroUsuario };
       const res = await base44.entities.Destinatario.filter(escopo, "-created_date", 200);
       setDestinatarios(toArray(res));
     } finally {
@@ -192,10 +192,8 @@ export default function Configuracao() {
 
   // Funções de Destinatário
   const salvarDestinatario = async (dados) => {
-    await base44.entities.Destinatario.create({
-      ...dados,
-      usuario_id: isAdmin && filtroUsuario !== "todos" ? filtroUsuario : usuarioLogado?.id,
-    });
+    // A entidade não declara usuario_id — o vínculo é feito pelo created_by_id automático.
+    await base44.entities.Destinatario.create(dados);
     carregarDestinatarios();
   };
 

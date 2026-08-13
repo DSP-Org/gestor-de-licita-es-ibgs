@@ -49,13 +49,17 @@ export default function FavoritasTab() {
   const carregar = async () => {
     setLoading(true);
     try {
-      // Master com "todos" vê tudo; qualquer outro caso é restrito ao usuário selecionado.
-      const escopo = isAdmin && filtroUsuario === "todos"
-        ? {}
-        : { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
+      // O RLS já restringe ambas as entidades ao dono. Estes filtros servem ao master,
+      // que enxerga tudo e precisa estreitar para o usuário escolhido no seletor.
+      const restrito = !(isAdmin && filtroUsuario === "todos");
+      // Licitacao tem usuario_id e created_by_id; FavoritaLista só tem created_by_id.
+      const escopoLicitacao = restrito
+        ? { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] }
+        : {};
+      const escopoLista = restrito ? { created_by_id: filtroUsuario } : {};
       const [licData, listasData] = await Promise.all([
-        base44.entities.Licitacao.filter({ favorito: true, ...escopo }, "-updated_date", 500),
-        base44.entities.FavoritaLista.filter(escopo, "ordem", 100)
+        base44.entities.Licitacao.filter({ favorito: true, ...escopoLicitacao }, "-updated_date", 500),
+        base44.entities.FavoritaLista.filter(escopoLista, "ordem", 100)
       ]);
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
@@ -128,11 +132,11 @@ export default function FavoritasTab() {
   const handleCriarLista = async () => {
     if (!nomeLista.trim()) return;
     try {
+      // A entidade não declara usuario_id — o vínculo é feito pelo created_by_id automático.
       await base44.entities.FavoritaLista.create({
         nome: nomeLista,
         cor: corLista,
         ordem: listas.length,
-        usuario_id: isAdmin && filtroUsuario !== "todos" ? filtroUsuario : usuarioLogado?.id,
       });
       setNomeLista("");
       setCorLista("blue");
