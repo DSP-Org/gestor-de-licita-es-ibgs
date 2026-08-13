@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Wallet, Plus, Folder, Edit2, Trash2, ChevronRight, Download, GripVertical } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
+import { useUserFilter } from "@/lib/UserFilterContext";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
@@ -43,14 +44,18 @@ export default function FavoritasTab() {
   const [editandoLista, setEditandoLista] = useState(null);
   const [compartilharLista, setCompartilharLista] = useState(false);
   const [exportandoLista, setExportandoLista] = useState(null);
-  const [usuarioLogado, setUsuarioLogado] = useState(null);
+  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
 
   const carregar = async () => {
     setLoading(true);
     try {
+      // Master com "todos" vê tudo; qualquer outro caso é restrito ao usuário selecionado.
+      const escopo = isAdmin && filtroUsuario === "todos"
+        ? {}
+        : { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
       const [licData, listasData] = await Promise.all([
-        base44.entities.Licitacao.filter({ favorito: true }, "-updated_date", 500),
-        base44.entities.FavoritaLista.filter({}, "ordem", 100)
+        base44.entities.Licitacao.filter({ favorito: true, ...escopo }, "-updated_date", 500),
+        base44.entities.FavoritaLista.filter(escopo, "ordem", 100)
       ]);
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
@@ -64,16 +69,10 @@ export default function FavoritasTab() {
   };
 
   useEffect(() => {
-    base44.auth.me().then((u) => {
-      setUsuarioLogado(u);
-    });
-  }, []);
-
-  useEffect(() => {
     if (usuarioLogado) {
       carregar();
     }
-  }, [usuarioLogado]);
+  }, [usuarioLogado, filtroUsuario, isAdmin]);
 
   const filtradas = useMemo(() => {
     let resultado = licitacoes;
@@ -132,7 +131,8 @@ export default function FavoritasTab() {
       await base44.entities.FavoritaLista.create({
         nome: nomeLista,
         cor: corLista,
-        ordem: listas.length
+        ordem: listas.length,
+        usuario_id: isAdmin && filtroUsuario !== "todos" ? filtroUsuario : usuarioLogado?.id,
       });
       setNomeLista("");
       setCorLista("blue");

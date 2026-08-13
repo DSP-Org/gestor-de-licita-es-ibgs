@@ -28,6 +28,10 @@ export default function Configuracao() {
   const [destinatarios, setDestinatarios] = useState([]);
   const [loadingDestinatarios, setLoadingDestinatarios] = useState(true);
 
+  // Usuários elegíveis a receber e-mail — carregados uma única vez para todas as buscas.
+  const [usuariosEmail, setUsuariosEmail] = useState([]);
+  const [loadingUsuariosEmail, setLoadingUsuariosEmail] = useState(true);
+
   const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
 
   // Carregar Buscas
@@ -48,10 +52,27 @@ export default function Configuracao() {
   const carregarDestinatarios = async () => {
     setLoadingDestinatarios(true);
     try {
-      const res = await base44.entities.Destinatario.list("-created_date", 200);
+      // Master com "todos" vê tudo; qualquer outro caso é restrito ao usuário selecionado.
+      const escopo = isAdmin && filtroUsuario === "todos"
+        ? {}
+        : { $or: [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }] };
+      const res = await base44.entities.Destinatario.filter(escopo, "-created_date", 200);
       setDestinatarios(toArray(res));
     } finally {
       setLoadingDestinatarios(false);
+    }
+  };
+
+  const carregarUsuariosEmail = async () => {
+    setLoadingUsuariosEmail(true);
+    try {
+      const res = await base44.entities.User.list("-created_date", 200);
+      setUsuariosEmail(toArray(res).filter((u) => u && u.id));
+    } catch (err) {
+      console.error("Erro ao carregar usuários:", err);
+      setUsuariosEmail([]);
+    } finally {
+      setLoadingUsuariosEmail(false);
     }
   };
 
@@ -61,6 +82,10 @@ export default function Configuracao() {
       carregarDestinatarios();
     }
   }, [filtroUsuario, isAdmin, usuarioLogado]);
+
+  useEffect(() => {
+    if (usuarioLogado) carregarUsuariosEmail();
+  }, [usuarioLogado]);
 
   const buscasExibidas = useMemo(() => {
     if (!isAdmin || filtroUsuario === "todos") return buscas;
@@ -167,7 +192,10 @@ export default function Configuracao() {
 
   // Funções de Destinatário
   const salvarDestinatario = async (dados) => {
-    await base44.entities.Destinatario.create(dados);
+    await base44.entities.Destinatario.create({
+      ...dados,
+      usuario_id: isAdmin && filtroUsuario !== "todos" ? filtroUsuario : usuarioLogado?.id,
+    });
     carregarDestinatarios();
   };
 
@@ -350,6 +378,8 @@ export default function Configuracao() {
                     <div className="border-t pt-4">
                       <SeletorDestinatarios
                         busca={b}
+                        usuarios={usuariosEmail}
+                        carregando={loadingUsuariosEmail}
                         onUpdated={(id, campo, valor) =>
                           setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
                         }

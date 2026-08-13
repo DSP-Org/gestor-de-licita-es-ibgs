@@ -1,11 +1,12 @@
 import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor } from "./LicitacaoCard";
+import ObjetoExpandivel from "./ObjetoExpandivel";
 import MenuAcoes from "./MenuAcoes";
 
 const renderColunaLicitacao = (l) => (
   <div className="space-y-1">
     <p className="font-semibold text-sm">{l.titulo}</p>
-    <p className="text-xs text-muted-foreground leading-relaxed">{l.objeto}</p>
+    <ObjetoExpandivel texto={l.objeto} textClassName="text-xs text-muted-foreground leading-relaxed" linhas="line-clamp-3" />
     <p className="text-xs font-medium text-foreground">{l.orgao || "—"}</p>
   </div>
 );
@@ -93,6 +94,7 @@ export default function LicitacaoTable({
                   {col.label}
                 </th>
               ))}
+              {(onDelete || renderActions) && <th className="w-10 px-1 py-2.5" />}
             </tr>
           </thead>
           <tbody>
@@ -112,24 +114,23 @@ export default function LicitacaoTable({
                     />
                   </td>
                 )}
-                {colunasExibidas.map((col, idx) => (
+                {colunasExibidas.map((col) => (
                   <td
                     key={col.id}
-                    className={`relative ${col.className} ${
+                    className={`${col.className} ${
                       col.id === "licitacao" ? "sticky left-10 bg-card z-10" : ""
                     }`}
                   >
                     {col.render(l)}
-                    {idx === colunasExibidas.length - 1 && (onDelete || renderActions) && (
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
-                        <MenuAcoes
-                          onSend={renderActions ? () => renderActions(l) : undefined}
-                          onDelete={onDelete ? () => onDelete(l) : undefined}
-                        />
-                      </div>
-                    )}
                   </td>
                 ))}
+                {(onDelete || renderActions) && (
+                  <td className="w-10 px-1 py-2.5 align-top" onClick={(e) => e.stopPropagation()}>
+                    <MenuAcoes onDelete={onDelete ? () => onDelete(l) : undefined}>
+                      {renderActions?.(l)}
+                    </MenuAcoes>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -158,7 +159,13 @@ export default function LicitacaoTable({
               </div>
               {l.status && <StatusBadge status={l.status} />}
             </div>
-            <h3 className="font-heading font-semibold text-sm leading-snug mt-1.5">{l.objeto}</h3>
+            <div className="mt-1.5">
+              <ObjetoExpandivel
+                texto={l.objeto}
+                textClassName="font-heading font-semibold text-sm leading-snug text-foreground"
+                linhas="line-clamp-3"
+              />
+            </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1.5">
               {l.titulo && <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium">{l.titulo}</span>}
               {l.orgao && <span className="font-medium text-foreground">{l.orgao}</span>}

@@ -67,6 +67,28 @@ export default function Layout() {
           </div>
         </div>
 
+        {/* Seletor de usuário — somente master */}
+        {isAdmin && sidebarExpandido && (
+          <div className="px-3 pb-3">
+            <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#7a8fa3" }}>
+              Visualizando
+            </label>
+            <select
+              value={filtroUsuario}
+              onChange={(e) => setFiltroUsuario(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+              style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
+            >
+              <option value="todos">Todos os usuários</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Navegação Principal */}
         <nav className="flex-1 flex flex-col items-center gap-2 py-4 px-2">
           {allItems.map((item) => (
@@ -132,6 +154,21 @@ export default function Layout() {
           </div>
           <div className="min-w-0 leading-tight flex-1">
             <p className="font-bold text-sm truncate">Licitalerta360</p>
+            {isAdmin && (
+              <select
+                value={filtroUsuario}
+                onChange={(e) => setFiltroUsuario(e.target.value)}
+                className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border focus:outline-none"
+                style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
+              >
+                <option value="todos">Todos os usuários</option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name || u.email}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           {permissao !== "granted" && permissao !== "unsupported" && (
             <button

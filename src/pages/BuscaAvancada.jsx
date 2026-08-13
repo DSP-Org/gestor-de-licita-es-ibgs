@@ -45,7 +45,7 @@ export default function BuscaAvancada() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [selecionados, setSelecionados] = useState([]);
-  const { filtroUsuario } = useUserFilter();
+  const { isAdmin, filtroUsuario } = useUserFilter();
   const [municipios, setMunicipios] = useState([]);
 
   // Carrega municípios quando UFs mudam
@@ -88,6 +88,11 @@ export default function BuscaAvancada() {
       const filtro = {};
 
       if (filtros.status) filtro.status = filtros.status;
+
+      // Master com "todos" vê tudo; qualquer outro caso é restrito ao usuário selecionado.
+      if (!(isAdmin && filtroUsuario === "todos")) {
+        filtro.$or = [{ usuario_id: filtroUsuario }, { created_by_id: filtroUsuario }];
+      }
 
       const dados = await base44.entities.Licitacao.filter(
         filtro,

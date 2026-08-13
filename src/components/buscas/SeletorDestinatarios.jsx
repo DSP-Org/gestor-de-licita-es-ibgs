@@ -2,29 +2,15 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Users, Loader2, ChevronDown } from "lucide-react";
 
-export default function SeletorDestinatarios({ busca, onUpdated }) {
-  const [usuarios, setUsuarios] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+// `usuarios` e `carregando` vêm do pai: um único fetch para todas as buscas da página.
+export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], carregando = false }) {
   const [atualizando, setAtualizando] = useState(false);
   const [selecionados, setSelecionados] = useState(busca.destinatarios_email || []);
   const [expandido, setExpandido] = useState(false);
 
   useEffect(() => {
-    carregarUsuarios();
-  }, []);
-
-  useEffect(() => {
     setSelecionados(busca.destinatarios_email || []);
   }, [busca.destinatarios_email]);
-
-  const carregarUsuarios = async () => {
-    try {
-      const lista = await base44.entities.User.list("-created_date", 200);
-      setUsuarios(Array.isArray(lista) ? lista : Object.values(lista || {}));
-    } finally {
-      setCarregando(false);
-    }
-  };
 
   const toggleDestinatario = async (userId) => {
     const novosSelecionados = selecionados.includes(userId)
