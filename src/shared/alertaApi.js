@@ -31,6 +31,11 @@ export const STATUS_OPTIONS = [
   { value: "descartada", label: "Descartada", color: "bg-gray-200 text-gray-600" },
 ];
 
+// Horários em que a sincronização automática pode rodar. Precisam corresponder
+// ao cron do workflow "Sincronização Diária" (base44/workflows) — um horário fora
+// dessa lista nunca seria disparado. Ao alterar aqui, altere lá também.
+export const HORARIOS_SINCRONIZACAO = ["06:00", "09:00", "12:00", "15:00", "18:00"];
+
 export async function buscarLicitacoes(filtros = {}) {
   const response = await base44.functions.invoke("buscarLicitacoesApi", filtros);
   return response.data;

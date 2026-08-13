@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { RefreshCw, Mail, Clock } from "lucide-react";
+import { HORARIOS_SINCRONIZACAO } from "@/shared/alertaApi";
 
 function Toggle({ label, icon: Icon, checked, onChange, loading, description }) {
   return (
@@ -70,16 +71,23 @@ export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
           <Clock className="w-4 h-4 shrink-0 text-primary" />
           <span className="min-w-0">
             <span className="font-medium block leading-tight">Horário da busca</span>
-            <span className="text-[11px] text-muted-foreground">Execução diária</span>
+            <span className="text-[11px] text-muted-foreground">Seg a sex</span>
           </span>
-          <input
-            type="time"
+          <select
             value={horario}
             disabled={atualizando === "horario_sincronizacao"}
-            onChange={(e) => setHorario(e.target.value)}
-            onBlur={() => atualizarCampo("horario_sincronizacao", horario)}
+            onChange={(e) => {
+              setHorario(e.target.value);
+              atualizarCampo("horario_sincronizacao", e.target.value);
+            }}
             className="ml-auto w-24 px-2 py-1.5 text-xs border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-          />
+          >
+            {/* Um horário fora desta lista nunca seria disparado pelo cron. */}
+            {!HORARIOS_SINCRONIZACAO.includes(horario) && <option value={horario}>{horario}</option>}
+            {HORARIOS_SINCRONIZACAO.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
         </label>
       )}
     </div>

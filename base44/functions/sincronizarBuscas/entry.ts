@@ -22,9 +22,26 @@ export default async function(req) {
     const idsSelecionados = Array.isArray(payload.buscaIds)
       ? payload.buscaIds
       : payload.buscaId ? [payload.buscaId] : null;
-    const buscas = idsSelecionados
+    let buscas = idsSelecionados
       ? buscasAtivas.filter((busca) => idsSelecionados.includes(busca.id))
       : buscasAtivas;
+
+    // Sem buscaIds significa execução agendada pelo workflow. O cron dispara nos
+    // horários oferecidos pela interface, e aqui cada busca só roda no horário
+    // que o usuário configurou. Sincronização manual sempre traz buscaIds e
+    // portanto ignora este filtro — o botão funciona a qualquer hora.
+    if (!idsSelecionados) {
+      // formatToParts evita variações de locale (pt-BR chega a devolver "14 h").
+      const partes = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        hour12: false,
+      }).formatToParts(new Date());
+      const horaAtual = (partes.find((p) => p.type === "hour")?.value || "").padStart(2, "0");
+      buscas = buscas.filter(
+        (busca) => String(busca.horario_sincronizacao || "09:00").slice(0, 2).padStart(2, "0") === horaAtual,
+      );
+    }
     let buscasProcessadas = 0;
     let totalNovas = 0;
     const resumo = [];
@@ -169,22 +186,33 @@ export default async function(req) {
             </table>
           </body></html>`;
 
-          // E-mail aos destinatários selecionados (ou ao dono da busca)
+          // E-mail aos destinatários selecionados (ou ao dono da busca).
+          // destinatarios_email hoje guarda endereços vindos da agenda Destinatario,
+          // mas buscas antigas ainda guardam IDs de User. Aceitamos os dois: se o
+          // valor tem "@" é endereço, senão é ID e precisa ser resolvido.
           if (busca.notificar_email !== false) {
             try {
-              const ids = Array.isArray(busca.destinatarios_email) && busca.destinatarios_email.length > 0
+              const valores = Array.isArray(busca.destinatarios_email) && busca.destinatarios_email.length > 0
                 ? busca.destinatarios_email
                 : [donoId];
-              for (const uid of ids) {
+              const enderecos = [];
+              for (const valor of valores) {
+                if (typeof valor === "string" && valor.includes("@")) {
+                  enderecos.push(valor);
+                  continue;
+                }
                 try {
-                  const u = await base44.asServiceRole.entities.User.get(uid);
-                  if (u && u.email) {
-                    await base44.asServiceRole.integrations.Core.SendEmail({
-                      to: u.email,
-                      subject: `Novas licitações encontradas — ${busca.nome}`,
-                      body: corpo,
-                    });
-                  }
+                  const u = await base44.asServiceRole.entities.User.get(valor);
+                  if (u && u.email) enderecos.push(u.email);
+                } catch {}
+              }
+              for (const to of [...new Set(enderecos)]) {
+                try {
+                  await base44.asServiceRole.integrations.Core.SendEmail({
+                    to,
+                    subject: `Novas licitações encontradas — ${busca.nome}`,
+                    body: corpo,
+                  });
                 } catch {}
               }
             } catch {}

@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Users, Loader2, ChevronDown } from "lucide-react";
 
-// `usuarios` e `carregando` vêm do pai: um único fetch para todas as buscas da página.
-export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], carregando = false }) {
+// `contatos` são registros da agenda Destinatario, carregados uma única vez pelo pai.
+// O campo destinatarios_email guarda endereços; buscas antigas podem ter IDs de User,
+// que aparecem aqui como selecionados sem contato correspondente até serem trocados.
+export default function SeletorDestinatarios({ busca, onUpdated, contatos = [], carregando = false }) {
   const [atualizando, setAtualizando] = useState(false);
   const [selecionados, setSelecionados] = useState(busca.destinatarios_email || []);
   const [expandido, setExpandido] = useState(false);
@@ -11,15 +13,6 @@ export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], 
   useEffect(() => {
     setSelecionados(busca.destinatarios_email || []);
   }, [busca.destinatarios_email]);
-
-  const toggleDestinatario = async (userId) => {
-    const novosSelecionados = selecionados.includes(userId)
-      ? selecionados.filter((id) => id !== userId)
-      : [...selecionados, userId];
-
-    setSelecionados(novosSelecionados);
-    await salvar(novosSelecionados);
-  };
 
   const salvar = async (novosSelecionados) => {
     setAtualizando(true);
@@ -33,8 +26,16 @@ export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], 
     }
   };
 
+  const toggleDestinatario = (email) => {
+    const novos = selecionados.includes(email)
+      ? selecionados.filter((e) => e !== email)
+      : [...selecionados, email];
+    setSelecionados(novos);
+    salvar(novos);
+  };
+
   const selecionarTodos = () => {
-    const todos = usuarios.map((u) => u.id);
+    const todos = contatos.map((c) => c.email).filter(Boolean);
     setSelecionados(todos);
     salvar(todos);
   };
@@ -44,6 +45,8 @@ export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], 
     salvar([]);
   };
 
+  const legados = selecionados.filter((v) => !String(v).includes("@")).length;
+
   return (
     <div className="space-y-2">
       <button
@@ -52,21 +55,17 @@ export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], 
         className="w-full flex items-center justify-between text-left text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <span className="flex items-center gap-1">
-          <Users className="w-3 h-3" /> Destinatários do e-mail
+          <Users className="w-3 h-3" /> Quem recebe esta busca
         </span>
         <div className="flex items-center gap-1">
           <span className="text-xs">{selecionados.length} selecionado(s)</span>
-          <ChevronDown
-            className={`w-4 h-4 transition-transform ${
-              expandido ? "rotate-180" : ""
-            }`}
-          />
+          <ChevronDown className={`w-4 h-4 transition-transform ${expandido ? "rotate-180" : ""}`} />
         </div>
       </button>
 
       {expandido && (
         <>
-          {usuarios.length > 0 && (
+          {contatos.length > 0 && (
             <div className="flex gap-2 text-xs ml-4">
               <button
                 type="button"
@@ -89,37 +88,42 @@ export default function SeletorDestinatarios({ busca, onUpdated, usuarios = [], 
 
           {carregando ? (
             <p className="text-xs text-muted-foreground flex items-center gap-1 ml-4">
-              <Loader2 className="w-3 h-3 animate-spin" /> Carregando usuários...
+              <Loader2 className="w-3 h-3 animate-spin" /> Carregando contatos...
             </p>
-          ) : usuarios.length === 0 ? (
+          ) : contatos.length === 0 ? (
             <p className="text-xs text-muted-foreground ml-4">
-              Nenhum usuário cadastrado. O e-mail será enviado ao dono da busca.
+              Nenhum contato na agenda. Cadastre na aba Destinatários — sem ninguém escolhido,
+              o e-mail vai para o dono da busca.
             </p>
           ) : (
             <div className="ml-4 max-h-40 overflow-auto border rounded-md p-2 space-y-1">
-              {usuarios.map((u) => (
+              {contatos.map((c) => (
                 <label
-                  key={u.id}
+                  key={c.id}
                   className="flex items-center gap-2 text-sm py-0.5 cursor-pointer hover:bg-muted rounded px-1"
                 >
                   <input
                     type="checkbox"
-                    checked={selecionados.includes(u.id)}
-                    onChange={() => toggleDestinatario(u.id)}
+                    checked={selecionados.includes(c.email)}
+                    onChange={() => toggleDestinatario(c.email)}
                     disabled={atualizando}
                     className="w-4 h-4"
                   />
-                  <span className="min-w-0 truncate">
-                    {u.full_name || u.email}
-                  </span>
-                  {u.email && (
-                    <span className="text-xs text-muted-foreground truncate">
-                      · {u.email}
-                    </span>
+                  <span className="min-w-0 truncate">{c.nome || c.email}</span>
+                  {c.nome && (
+                    <span className="text-xs text-muted-foreground truncate">· {c.email}</span>
                   )}
                 </label>
               ))}
             </div>
+          )}
+
+          {legados > 0 && (
+            <p className="text-[11px] text-amber-600 ml-4">
+              {legados} destinatário(s) desta busca foram configurados no formato antigo e não
+              aparecem na lista. Continuam recebendo normalmente; escolha os contatos acima para
+              substituí-los.
+            </p>
           )}
         </>
       )}

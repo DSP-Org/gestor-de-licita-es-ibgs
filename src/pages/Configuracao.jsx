@@ -28,9 +28,6 @@ export default function Configuracao() {
   const [destinatarios, setDestinatarios] = useState([]);
   const [loadingDestinatarios, setLoadingDestinatarios] = useState(true);
 
-  // Usuários elegíveis a receber e-mail — carregados uma única vez para todas as buscas.
-  const [usuariosEmail, setUsuariosEmail] = useState([]);
-  const [loadingUsuariosEmail, setLoadingUsuariosEmail] = useState(true);
 
   const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
 
@@ -63,29 +60,12 @@ export default function Configuracao() {
     }
   };
 
-  const carregarUsuariosEmail = async () => {
-    setLoadingUsuariosEmail(true);
-    try {
-      const res = await base44.entities.User.list("-created_date", 200);
-      setUsuariosEmail(toArray(res).filter((u) => u && u.id));
-    } catch (err) {
-      console.error("Erro ao carregar usuários:", err);
-      setUsuariosEmail([]);
-    } finally {
-      setLoadingUsuariosEmail(false);
-    }
-  };
-
   useEffect(() => {
     if (usuarioLogado) {
       carregarBuscas();
       carregarDestinatarios();
     }
   }, [filtroUsuario, isAdmin, usuarioLogado]);
-
-  useEffect(() => {
-    if (usuarioLogado) carregarUsuariosEmail();
-  }, [usuarioLogado]);
 
   const buscasExibidas = useMemo(() => {
     if (!isAdmin || filtroUsuario === "todos") return buscas;
@@ -376,8 +356,8 @@ export default function Configuracao() {
                     <div className="border-t pt-4">
                       <SeletorDestinatarios
                         busca={b}
-                        usuarios={usuariosEmail}
-                        carregando={loadingUsuariosEmail}
+                        contatos={destinatarios}
+                        carregando={loadingDestinatarios}
                         onUpdated={(id, campo, valor) =>
                           setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
                         }
