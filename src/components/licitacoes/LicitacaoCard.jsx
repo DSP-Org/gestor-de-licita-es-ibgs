@@ -17,6 +17,15 @@ export function formatValor(valor) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
+export function formatDataBr(dataStr) {
+  if (!dataStr) return "—";
+  if (dataStr.includes("/")) return dataStr;
+  const apenasData = dataStr.split("T")[0];
+  const partes = apenasData.split("-");
+  if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  return dataStr;
+}
+
 export default function LicitacaoCard({ licitacao, onClick, action }) {
   const isNova = licitacao.status_leitura === "nova";
 
@@ -69,7 +78,7 @@ export default function LicitacaoCard({ licitacao, onClick, action }) {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div>
             <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Publicação</span>
-            <p className="font-semibold text-foreground">{licitacao.data_sincronizacao ? new Date(licitacao.data_sincronizacao).toLocaleDateString("pt-BR") : "—"}</p>
+            <p className="font-semibold text-foreground">{formatDataBr(licitacao.data_publicacao || licitacao.data_sincronizacao)}</p>
           </div>
           <div>
             <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Abertura</span>

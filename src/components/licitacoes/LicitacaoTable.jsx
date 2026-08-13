@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import { StatusBadge, formatValor } from "./LicitacaoCard";
+import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ObjetoExpandivel from "./ObjetoExpandivel";
 import MenuAcoes from "./MenuAcoes";
 
@@ -47,6 +47,12 @@ export default function LicitacaoTable({
       label: "Modalidade",
       render: (l) => l.tipo || "—",
       className: "px-3 py-2.5 text-muted-foreground",
+    },
+    {
+      id: "publicacao",
+      label: "Publicação",
+      render: (l) => formatDataBr(l.data_publicacao || l.data_sincronizacao),
+      className: "px-3 py-2.5 text-muted-foreground whitespace-nowrap",
     },
     {
       id: "abertura",

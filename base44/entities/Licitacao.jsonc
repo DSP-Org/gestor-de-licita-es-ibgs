@@ -108,6 +108,10 @@
       "format": "date",
       "description": "Data em que foi sincronizada (YYYY-MM-DD)"
     },
+    "data_publicacao": {
+      "type": "string",
+      "description": "Data em que a licitação foi publicada/inserida (YYYY-MM-DD)"
+    },
     "status_leitura": {
       "type": "string",
       "enum": ["nova", "vista", "lida"],

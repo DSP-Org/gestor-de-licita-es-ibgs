@@ -4,7 +4,7 @@ import { X, ExternalLink, Star, Save, FileDown, Share2, ChevronLeft, ChevronRigh
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { toArray } from "@/lib/toArray";
-import { StatusBadge, formatValor } from "./LicitacaoCard";
+import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
 export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext, onMarcarLeitura }) {
@@ -112,6 +112,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       ["Modalidade", licitacao.tipo],
       ["Município", `${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`],
       ["Código IBGE", licitacao.municipio_ibge],
+      ["Publicação", formatDataBr(licitacao.data_publicacao || licitacao.data_sincronizacao)],
       ["Abertura", licitacao.aberturaComHora || licitacao.abertura],
       ["Valor estimado", formatValor(licitacao.valor)],
       ["Valor da proposta", valorProposta ? `R$ ${Number(valorProposta).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"],
@@ -214,6 +215,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
             <Info label="Município" value={`${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`} />
             <Info label="Modalidade" value={licitacao.tipo} />
             <Info label="Valor estimado" value={formatValor(licitacao.valor)} />
+            <Info label="Publicação" value={formatDataBr(licitacao.data_publicacao || licitacao.data_sincronizacao)} />
             <Info label="Abertura" value={licitacao.aberturaComHora || licitacao.abertura} />
             <Info label="Código IBGE" value={licitacao.municipio_ibge} />
           </div>
@@ -253,7 +255,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
               </div>
               {licitacao.data_sincronizacao && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Sincronizado em: {new Date(licitacao.data_sincronizacao).toLocaleDateString("pt-BR")}
+                  Sincronizado em: {formatDataBr(licitacao.data_sincronizacao)}
                 </p>
               )}
             </div>

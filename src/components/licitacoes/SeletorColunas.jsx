@@ -6,6 +6,7 @@ const COLUNAS_DISPONIVEIS = [
   { id: "status", label: "Status" },
   { id: "local", label: "Local" },
   { id: "modalidade", label: "Modalidade" },
+  { id: "publicacao", label: "Publicação" },
   { id: "abertura", label: "Abertura" },
   { id: "valor", label: "Valor" },
 ];

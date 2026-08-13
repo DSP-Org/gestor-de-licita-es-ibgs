@@ -133,6 +133,7 @@ export default async function(req) {
             usuario_id: donoId,
             salva_manualmente: false,
             data_sincronizacao: hoje,
+            data_publicacao: l.data_insercao || l.data_publicacao || l.data || hoje,
             status_leitura: "nova",
           }));
 
