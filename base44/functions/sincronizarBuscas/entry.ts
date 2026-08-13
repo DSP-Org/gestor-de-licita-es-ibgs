@@ -49,6 +49,18 @@ export default async function(req) {
     for (const busca of buscas) {
       try {
         const donoId = busca.usuario_id || busca.created_by_id;
+
+        // Se a busca tiver sido sincronizada há menos de 5 minutos, pular para economizar banco e API (salvo se payload.force === true)
+        if (busca.ultima_sincronizacao && payload.force !== true) {
+          const diffMs = Date.now() - new Date(busca.ultima_sincronizacao).getTime();
+          const cooldownMs = 5 * 60 * 1000; // 5 minutos
+          if (diffMs < cooldownMs) {
+            buscasProcessadas++;
+            resumo.push({ busca: busca.nome, novas: 0, ignorada: "cooldown", mensagem: "Sincronizada recentemente (menos de 5 min)" });
+            continue;
+          }
+        }
+
         // Consulta por data de inserção: a API devolve apenas licitações novas,
         // então não se paga novamente por resultados já sincronizados.
         // O cache persistente (ConsultaCache) também evita repetir a mesma
@@ -86,7 +98,14 @@ export default async function(req) {
           ? filtrarPorTodasPalavras(lics, busca.palavra_chave)
           : lics;
 
-        const existentes = await base44.asServiceRole.entities.Licitacao.filter({ usuario_id: donoId });
+        // Otimização: Filtra no banco apenas as licitações com id_licitacao pertencentes aos resultados atuais
+        const idsPesquisa = resultados.map((l) => l.id_licitacao).filter(Boolean);
+        const existentes = idsPesquisa.length > 0
+          ? await base44.asServiceRole.entities.Licitacao.filter({
+              usuario_id: donoId,
+              id_licitacao: { $in: idsPesquisa },
+            })
+          : [];
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
         const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });

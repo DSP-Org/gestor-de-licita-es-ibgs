@@ -14,7 +14,7 @@ const hojeSP = () => new Date().toLocaleDateString("en-CA", { timeZone: "America
  */
 function ttlPadrao(dataInsercao?: string) {
   if (!dataInsercao || dataInsercao >= hojeSP()) return 0.25; // 15 minutos
-  return 24 * 7; // 7 dias
+  return 24 * 365; // 365 dias (1 ano) para datas passadas
 }
 
 export async function consultarComCache(base44: any, filtros: any, ttlHoras?: number) {
