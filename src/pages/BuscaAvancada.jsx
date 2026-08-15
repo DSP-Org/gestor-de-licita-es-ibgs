@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario } from "@/lib/escopoUsuario";
+import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
+import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import { toArray } from "@/lib/toArray";
 import { Search, Filter, Trash2, X } from "lucide-react";
 
@@ -46,7 +47,18 @@ export default function BuscaAvancada() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [selecionados, setSelecionados] = useState([]);
-  const { isAdmin, filtroUsuario } = useUserFilter();
+  const [listasFavoritas, setListasFavoritas] = useState([]);
+  // Licitações aguardando a escolha da lista no seletor.
+  const [favoritando, setFavoritando] = useState(null);
+  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
+
+  useEffect(() => {
+    if (!usuarioLogado) return;
+    base44.entities.FavoritaLista
+      .filter(escopoPorCriador(isAdmin, filtroUsuario), "ordem", 100)
+      .then((res) => setListasFavoritas(toArray(res)))
+      .catch(() => setListasFavoritas([]));
+  }, [isAdmin, filtroUsuario, usuarioLogado]);
   const [municipios, setMunicipios] = useState([]);
 
   // Carrega municípios quando UFs mudam
@@ -90,6 +102,8 @@ export default function BuscaAvancada() {
 
       if (filtros.status) filtro.status = filtros.status;
 
+      // Descartadas continuam no banco, mas não voltam nas buscas do usuário.
+      filtro.oculto = { $ne: true };
       Object.assign(filtro, escopoUsuario(isAdmin, filtroUsuario));
 
       const dados = await base44.entities.Licitacao.filter(
@@ -257,11 +271,13 @@ export default function BuscaAvancada() {
     }
   }
 
+  // Descartar apenas oculta: o registro continua no banco. Antes isto passava
+  // id_licitacao onde o SDK espera o id do registro, então nada era gravado.
   async function handleDelete(licacao) {
-    if (!confirm("Descartar esta licitação?")) return;
+    if (!confirm("Descartar esta licitação? Ela sai da sua lista, mas continua no banco.")) return;
     try {
-      await base44.entities.Licitacao.update(licacao.id_licitacao, { status: "descartada" });
-      setLicitacoes(prev => prev.filter(l => l.id_licitacao !== licacao.id_licitacao));
+      await base44.entities.Licitacao.update(licacao.id, { oculto: true });
+      setLicitacoes(prev => prev.filter(l => l.id !== licacao.id));
     } catch (err) {
       console.error("Erro ao descartar:", err);
       alert("Erro ao descartar licitação");
@@ -274,18 +290,24 @@ export default function BuscaAvancada() {
     alert("Funcionalidade de envio em desenvolvimento");
   }
 
-  async function handleFavoritarLicitacao(licacao) {
-    try {
-      const novoFav = !licacao.favorito;
-      await base44.entities.Licitacao.update(licacao.id_licitacao, { favorito: novoFav });
-      setLicitacoes(prev =>
-        prev.map(l => l.id_licitacao === licacao.id_licitacao ? { ...l, favorito: novoFav } : l)
-      );
-    } catch (err) {
-      console.error("Erro ao favoritar:", err);
-      alert("Erro ao favoritar licitação");
-    }
-  }
+  // Favoritar abre o seletor de lista. Antes passava id_licitacao onde o SDK
+  // espera o id do registro, então a gravação não acontecia.
+  const handleFavoritarLicitacao = (licacao) => setFavoritando([licacao]);
+
+  const criarListaFavorita = async (nome) => {
+    const nova = await base44.entities.FavoritaLista.create({ nome, ordem: listasFavoritas.length });
+    setListasFavoritas((prev) => [...prev, nova]);
+    return nova;
+  };
+
+  const confirmarFavoritar = async (listaId) => {
+    const campos = { favorito: true, lista_favorita_id: listaId || "" };
+    await base44.entities.Licitacao.bulkUpdate(favoritando.map((l) => ({ id: l.id, ...campos })));
+    setLicitacoes((prev) =>
+      prev.map((l) => (favoritando.some((f) => f.id === l.id) ? { ...l, ...campos } : l)),
+    );
+    setFavoritando(null);
+  };
 
   function handleToggleSelecao(licId) {
     setSelecionados(prev =>
@@ -574,6 +596,16 @@ export default function BuscaAvancada() {
           </div>
         )}
       </div>
+
+      {favoritando && (
+        <SeletorListaDialog
+          quantidade={favoritando.length}
+          listas={listasFavoritas}
+          onCriarLista={criarListaFavorita}
+          onConfirm={confirmarFavoritar}
+          onClose={() => setFavoritando(null)}
+        />
+      )}
     </div>
   );
 }

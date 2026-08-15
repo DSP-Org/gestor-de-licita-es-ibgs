@@ -53,7 +53,7 @@ export default function FavoritasTab() {
       // Licitacao tem usuario_id e created_by_id; FavoritaLista só tem created_by_id.
       const [licData, listasData] = await Promise.all([
         base44.entities.Licitacao.filter(
-          { favorito: true, ...escopoUsuario(isAdmin, filtroUsuario) },
+          { favorito: true, oculto: { $ne: true }, ...escopoUsuario(isAdmin, filtroUsuario) },
           "-updated_date",
           500,
         ),

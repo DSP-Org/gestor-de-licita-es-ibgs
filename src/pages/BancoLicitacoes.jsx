@@ -4,7 +4,7 @@ import { useUserFilter } from "@/lib/UserFilterContext";
 import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
 import {
   Search, Star, Check, Loader2, Database, ChevronLeft, ChevronRight,
-  FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles,
+  FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles, Trash2,
 } from "lucide-react";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
@@ -12,6 +12,7 @@ import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import AtualizacaoBulkActions from "@/components/licitacoes/AtualizacaoBulkActions";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import GestaoRapida from "@/components/licitacoes/GestaoRapida";
+import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
@@ -42,12 +43,15 @@ export default function BancoLicitacoes() {
   // Carregadas uma vez e compartilhadas por todos os cards, para o seletor de
   // lista não disparar uma consulta por licitação.
   const [listasFavoritas, setListasFavoritas] = useState([]);
+  // { modo: "atualizar" | "criar", itens: [...] } enquanto o seletor de lista está aberto.
+  const [favoritando, setFavoritando] = useState(null);
 
   const carregarNovas = async () => {
     setNovasLoading(true);
     try {
       // Filtra APENAS licitações com status_leitura = "nova"
-      const filtro = { status_leitura: "nova", ...escopoUsuario(isAdmin, filtroUsuario) };
+      // oculto: descartadas continuam no banco, mas somem das listagens.
+      const filtro = { status_leitura: "nova", oculto: { $ne: true }, ...escopoUsuario(isAdmin, filtroUsuario) };
 
       const lista = await base44.entities.Licitacao.filter(
         filtro,
@@ -145,20 +149,71 @@ export default function BancoLicitacoes() {
     carregarNovas();
   };
 
-  const handleSaveManual = async (licitacao) => {
-    await base44.entities.Licitacao.update(licitacao.id, { salva_manualmente: true, favorito: true });
-    setNovas((prev) => prev.filter((item) => item.id !== licitacao.id));
+  // Favoritar abre o seletor de lista; a gravação acontece em confirmarFavoritar.
+  const handleSaveManual = (licitacao) => setFavoritando({ modo: "atualizar", itens: [licitacao] });
+
+  const criarListaFavorita = async (nome) => {
+    const nova = await base44.entities.FavoritaLista.create({ nome, ordem: listasFavoritas.length });
+    setListasFavoritas((prev) => [...prev, nova]);
+    return nova;
   };
 
+  const confirmarFavoritar = async (listaId) => {
+    const { modo, itens } = favoritando;
+    const campos = { favorito: true, salva_manualmente: true, lista_favorita_id: listaId || "" };
+
+    if (modo === "criar") {
+      // Vindas do acervo (ConsultaCache), ainda não existem como Licitacao.
+      await base44.entities.Licitacao.bulkCreate(
+        itens.map((lic) => ({
+          id_licitacao: lic.id_licitacao,
+          titulo: lic.titulo,
+          objeto: lic.objeto,
+          uf: lic.uf,
+          municipio: lic.municipio,
+          municipio_ibge: lic.municipio_IBGE,
+          orgao: lic.orgao,
+          abertura_datetime: lic.abertura_datetime,
+          abertura: lic.abertura,
+          tipo: lic.tipo,
+          id_tipo: lic.id_tipo,
+          valor: lic.valor,
+          link: lic.link,
+          link_externo: lic.linkExterno,
+          status: "interessado",
+          data_sincronizacao: hojeISO(),
+          ...campos,
+        })),
+      );
+      setSalvasIds((prev) => new Set([...prev, ...itens.map((l) => l.id_licitacao)]));
+      // Alimenta o banco global compartilhado, economizando consultas futuras.
+      itens.forEach((lic) => base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {}));
+    } else {
+      await base44.entities.Licitacao.bulkUpdate(itens.map((l) => ({ id: l.id, ...campos })));
+      setNovas((prev) => prev.filter((n) => !itens.some((i) => i.id === n.id)));
+      setSelecionadasNovas(new Set());
+    }
+    setFavoritando(null);
+  };
+
+  // Descartar apenas oculta: o registro continua no banco e só o administrador
+  // pode removê-lo de vez.
   const handleDeleteNova = async (licitacao) => {
-    if (!window.confirm(`Excluir "${licitacao.titulo}" da lista?`)) return;
-    await base44.entities.Licitacao.delete(licitacao.id);
+    if (!window.confirm(`Descartar "${licitacao.titulo}"? Ela sai da sua lista, mas continua no banco.`)) return;
+    await base44.entities.Licitacao.update(licitacao.id, { oculto: true });
     setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
     setSelecionadasNovas((prev) => {
       const nova = new Set(prev);
       nova.delete(licitacao.id_licitacao);
       return nova;
     });
+  };
+
+  const excluirDefinitivamente = async (licitacao) => {
+    if (!isAdmin) return;
+    if (!window.confirm(`Excluir "${licitacao.titulo}" DEFINITIVAMENTE do banco? Esta ação não pode ser desfeita.`)) return;
+    await base44.entities.Licitacao.delete(licitacao.id);
+    setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
   };
 
   const toggleSelecaoNova = (idLicitacao, marcada) => {
@@ -172,28 +227,35 @@ export default function BancoLicitacoes() {
   const itensSelecionadosNovas = () => novas.filter((item) => selecionadasNovas.has(item.id_licitacao));
 
   const excluirSelecionadasNovas = async () => {
-    if (!window.confirm(`Excluir ${selecionadasNovas.size} licitação(ões) selecionada(s)?`)) return;
-    const ids = itensSelecionadosNovas().map((item) => item.id);
-    await base44.entities.Licitacao.deleteMany({ id: { $in: ids } });
+    if (!window.confirm(`Descartar ${selecionadasNovas.size} licitação(ões)? Elas saem da sua lista, mas continuam no banco.`)) return;
+    const itens = itensSelecionadosNovas();
+    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, oculto: true })));
     setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
     setSelecionadasNovas(new Set());
   };
 
-  const salvarSelecionadasNovas = async () => {
-    const itens = itensSelecionadosNovas();
-    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, salva_manualmente: true, favorito: true })));
-    setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
-    setSelecionadasNovas(new Set());
-  };
+  const salvarSelecionadasNovas = () =>
+    setFavoritando({ modo: "atualizar", itens: itensSelecionadosNovas() });
 
   const enviarSelecionadasNovas = () => setCompartilhar(itensSelecionadosNovas());
 
   const renderActionsNova = (licitacao) => (
-    <AtualizacaoActions
-      onSend={() => setCompartilhar([licitacao])}
-      onSave={() => handleSaveManual(licitacao)}
-      onDelete={() => handleDeleteNova(licitacao)}
-    />
+    <div className="flex flex-wrap items-center gap-3">
+      <AtualizacaoActions
+        onSend={() => setCompartilhar([licitacao])}
+        onSave={() => handleSaveManual(licitacao)}
+        onDelete={() => handleDeleteNova(licitacao)}
+      />
+      {isAdmin && (
+        <button
+          onClick={() => excluirDefinitivamente(licitacao)}
+          title="Excluir do banco (somente administrador)"
+          className="inline-flex items-center text-muted-foreground hover:text-red-600 sm:gap-1.5 sm:text-xs"
+        >
+          <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir do banco</span>
+        </button>
+      )}
+    </div>
   );
 
   // Triagem direto no card: lista de favoritos, status de gestão e leitura.
@@ -222,7 +284,6 @@ export default function BancoLicitacoes() {
   const [filtroPalavraChaveLivre, setFiltroPalavraChaveLivre] = useState("");
   const [filtroModoPalavrasLivre, setFiltroModoPalavrasLivre] = useState("qualquer");
   const [salvasIds, setSalvasIds] = useState(new Set());
-  const [salvandoId, setSalvandoId] = useState(null);
   const [pagina, setPagina] = useState(1);
   const porPagina = 30;
   const [buscandoApi, setBuscandoApi] = useState(false);
@@ -252,7 +313,7 @@ export default function BancoLicitacoes() {
           // precisam respeitar o seletor — senão o master vê "Favoritada" em
           // itens que outra pessoa favoritou.
           base44.entities.Licitacao.filter(
-            escopoUsuario(isAdmin, filtroUsuario),
+            { oculto: { $ne: true }, ...escopoUsuario(isAdmin, filtroUsuario) },
             "-updated_date",
             500,
           ),
@@ -440,37 +501,9 @@ export default function BancoLicitacoes() {
     }
   };
 
-  const salvar = async (lic) => {
-    setSalvandoId(lic.id_licitacao);
-    try {
-      await base44.entities.Licitacao.create({
-        id_licitacao: lic.id_licitacao,
-        titulo: lic.titulo,
-        objeto: lic.objeto,
-        uf: lic.uf,
-        municipio: lic.municipio,
-        municipio_ibge: lic.municipio_IBGE,
-        orgao: lic.orgao,
-        abertura_datetime: lic.abertura_datetime,
-        abertura: lic.abertura,
-        tipo: lic.tipo,
-        id_tipo: lic.id_tipo,
-        valor: lic.valor,
-        link: lic.link,
-        link_externo: lic.linkExterno,
-        status: "interessado",
-        favorito: true,
-        salva_manualmente: true,
-        // Sem isso a licitação entra no banco sem nenhuma data e a coluna de
-        // sincronização fica vazia. A publicação não vem da API neste caminho.
-        data_sincronizacao: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-      });
-      setSalvasIds((prev) => new Set(prev).add(lic.id_licitacao));
-      base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {});
-    } finally {
-      setSalvandoId(null);
-    }
-  };
+  // Favoritar no acervo também passa pelo seletor de lista. A criação do
+  // registro acontece em confirmarFavoritar, no modo "criar".
+  const salvar = (lic) => setFavoritando({ modo: "criar", itens: [lic] });
 
   const listaNavegacao = aba === "novas" ? novasFiltradas : aba === "acervo" ? paginadas : [];
   const idxSelecionada = selecionada
@@ -740,11 +773,9 @@ export default function BancoLicitacoes() {
               ) : (
                 <button
                   onClick={() => salvar(lic)}
-                  disabled={salvandoId === lic.id_licitacao}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
                 >
-                  <Star className="w-3.5 h-3.5" />
-                  {salvandoId === lic.id_licitacao ? "Favoritando..." : "Favoritar"}
+                  <Star className="w-3.5 h-3.5" /> Favoritar
                 </button>
               );
             }}
@@ -798,6 +829,16 @@ export default function BancoLicitacoes() {
           licitacoes={paginadas.filter((l) => selecionadosAcervo.has(l.id_licitacao))}
           origem="Banco de Licitação"
           onClose={() => setEnviarEmail(false)}
+        />
+      )}
+
+      {favoritando && (
+        <SeletorListaDialog
+          quantidade={favoritando.itens.length}
+          listas={listasFavoritas}
+          onCriarLista={criarListaFavorita}
+          onConfirm={confirmarFavoritar}
+          onClose={() => setFavoritando(null)}
         />
       )}
     </div>

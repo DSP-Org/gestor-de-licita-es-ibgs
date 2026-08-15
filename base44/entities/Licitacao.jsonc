@@ -112,6 +112,11 @@
       "type": "string",
       "description": "Data em que a licitação foi publicada/inserida (YYYY-MM-DD)"
     },
+    "oculto": {
+      "type": "boolean",
+      "default": false,
+      "description": "Descartada pelo usuario: some das listagens dele mas continua no banco. Apagar o registro de vez e restrito ao administrador."
+    },
     "status_leitura": {
       "type": "string",
       "enum": ["nova", "vista", "lida"],
