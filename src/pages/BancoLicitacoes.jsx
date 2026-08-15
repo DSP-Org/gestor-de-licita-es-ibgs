@@ -316,6 +316,31 @@ export default function BancoLicitacoes() {
     return modoPalavras === "todas" ? positivos.every((p) => texto.includes(p)) : positivos.some((p) => texto.includes(p));
   };
 
+  // Converte uma busca salva no mesmo formato de filtro usado pelo modo "config".
+  const filtrosDaBusca = (b) => ({
+    ufs: (b.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
+    modalidades: (b.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
+    municipioIbge: b.municipio_ibge || "",
+    palavraChave: b.palavra_chave || "",
+    modoPalavras: b.modo_palavras || "qualquer",
+  });
+
+  const combinaComFiltros = (l, f) => {
+    if (f.ufs.length && !f.ufs.includes(l.uf)) return false;
+    if (f.modalidades.length && !f.modalidades.includes(String(l.id_tipo))) return false;
+    if (f.municipioIbge && l.municipio_IBGE !== f.municipioIbge) return false;
+    return combinaComPalavraChave(l, f.palavraChave, f.modoPalavras);
+  };
+
+  // O acervo vem do ConsultaCache, que é global por design (economiza chamadas à
+  // API entre usuários). Para não expor o banco inteiro, o recorte padrão é a
+  // união dos filtros das buscas salvas do usuário selecionado: uma licitação
+  // aparece se casar com pelo menos uma delas.
+  const filtrosDoUsuario = useMemo(
+    () => buscasSalvasAcervo.map(filtrosDaBusca),
+    [buscasSalvasAcervo]
+  );
+
   const ufsLivreSelecionadas = useMemo(
     () => (filtroUf || "").split(",").map((s) => s.trim()).filter(Boolean),
     [filtroUf]
@@ -345,22 +370,23 @@ export default function BancoLicitacoes() {
     const termo = busca.trim().toLowerCase();
     return acervo.filter((l) => {
       if (configFiltros) {
-        if (configFiltros.ufs.length && !configFiltros.ufs.includes(l.uf)) return false;
-        if (configFiltros.modalidades.length && !configFiltros.modalidades.includes(String(l.id_tipo))) return false;
-        if (configFiltros.municipioIbge && l.municipio_IBGE !== configFiltros.municipioIbge) return false;
-        if (!combinaComPalavraChave(l, configFiltros.palavraChave, configFiltros.modoPalavras)) return false;
+        if (!combinaComFiltros(l, configFiltros)) return false;
       } else if (filtroModoAcervo === "livre" && filtrosLivrePreenchidos >= 2) {
         if (ufsLivreSelecionadas.length && !ufsLivreSelecionadas.includes(l.uf)) return false;
         if (cidadesLivreSelecionadas.length && !cidadesLivreSelecionadas.includes(l.municipio)) return false;
         if (filtroModalidade && l.tipo !== filtroModalidade) return false;
         if (!combinaComPalavraChave(l, filtroPalavraChaveLivre, filtroModoPalavrasLivre)) return false;
+      } else if (!filtrosDoUsuario.some((f) => combinaComFiltros(l, f))) {
+        // Sem busca escolhida e sem filtros livres: mostra apenas o que casa com
+        // as buscas salvas do usuário. Sem buscas salvas, nada é exibido.
+        return false;
       }
       if (!termo) return true;
       return [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [acervo, busca, ufsLivreSelecionadas, cidadesLivreSelecionadas, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos]);
+  }, [acervo, busca, ufsLivreSelecionadas, cidadesLivreSelecionadas, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos, filtrosDoUsuario]);
 
   useEffect(() => {
     setPagina(1);
@@ -687,6 +713,15 @@ export default function BancoLicitacoes() {
 
           {erro && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{erro}</div>
+          )}
+
+          {/* Explica o recorte padrão: sem isso o acervo parece incompleto. */}
+          {!configFiltros && !(filtroModoAcervo === "livre" && filtrosLivrePreenchidos >= 2) && (
+            <p className="text-xs text-muted-foreground">
+              {filtrosDoUsuario.length === 0
+                ? "Nenhuma busca salva configurada — crie uma busca para ver licitações do acervo aqui."
+                : `Exibindo o que corresponde às ${filtrosDoUsuario.length} busca(s) salva(s). Escolha uma busca acima ou use os filtros livres para outro recorte.`}
+            </p>
           )}
 
           <LicitacoesVisualizacao
