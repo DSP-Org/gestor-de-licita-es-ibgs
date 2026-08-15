@@ -26,51 +26,21 @@ export default async function(req) {
       ? buscasAtivas.filter((busca) => idsSelecionados.includes(busca.id))
       : buscasAtivas;
 
-    // Sem buscaIds significa execução agendada pelo workflow. A sincronização
-    // manual sempre traz buscaIds e ignora este filtro, então o botão funciona a
-    // qualquer hora.
-    //
-    // O critério é "já passou do horário e ainda não sincronizou hoje", e não
-    // "a hora atual é exatamente a configurada". A diferença importa: o CLI do
-    // Base44 não publica workflows, então o cron em produção pode não ter todos
-    // os horários que a interface oferece. Com a comparação exata, uma busca
-    // marcada para um horário fora do cron nunca rodaria — silenciosamente. Com
-    // este critério ela roda no primeiro disparo seguinte, no pior caso mais
-    // tarde do que o pedido, mas nunca deixa de rodar.
+    // Sem buscaIds significa execução agendada pelo workflow. O cron dispara nos
+    // horários oferecidos pela interface, e aqui cada busca só roda no horário
+    // que o usuário configurou. Sincronização manual sempre traz buscaIds e
+    // portanto ignora este filtro — o botão funciona a qualquer hora.
     if (!idsSelecionados) {
       // formatToParts evita variações de locale (pt-BR chega a devolver "14 h").
       const partes = new Intl.DateTimeFormat("en-GB", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
-        minute: "2-digit",
         hour12: false,
       }).formatToParts(new Date());
-      const parte = (tipo) => (partes.find((p) => p.type === tipo)?.value || "").padStart(2, "0");
-      const agora = `${parte("hour")}:${parte("minute")}`;
-      const hojeSP = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-
-      buscas = buscas.filter((busca) => {
-        const horario = String(busca.horario_sincronizacao || "09:00").slice(0, 5);
-
-        if (!busca.ultima_sincronizacao) return true;
-        const ultima = new Date(busca.ultima_sincronizacao);
-        const jaRodouHoje =
-          ultima.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === hojeSP;
-        if (jaRodouHoje) return false;
-
-        if (agora >= horario) return true;
-
-        // Rede de segurança. Se o cron não tiver nenhum disparo depois do horário
-        // escolhido — o CLI não publica workflows, então o agendamento em produção
-        // pode não cobrir todos os horários da interface — a condição acima nunca
-        // seria verdadeira e a busca ficaria parada para sempre.
-        //
-        // O limiar precisa passar de 24h. Abaixo disso ele venceria a corrida com
-        // o horário configurado: numa operação diária normal, o primeiro disparo
-        // do dia já está a mais de 20h da véspera, e toda busca rodaria ali,
-        // ignorando o horário escolhido.
-        return Date.now() - ultima.getTime() >= 26 * 60 * 60 * 1000;
-      });
+      const horaAtual = (partes.find((p) => p.type === "hour")?.value || "").padStart(2, "0");
+      buscas = buscas.filter(
+        (busca) => String(busca.horario_sincronizacao || "09:00").slice(0, 2).padStart(2, "0") === horaAtual,
+      );
     }
     let buscasProcessadas = 0;
     let totalNovas = 0;
