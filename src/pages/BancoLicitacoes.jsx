@@ -518,7 +518,7 @@ export default function BancoLicitacoes() {
             <Database className="w-5 h-5" /> Licitações
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Novidades da sincronização automática e o acervo completo já consultado, em um só lugar.
+            Novidades da sincronização automática e o acervo que corresponde às suas buscas, em um só lugar.
           </p>
         </div>
         <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
@@ -526,7 +526,10 @@ export default function BancoLicitacoes() {
             <Database className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xl font-bold leading-none">{acervo.length}</p>
+            {/* acervoFiltrado, não acervo: o número precisa refletir o mesmo
+                recorte da lista — usuário selecionado, busca salva ou filtros
+                livres. Antes exibia o total bruto do banco global. */}
+            <p className="text-xl font-bold leading-none">{acervoFiltrado.length}</p>
             <p className="text-xs text-muted-foreground mt-1">no acervo</p>
           </div>
         </div>
