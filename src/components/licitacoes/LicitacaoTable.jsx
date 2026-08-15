@@ -144,7 +144,9 @@ export default function LicitacaoTable({
                   <td className="w-10 px-1 py-2.5 align-top" onClick={(e) => e.stopPropagation()}>
                     <MenuAcoes onDelete={onDelete ? () => onDelete(l) : undefined}>
                       {renderGestao && (
-                        <div className="px-1 pb-2 mb-1 border-b w-56">{renderGestao(l)}</div>
+                        <div className="px-1 pb-2 mb-1 border-b w-52">
+                          {renderGestao(l, { empilhado: true })}
+                        </div>
                       )}
                       {renderActions?.(l)}
                     </MenuAcoes>

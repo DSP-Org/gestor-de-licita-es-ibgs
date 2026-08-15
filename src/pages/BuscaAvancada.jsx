@@ -557,7 +557,6 @@ export default function BuscaAvancada() {
             onRowClick={(lic) => {}}
             selecionados={selecionados}
             onToggleSelecao={handleToggleSelecao}
-            onDelete={handleDelete}
             renderActions={(lic) => (
               <AtualizacaoActions
                 onSend={() => handleEnviarLicitacao(lic)}

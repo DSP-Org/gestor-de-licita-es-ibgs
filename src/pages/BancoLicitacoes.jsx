@@ -198,10 +198,11 @@ export default function BancoLicitacoes() {
 
   // Triagem direto no card: lista de favoritos, status de gestão e leitura.
   // A licitação some da aba só na próxima carga, para dar chance de desfazer.
-  const renderGestaoNova = (licitacao) => (
+  const renderGestaoNova = (licitacao, opcoes) => (
     <GestaoRapida
       licitacao={licitacao}
       listas={listasFavoritas}
+      empilhado={opcoes?.empilhado}
       onUpdated={(id, campo, valor) =>
         setNovas((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)))
       }
@@ -654,7 +655,6 @@ export default function BancoLicitacoes() {
             onRowClick={setSelecionada}
             selecionados={selecionadasNovas}
             onToggleSelecao={toggleSelecaoNova}
-            onDelete={handleDeleteNova}
             renderActions={renderActionsNova}
             renderGestao={renderGestaoNova}
           />
