@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Wallet, Plus, Folder, Edit2, Trash2, ChevronRight, Download, GripVertical } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
+import { escopoUsuario, donoEfetivo } from "@/lib/escopoUsuario";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
@@ -50,14 +50,13 @@ export default function FavoritasTab() {
   const carregar = async () => {
     setLoading(true);
     try {
-      // Licitacao tem usuario_id e created_by_id; FavoritaLista só tem created_by_id.
       const [licData, listasData] = await Promise.all([
         base44.entities.Licitacao.filter(
           { favorito: true, oculto: { $ne: true }, ...escopoUsuario(isAdmin, filtroUsuario) },
           "-updated_date",
           500,
         ),
-        base44.entities.FavoritaLista.filter(escopoPorCriador(isAdmin, filtroUsuario), "ordem", 100)
+        base44.entities.FavoritaLista.filter(escopoUsuario(isAdmin, filtroUsuario), "ordem", 100)
       ]);
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
@@ -130,11 +129,12 @@ export default function FavoritasTab() {
   const handleCriarLista = async () => {
     if (!nomeLista.trim()) return;
     try {
-      // A entidade não declara usuario_id — o vínculo é feito pelo created_by_id automático.
+      // usuario_id: com um usuário escolhido no seletor, a lista nasce dele.
       await base44.entities.FavoritaLista.create({
         nome: nomeLista,
         cor: corLista,
         ordem: listas.length,
+        usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
       });
       setNomeLista("");
       setCorLista("blue");

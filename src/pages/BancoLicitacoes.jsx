@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
+import { escopoUsuario, donoEfetivo, pertenceAoUsuario } from "@/lib/escopoUsuario";
 import {
   Search, Star, Check, Loader2, Database, ChevronLeft, ChevronRight,
   FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles, Trash2,
@@ -85,17 +85,16 @@ export default function BancoLicitacoes() {
       setBuscasSelecionadas(lista.map((item) => item.id));
     });
 
-    // FavoritaLista só tem created_by_id como campo de dono.
     base44.entities.FavoritaLista
-      .filter(escopoPorCriador(isAdmin, filtroUsuario), "ordem", 100)
+      .filter(escopoUsuario(isAdmin, filtroUsuario), "ordem", 100)
       .then((res) => setListasFavoritas(toArray(res).sort((a, b) => (a.ordem || 0) - (b.ordem || 0))))
       .catch(() => setListasFavoritas([]));
   }, [filtroUsuario, isAdmin, usuarioLogado]);
 
-  const buscasFiltradas = useMemo(() => {
-    if (filtroUsuario === "todos") return buscasSalvas;
-    return buscasSalvas.filter((b) => b.created_by_id === filtroUsuario || b.usuario_id === filtroUsuario);
-  }, [buscasSalvas, filtroUsuario]);
+  const buscasFiltradas = useMemo(
+    () => buscasSalvas.filter((b) => pertenceAoUsuario(b, filtroUsuario)),
+    [buscasSalvas, filtroUsuario],
+  );
 
   useEffect(() => {
     setBuscasSelecionadas([]);
@@ -103,7 +102,7 @@ export default function BancoLicitacoes() {
 
   const novasFiltradas = useMemo(() => {
     return novas.filter((l) => {
-      if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
+      if (!pertenceAoUsuario(l, filtroUsuario)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
       if (busca) {
@@ -122,7 +121,7 @@ export default function BancoLicitacoes() {
     const grupos = {};
     novas
       .filter((l) => {
-        if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
+        if (!pertenceAoUsuario(l, filtroUsuario)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
         if (busca) {
           const q = busca.toLowerCase();
@@ -165,7 +164,12 @@ export default function BancoLicitacoes() {
   const handleSaveManual = (licitacao) => setFavoritando({ modo: "atualizar", itens: [licitacao] });
 
   const criarListaFavorita = async (nome) => {
-    const nova = await base44.entities.FavoritaLista.create({ nome, ordem: listasFavoritas.length });
+    // usuario_id: com um usuário escolhido no seletor, a lista nasce dele.
+    const nova = await base44.entities.FavoritaLista.create({
+      nome,
+      ordem: listasFavoritas.length,
+      usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
+    });
     setListasFavoritas((prev) => [...prev, nova]);
     return nova;
   };
@@ -176,8 +180,10 @@ export default function BancoLicitacoes() {
 
     if (modo === "criar") {
       // Vindas do acervo (ConsultaCache), ainda não existem como Licitacao.
+      // usuario_id: com um usuário escolhido no seletor, a licitação nasce dele.
       await base44.entities.Licitacao.bulkCreate(
         itens.map((lic) => ({
+          usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
           id_licitacao: lic.id_licitacao,
           titulo: lic.titulo,
           objeto: lic.objeto,
@@ -533,18 +539,24 @@ export default function BancoLicitacoes() {
             Novidades da sincronização automática e o acervo que corresponde às suas buscas, em um só lugar.
           </p>
         </div>
-        <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Database className="w-5 h-5" />
+        {/* O contador acompanha a aba ativa e usa as listas já filtradas, para
+            bater com o que está visível. Na aba Favoritas ele some: lá o
+            FavoritasTab exibe as próprias estatísticas. */}
+        {aba !== "favoritas" && (
+          <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              {aba === "novas" ? <Sparkles className="w-5 h-5" /> : <Database className="w-5 h-5" />}
+            </div>
+            <div>
+              <p className="text-xl font-bold leading-none">
+                {aba === "novas" ? novasFiltradas.length : acervoFiltrado.length}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {aba === "novas" ? "novas" : "no acervo"}
+              </p>
+            </div>
           </div>
-          <div>
-            {/* acervoFiltrado, não acervo: o número precisa refletir o mesmo
-                recorte da lista — usuário selecionado, busca salva ou filtros
-                livres. Antes exibia o total bruto do banco global. */}
-            <p className="text-xl font-bold leading-none">{acervoFiltrado.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">no acervo</p>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Abas + seletor de usuário (persistente entre abas) */}

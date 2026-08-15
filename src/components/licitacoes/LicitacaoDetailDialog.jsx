@@ -5,7 +5,7 @@ import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { toArray } from "@/lib/toArray";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoPorCriador } from "@/lib/escopoUsuario";
+import { escopoUsuario } from "@/lib/escopoUsuario";
 import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
@@ -38,7 +38,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       try {
         // FavoritaLista só tem created_by_id como campo de dono.
         const listasData = await base44.entities.FavoritaLista.filter(
-          escopoPorCriador(isAdmin, filtroUsuario),
+          escopoUsuario(isAdmin, filtroUsuario),
           "ordem",
           100,
         );

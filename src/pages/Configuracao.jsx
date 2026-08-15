@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
+import { escopoUsuario, donoEfetivo, pertenceAoUsuario } from "@/lib/escopoUsuario";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
@@ -53,7 +53,7 @@ export default function Configuracao() {
     try {
       // Destinatario não tem usuario_id; o dono é created_by_id.
       const res = await base44.entities.Destinatario.filter(
-        escopoPorCriador(isAdmin, filtroUsuario),
+        escopoUsuario(isAdmin, filtroUsuario),
         "-created_date",
         200,
       );
@@ -72,7 +72,7 @@ export default function Configuracao() {
 
   const buscasExibidas = useMemo(() => {
     if (!isAdmin || filtroUsuario === "todos") return buscas;
-    return buscas.filter((b) => b.created_by_id === filtroUsuario || b.usuario_id === filtroUsuario);
+    return buscas.filter((b) => pertenceAoUsuario(b, filtroUsuario));
   }, [buscas, isAdmin, filtroUsuario]);
 
   // Funções de Busca
@@ -148,8 +148,11 @@ export default function Configuracao() {
 
   // Funções de Destinatário
   const salvarDestinatario = async (dados) => {
-    // A entidade não declara usuario_id — o vínculo é feito pelo created_by_id automático.
-    await base44.entities.Destinatario.create(dados);
+    // usuario_id: com um usuário escolhido no seletor, o contato nasce dele.
+    await base44.entities.Destinatario.create({
+      ...dados,
+      usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
+    });
     carregarDestinatarios();
   };
 

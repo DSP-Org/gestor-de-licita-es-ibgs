@@ -19,6 +19,10 @@
       "type": "number",
       "default": 0,
       "description": "Ordem de exibição"
+    },
+    "usuario_id": {
+      "type": "string",
+      "description": "ID do usuário dono da lista. Permite que o administrador crie a lista em nome de outro usuário, diferente de created_by_id (quem efetivamente criou o registro)."
     }
   },
   "required": ["nome"],
@@ -27,6 +31,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -41,6 +48,9 @@
           "created_by_id": "{{user.id}}"
         },
         {
+          "usuario_id": "{{user.id}}"
+        },
+        {
           "user_condition": {
             "email": "nailton.alsampaio@gmail.com"
           }
@@ -51,6 +61,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "usuario_id": "{{user.id}}"
         },
         {
           "user_condition": {

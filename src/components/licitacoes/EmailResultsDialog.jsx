@@ -5,7 +5,7 @@ import { X, Mail, Loader2, Send } from "lucide-react";
 import { formatValor } from "./LicitacaoCard";
 import { toArray } from "@/lib/toArray";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoPorCriador } from "@/lib/escopoUsuario";
+import { escopoUsuario } from "@/lib/escopoUsuario";
 
 export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   const { isAdmin, filtroUsuario } = useUserFilter();
@@ -19,7 +19,7 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
 
   useEffect(() => {
     // Destinatario só tem created_by_id como campo de dono.
-    base44.entities.Destinatario.filter(escopoPorCriador(isAdmin, filtroUsuario), "-created_date", 200)
+    base44.entities.Destinatario.filter(escopoUsuario(isAdmin, filtroUsuario), "-created_date", 200)
       .then((lista) => setContatos(toArray(lista)))
       .catch((e) => setErro(e.message || "Erro ao carregar destinatários."))
       .finally(() => setLoading(false));

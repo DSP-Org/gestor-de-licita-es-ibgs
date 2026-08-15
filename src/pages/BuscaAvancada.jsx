@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, escopoPorCriador } from "@/lib/escopoUsuario";
+import { escopoUsuario, donoEfetivo } from "@/lib/escopoUsuario";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
@@ -55,7 +55,7 @@ export default function BuscaAvancada() {
   useEffect(() => {
     if (!usuarioLogado) return;
     base44.entities.FavoritaLista
-      .filter(escopoPorCriador(isAdmin, filtroUsuario), "ordem", 100)
+      .filter(escopoUsuario(isAdmin, filtroUsuario), "ordem", 100)
       .then((res) => setListasFavoritas(toArray(res)))
       .catch(() => setListasFavoritas([]));
   }, [isAdmin, filtroUsuario, usuarioLogado]);
@@ -295,7 +295,12 @@ export default function BuscaAvancada() {
   const handleFavoritarLicitacao = (licacao) => setFavoritando([licacao]);
 
   const criarListaFavorita = async (nome) => {
-    const nova = await base44.entities.FavoritaLista.create({ nome, ordem: listasFavoritas.length });
+    // usuario_id: com um usuário escolhido no seletor, a lista nasce dele.
+    const nova = await base44.entities.FavoritaLista.create({
+      nome,
+      ordem: listasFavoritas.length,
+      usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
+    });
     setListasFavoritas((prev) => [...prev, nova]);
     return nova;
   };
