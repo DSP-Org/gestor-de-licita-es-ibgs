@@ -115,16 +115,28 @@ export default function BancoLicitacoes() {
     });
   }, [novas, filtroStatus, busca, filtroUsuario, filtroOrigem]);
 
+  // Contagem por origem. Respeita usuário, status e termo de busca, mas de
+  // propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
+  // origem zeraria as demais e não haveria como trocar de seleção.
   const porBuscaOrigem = useMemo(() => {
     const grupos = {};
     novas
-      .filter((l) => filtroUsuario === "todos" || l.created_by_id === filtroUsuario || l.usuario_id === filtroUsuario)
+      .filter((l) => {
+        if (filtroUsuario !== "todos" && l.created_by_id !== filtroUsuario && l.usuario_id !== filtroUsuario) return false;
+        if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+        if (busca) {
+          const q = busca.toLowerCase();
+          const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
+          if (!txt.includes(q)) return false;
+        }
+        return true;
+      })
       .forEach((l) => {
         const key = l.busca_origem || "Sem origem";
         grupos[key] = (grupos[key] || 0) + 1;
       });
     return grupos;
-  }, [novas, filtroUsuario]);
+  }, [novas, filtroUsuario, filtroStatus, busca]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
@@ -571,8 +583,11 @@ export default function BancoLicitacoes() {
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="font-heading font-semibold text-sm sm:text-base">Sincronização automática</h2>
+                {/* novasFiltradas, não novas: o número precisa acompanhar o
+                    usuário selecionado, o status, a origem e o termo de busca —
+                    a mesma origem da lista logo abaixo. */}
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0">
-                  {novas.length} licitação(ões) encontradas.
+                  {novasFiltradas.length} licitação(ões) encontradas.
                 </p>
               </div>
             </div>
