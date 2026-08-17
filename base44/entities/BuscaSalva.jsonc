@@ -84,20 +84,33 @@
     },
     "usuario_id": {
       "type": "string",
-      "description": "ID do usu\u00e1rio para quem esta busca foi configurada. Permite que um administrador configure a busca em nome de outro usu\u00e1rio (o dono real da busca, usado na sincroniza\u00e7\u00e3o e notifica\u00e7\u00f5es), diferente de created_by_id (quem efetivamente criou o registro)."
+      "description": "ID do usu\u00e1rio individual dono da busca para fins de notifica\u00e7\u00e3o (destinat\u00e1rio padr\u00e3o quando destinatarios_email est\u00e1 vazio). N\u00e3o controla mais o acesso \u2014 isso \u00e9 feito por unidade_negocio_id."
+    },
+    "unidade_negocio_id": {
+      "type": "string",
+      "description": "ID da unidade de neg\u00f3cio dona deste registro. Controla o acesso: qualquer usu\u00e1rio da unidade enxerga o registro."
     }
   },
   "required": [
     "nome"
   ],
   "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+        },
+        {
+          "user_condition": {
+            "email": "nailton.alsampaio@gmail.com"
+          }
+        }
+      ]
+    },
     "read": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {
@@ -109,10 +122,7 @@
     "update": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {
@@ -124,10 +134,7 @@
     "delete": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {

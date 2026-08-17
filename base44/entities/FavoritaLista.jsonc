@@ -22,18 +22,31 @@
     },
     "usuario_id": {
       "type": "string",
-      "description": "ID do usuário dono da lista. Permite que o administrador crie a lista em nome de outro usuário, diferente de created_by_id (quem efetivamente criou o registro)."
+      "description": "ID do usuário individual que originalmente criou a lista. Legado — não controla mais o acesso, isso é feito por unidade_negocio_id."
+    },
+    "unidade_negocio_id": {
+      "type": "string",
+      "description": "ID da unidade de negócio dona deste registro. Controla o acesso: qualquer usuário da unidade enxerga o registro."
     }
   },
   "required": ["nome"],
   "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+        },
+        {
+          "user_condition": {
+            "email": "nailton.alsampaio@gmail.com"
+          }
+        }
+      ]
+    },
     "read": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {
@@ -45,10 +58,7 @@
     "update": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {
@@ -60,10 +70,7 @@
     "delete": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {

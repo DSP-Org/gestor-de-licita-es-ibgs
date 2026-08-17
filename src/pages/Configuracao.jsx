@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
-import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, donoEfetivo, pertenceAoUsuario } from "@/lib/escopoUsuario";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
+import { escopoUnidade, unidadeEfetiva, pertenceAUnidade } from "@/lib/escopoUnidade";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
@@ -30,14 +30,14 @@ export default function Configuracao() {
   const [loadingDestinatarios, setLoadingDestinatarios] = useState(true);
 
 
-  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
+  const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
   // Carregar Buscas
   const carregarBuscas = async () => {
     setLoadingBuscas(true);
     try {
       const lista = await base44.entities.BuscaSalva.filter(
-        escopoUsuario(isAdmin, filtroUsuario),
+        escopoUnidade(isAdmin, filtroUnidade),
         "-updated_date",
         100,
       );
@@ -51,9 +51,8 @@ export default function Configuracao() {
   const carregarDestinatarios = async () => {
     setLoadingDestinatarios(true);
     try {
-      // Destinatario não tem usuario_id; o dono é created_by_id.
       const res = await base44.entities.Destinatario.filter(
-        escopoUsuario(isAdmin, filtroUsuario),
+        escopoUnidade(isAdmin, filtroUnidade),
         "-created_date",
         200,
       );
@@ -68,16 +67,16 @@ export default function Configuracao() {
       carregarBuscas();
       carregarDestinatarios();
     }
-  }, [filtroUsuario, isAdmin, usuarioLogado]);
+  }, [filtroUnidade, isAdmin, usuarioLogado]);
 
   const buscasExibidas = useMemo(() => {
-    if (!isAdmin || filtroUsuario === "todos") return buscas;
-    return buscas.filter((b) => pertenceAoUsuario(b, filtroUsuario));
-  }, [buscas, isAdmin, filtroUsuario]);
+    if (!isAdmin || filtroUnidade === "todos") return buscas;
+    return buscas.filter((b) => pertenceAUnidade(b, filtroUnidade));
+  }, [buscas, isAdmin, filtroUnidade]);
 
   // Funções de Busca
   const salvarBusca = async (form) => {
-    const dados = isAdmin && filtroUsuario !== "todos" ? { ...form, usuario_id: filtroUsuario } : form;
+    const dados = isAdmin && filtroUnidade !== "todos" ? { ...form, unidade_negocio_id: filtroUnidade } : form;
     if (editando?.id) {
       await base44.entities.BuscaSalva.update(editando.id, dados);
     } else {
@@ -148,10 +147,10 @@ export default function Configuracao() {
 
   // Funções de Destinatário
   const salvarDestinatario = async (dados) => {
-    // usuario_id: com um usuário escolhido no seletor, o contato nasce dele.
+    // unidade_negocio_id: com uma unidade escolhida no seletor, o contato nasce dela.
     await base44.entities.Destinatario.create({
       ...dados,
-      usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
+      unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
     });
     carregarDestinatarios();
   };

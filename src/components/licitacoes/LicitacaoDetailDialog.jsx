@@ -4,13 +4,13 @@ import { X, ExternalLink, Star, Save, FileDown, Share2, ChevronLeft, ChevronRigh
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { toArray } from "@/lib/toArray";
-import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario } from "@/lib/escopoUsuario";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
+import { escopoUnidade } from "@/lib/escopoUnidade";
 import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
 export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext, onMarcarLeitura }) {
-  const { isAdmin, filtroUsuario } = useUserFilter();
+  const { isAdmin, filtroUnidade } = useUnidadeFilter();
   const [status, setStatus] = useState(licitacao?.status || "interessado");
   const [favorito, setFavorito] = useState(!!licitacao?.favorito);
   const [notas, setNotas] = useState(licitacao?.notas || "");
@@ -36,9 +36,8 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
     const carregarListas = async () => {
       setCarregandoListas(true);
       try {
-        // FavoritaLista só tem created_by_id como campo de dono.
         const listasData = await base44.entities.FavoritaLista.filter(
-          escopoUsuario(isAdmin, filtroUsuario),
+          escopoUnidade(isAdmin, filtroUnidade),
           "ordem",
           100,
         );
@@ -51,7 +50,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
     };
 
     carregarListas();
-  }, [isAdmin, filtroUsuario]);
+  }, [isAdmin, filtroUnidade]);
 
   if (!licitacao) return null;
 

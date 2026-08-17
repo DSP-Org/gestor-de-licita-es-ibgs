@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 import { X, Mail, Loader2, Send } from "lucide-react";
 import { formatValor } from "./LicitacaoCard";
 import { toArray } from "@/lib/toArray";
-import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario } from "@/lib/escopoUsuario";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
+import { escopoUnidade } from "@/lib/escopoUnidade";
 
 export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
-  const { isAdmin, filtroUsuario } = useUserFilter();
+  const { isAdmin, filtroUnidade } = useUnidadeFilter();
   const [contatos, setContatos] = useState([]);
   const [selecionados, setSelecionados] = useState([]);
   const [assunto, setAssunto] = useState(`Resultados de licitações — ${origem || "busca"}`);
@@ -18,12 +18,11 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
-    // Destinatario só tem created_by_id como campo de dono.
-    base44.entities.Destinatario.filter(escopoUsuario(isAdmin, filtroUsuario), "-created_date", 200)
+    base44.entities.Destinatario.filter(escopoUnidade(isAdmin, filtroUnidade), "-created_date", 200)
       .then((lista) => setContatos(toArray(lista)))
       .catch((e) => setErro(e.message || "Erro ao carregar destinatários."))
       .finally(() => setLoading(false));
-  }, [isAdmin, filtroUsuario]);
+  }, [isAdmin, filtroUnidade]);
 
   const toggle = (email) =>
     setSelecionados((prev) => (prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]));

@@ -3,8 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Search, Star, FileText, Clock, CheckCircle2, LayoutGrid, Table, Share2, Wallet, Plus, Folder, Edit2, Trash2, ChevronRight, Download, GripVertical } from "lucide-react";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
-import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, donoEfetivo } from "@/lib/escopoUsuario";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
+import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
@@ -45,18 +45,18 @@ export default function FavoritasTab() {
   const [editandoLista, setEditandoLista] = useState(null);
   const [compartilharLista, setCompartilharLista] = useState(false);
   const [exportandoLista, setExportandoLista] = useState(null);
-  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
+  const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
   const carregar = async () => {
     setLoading(true);
     try {
       const [licData, listasData] = await Promise.all([
         base44.entities.Licitacao.filter(
-          { favorito: true, oculto: { $ne: true }, ...escopoUsuario(isAdmin, filtroUsuario) },
+          { favorito: true, oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) },
           "-updated_date",
           500,
         ),
-        base44.entities.FavoritaLista.filter(escopoUsuario(isAdmin, filtroUsuario), "ordem", 100)
+        base44.entities.FavoritaLista.filter(escopoUnidade(isAdmin, filtroUnidade), "ordem", 100)
       ]);
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
@@ -73,7 +73,7 @@ export default function FavoritasTab() {
     if (usuarioLogado) {
       carregar();
     }
-  }, [usuarioLogado, filtroUsuario, isAdmin]);
+  }, [usuarioLogado, filtroUnidade, isAdmin]);
 
   const filtradas = useMemo(() => {
     let resultado = licitacoes;
@@ -129,12 +129,12 @@ export default function FavoritasTab() {
   const handleCriarLista = async () => {
     if (!nomeLista.trim()) return;
     try {
-      // usuario_id: com um usuário escolhido no seletor, a lista nasce dele.
+      // unidade_negocio_id: com uma unidade escolhida no seletor, a lista nasce dela.
       await base44.entities.FavoritaLista.create({
         nome: nomeLista,
         cor: corLista,
         ordem: listas.length,
-        usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
+        unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
       });
       setNomeLista("");
       setCorLista("blue");

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
-import { useUserFilter } from "@/lib/UserFilterContext";
-import { escopoUsuario, donoEfetivo } from "@/lib/escopoUsuario";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
+import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
@@ -50,15 +50,15 @@ export default function BuscaAvancada() {
   const [listasFavoritas, setListasFavoritas] = useState([]);
   // Licitações aguardando a escolha da lista no seletor.
   const [favoritando, setFavoritando] = useState(null);
-  const { isAdmin, filtroUsuario, usuarioLogado } = useUserFilter();
+  const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
   useEffect(() => {
     if (!usuarioLogado) return;
     base44.entities.FavoritaLista
-      .filter(escopoUsuario(isAdmin, filtroUsuario), "ordem", 100)
+      .filter(escopoUnidade(isAdmin, filtroUnidade), "ordem", 100)
       .then((res) => setListasFavoritas(toArray(res)))
       .catch(() => setListasFavoritas([]));
-  }, [isAdmin, filtroUsuario, usuarioLogado]);
+  }, [isAdmin, filtroUnidade, usuarioLogado]);
   const [municipios, setMunicipios] = useState([]);
 
   // Carrega municípios quando UFs mudam
@@ -102,9 +102,9 @@ export default function BuscaAvancada() {
 
       if (filtros.status) filtro.status = filtros.status;
 
-      // Descartadas continuam no banco, mas não voltam nas buscas do usuário.
+      // Descartadas continuam no banco, mas não voltam nas buscas da unidade.
       filtro.oculto = { $ne: true };
-      Object.assign(filtro, escopoUsuario(isAdmin, filtroUsuario));
+      Object.assign(filtro, escopoUnidade(isAdmin, filtroUnidade));
 
       const dados = await base44.entities.Licitacao.filter(
         filtro,
@@ -295,11 +295,11 @@ export default function BuscaAvancada() {
   const handleFavoritarLicitacao = (licacao) => setFavoritando([licacao]);
 
   const criarListaFavorita = async (nome) => {
-    // usuario_id: com um usuário escolhido no seletor, a lista nasce dele.
+    // unidade_negocio_id: com uma unidade escolhida no seletor, a lista nasce dela.
     const nova = await base44.entities.FavoritaLista.create({
       nome,
       ordem: listasFavoritas.length,
-      usuario_id: donoEfetivo(isAdmin, filtroUsuario, usuarioLogado),
+      unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
     });
     setListasFavoritas((prev) => [...prev, nova]);
     return nova;

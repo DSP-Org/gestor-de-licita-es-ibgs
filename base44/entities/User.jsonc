@@ -19,6 +19,10 @@
         "rejected"
       ],
       "default": "pending"
+    },
+    "unidade_negocio_id": {
+      "type": "string",
+      "description": "ID da unidade de neg\u00f3cio \u00e0 qual o usu\u00e1rio pertence. Define quais dados (licita\u00e7\u00f5es, buscas, favoritos, destinat\u00e1rios) o usu\u00e1rio enxerga."
     }
   },
   "required": [

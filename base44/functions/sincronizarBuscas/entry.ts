@@ -10,14 +10,15 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const appUrl = (secrets.get("APP_URL") || "").replace(/\/$/, "");
 
-    // Usuário autenticado sincroniza apenas as próprias buscas (admin sincroniza todas).
-    // Sem usuário (workflow agendado) processa todas as buscas ativas.
+    // Usuário autenticado sincroniza as buscas da própria unidade de negócio
+    // (admin sincroniza todas). Sem usuário (workflow agendado) processa todas
+    // as buscas ativas.
     const user = await base44.auth.me().catch(() => null);
 
     const payload = await req.json().catch(() => ({}));
     const todasAtivas = await base44.asServiceRole.entities.BuscaSalva.filter({ ativa: true });
     const buscasAtivas = user && user.role !== 'admin'
-      ? todasAtivas.filter((b) => b.created_by_id === user.id || b.usuario_id === user.id)
+      ? todasAtivas.filter((b) => b.unidade_negocio_id === user.unidade_negocio_id)
       : todasAtivas;
     const idsSelecionados = Array.isArray(payload.buscaIds)
       ? payload.buscaIds
@@ -105,7 +106,7 @@ export default async function(req) {
         const idsPesquisa = resultados.map((l) => l.id_licitacao).filter(Boolean);
         const existentes = idsPesquisa.length > 0
           ? await base44.asServiceRole.entities.Licitacao.filter({
-              usuario_id: donoId,
+              unidade_negocio_id: busca.unidade_negocio_id,
               id_licitacao: { $in: idsPesquisa },
             })
           : [];
@@ -134,6 +135,7 @@ export default async function(req) {
             favorito: false,
             busca_origem: busca.nome,
             usuario_id: donoId,
+            unidade_negocio_id: busca.unidade_negocio_id,
             salva_manualmente: false,
             data_sincronizacao: hoje,
             data_publicacao: l._dataInsercao || hoje,

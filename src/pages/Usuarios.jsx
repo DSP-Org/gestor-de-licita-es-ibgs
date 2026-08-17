@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail, KeyRound, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail, KeyRound, Eye, EyeOff, Building2, Plus, Pencil, RefreshCw } from "lucide-react";
 import AprovacaoUsuario from "@/components/usuarios/AprovacaoUsuario";
 import { toArray } from "@/lib/toArray";
 
@@ -13,9 +13,21 @@ export default function Usuarios({ embedded = false }) {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [role, setRole] = useState("user");
+  const [unidadeId, setUnidadeId] = useState("");
   const [invitando, setInvitando] = useState(false);
   const [liberarJa, setLiberarJa] = useState(true);
   const [msg, setMsg] = useState("");
+
+  // Unidades de negócio
+  const [unidades, setUnidades] = useState([]);
+  const [loadingUnidades, setLoadingUnidades] = useState(true);
+  const [novaUnidadeNome, setNovaUnidadeNome] = useState("");
+  const [editandoUnidade, setEditandoUnidade] = useState(null);
+  const [salvandoUnidade, setSalvandoUnidade] = useState(false);
+
+  // Migração usuario_id -> unidade_negocio_id (rodar uma única vez)
+  const [migrando, setMigrando] = useState(false);
+  const [resultadoMigracao, setResultadoMigracao] = useState(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -30,9 +42,64 @@ export default function Usuarios({ embedded = false }) {
     }
   };
 
+  const carregarUnidades = async () => {
+    setLoadingUnidades(true);
+    try {
+      const lista = await base44.entities.UnidadeNegocio.list("nome", 200);
+      setUnidades(toArray(lista));
+    } catch (e) {
+      console.error("Erro ao carregar unidades de negócio:", e);
+    } finally {
+      setLoadingUnidades(false);
+    }
+  };
+
   useEffect(() => {
     carregar();
+    carregarUnidades();
   }, []);
+
+  const salvarUnidade = async (e) => {
+    e.preventDefault();
+    if (!novaUnidadeNome.trim()) return;
+    setSalvandoUnidade(true);
+    try {
+      if (editandoUnidade) {
+        await base44.entities.UnidadeNegocio.update(editandoUnidade.id, { nome: novaUnidadeNome.trim() });
+      } else {
+        await base44.entities.UnidadeNegocio.create({ nome: novaUnidadeNome.trim() });
+      }
+      setNovaUnidadeNome("");
+      setEditandoUnidade(null);
+      carregarUnidades();
+    } catch (e) {
+      setErro(e.message || "Erro ao salvar unidade de negócio.");
+    } finally {
+      setSalvandoUnidade(false);
+    }
+  };
+
+  const editarUnidade = (unidade) => {
+    setEditandoUnidade(unidade);
+    setNovaUnidadeNome(unidade.nome);
+  };
+
+  const rodarMigracao = async () => {
+    if (!confirm("Isso cria uma unidade para cada usuário sem unidade e migra os dados existentes (licitações, buscas, favoritos, destinatários) para as unidades correspondentes. Pode ser executado mais de uma vez sem duplicar nada. Continuar?")) return;
+    setMigrando(true);
+    setResultadoMigracao(null);
+    try {
+      const res = await base44.functions.invoke("migrarUnidadesNegocio");
+      if (res.data?.error) throw new Error(res.data.error);
+      setResultadoMigracao(res.data);
+      carregarUnidades();
+      carregar();
+    } catch (e) {
+      setResultadoMigracao({ error: e.message });
+    } finally {
+      setMigrando(false);
+    }
+  };
 
   const convidar = async (e) => {
     e.preventDefault();
@@ -57,11 +124,12 @@ export default function Usuarios({ embedded = false }) {
         // Convite tradicional — usuário define a própria senha depois
         await base44.users.inviteUser(alvo, role);
       }
-      // Atualiza role e status de aprovação
+      // Atualiza role, unidade de negócio e status de aprovação
       const encontrados = toArray(await base44.entities.User.filter({ email: alvo }));
       if (encontrados[0]) {
         const atualizacoes = {};
         if (encontrados[0].role !== role) atualizacoes.role = role;
+        if (unidadeId && encontrados[0].unidade_negocio_id !== unidadeId) atualizacoes.unidade_negocio_id = unidadeId;
         if (liberarJa) atualizacoes.approval_status = "approved";
         if (Object.keys(atualizacoes).length > 0) {
           await base44.entities.User.update(encontrados[0].id, atualizacoes);
@@ -77,6 +145,7 @@ export default function Usuarios({ embedded = false }) {
       setEmail("");
       setSenha("");
       setConfirmarSenha("");
+      setUnidadeId("");
       carregar();
     } catch (e) {
       setErro(e.message || "Erro ao criar usuário.");
@@ -114,6 +183,81 @@ export default function Usuarios({ embedded = false }) {
         </div>
       )}
 
+      <div className="bg-card border rounded-lg p-4 space-y-3">
+        <h3 className="font-heading font-semibold flex items-center gap-2"><Building2 className="w-4 h-4" /> Unidades de Negócio</h3>
+        <p className="text-xs text-muted-foreground">
+          Cada usuário pertence a uma unidade. Dados (licitações, buscas, favoritos, destinatários) são
+          compartilhados entre todos os usuários da mesma unidade.
+        </p>
+        <form onSubmit={salvarUnidade} className="flex gap-2">
+          <input
+            value={novaUnidadeNome}
+            onChange={(e) => setNovaUnidadeNome(e.target.value)}
+            placeholder="Nome da unidade"
+            required
+            className="flex-1 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            type="submit"
+            disabled={salvandoUnidade}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 disabled:opacity-50 shrink-0"
+          >
+            {salvandoUnidade ? <Loader2 className="w-4 h-4 animate-spin" /> : editandoUnidade ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {editandoUnidade ? "Salvar" : "Criar"}
+          </button>
+          {editandoUnidade && (
+            <button
+              type="button"
+              onClick={() => { setEditandoUnidade(null); setNovaUnidadeNome(""); }}
+              className="px-3 py-2 text-sm border rounded-md hover:bg-muted shrink-0"
+            >
+              Cancelar
+            </button>
+          )}
+        </form>
+        {loadingUnidades ? (
+          <div className="flex items-center justify-center py-4 text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+          </div>
+        ) : unidades.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhuma unidade cadastrada ainda.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {unidades.map((un) => (
+              <button
+                key={un.id}
+                onClick={() => editarUnidade(un)}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/70"
+                title="Editar"
+              >
+                <Building2 className="w-3 h-3" /> {un.nome}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="border-t pt-3">
+          <button
+            onClick={rodarMigracao}
+            disabled={migrando}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-50"
+          >
+            {migrando ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Migrar dados existentes para unidades
+          </button>
+          <p className="text-xs text-muted-foreground mt-1">
+            Cria uma unidade para cada usuário sem unidade e vincula os dados antigos (por usuario_id) a ela.
+            Seguro executar mais de uma vez.
+          </p>
+          {resultadoMigracao && (
+            <div className={`text-xs mt-2 p-2 rounded-md ${resultadoMigracao.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+              {resultadoMigracao.error
+                ? `Erro: ${resultadoMigracao.error}`
+                : `${resultadoMigracao.unidadesCriadas} unidade(s) criada(s). ${Object.entries(resultadoMigracao.resumo || {}).map(([nome, r]) => `${nome}: ${r.atualizados}/${r.total}`).join(" · ")}`}
+            </div>
+          )}
+        </div>
+      </div>
+
       <form onSubmit={convidar} className="bg-card border rounded-lg p-4 space-y-3">
         <h3 className="font-heading font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Criar / convidar usuário</h3>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -133,8 +277,18 @@ export default function Usuarios({ embedded = false }) {
             onChange={(e) => setRole(e.target.value)}
             className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="user">Usuário (vê só os seus)</option>
+            <option value="user">Usuário (vê só os da unidade)</option>
             <option value="admin">Admin (vê tudo)</option>
+          </select>
+          <select
+            value={unidadeId}
+            onChange={(e) => setUnidadeId(e.target.value)}
+            className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Sem unidade</option>
+            {unidades.map((un) => (
+              <option key={un.id} value={un.id}>{un.nome}</option>
+            ))}
           </select>
           <button
             type="submit"
@@ -208,6 +362,9 @@ export default function Usuarios({ embedded = false }) {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {unidades.find((un) => un.id === u.unidade_negocio_id)?.nome || "Sem unidade"}
+                  </p>
                 </div>
                 <div className="hidden sm:block text-right">
                   <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${u.role === "admin" || u.approval_status === "approved" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>

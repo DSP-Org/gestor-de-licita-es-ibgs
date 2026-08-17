@@ -16,20 +16,33 @@
     },
     "usuario_id": {
       "type": "string",
-      "description": "ID do usu\u00e1rio dono do contato. Permite que o administrador cadastre o destinat\u00e1rio em nome de outro usu\u00e1rio, diferente de created_by_id (quem efetivamente criou o registro)."
+      "description": "ID do usu\u00e1rio individual que originalmente cadastrou o contato. Legado \u2014 n\u00e3o controla mais o acesso, isso \u00e9 feito por unidade_negocio_id."
+    },
+    "unidade_negocio_id": {
+      "type": "string",
+      "description": "ID da unidade de neg\u00f3cio dona deste registro. Controla o acesso: qualquer usu\u00e1rio da unidade enxerga o registro."
     }
   },
   "required": [
     "email"
   ],
   "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "read": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {
@@ -41,10 +54,7 @@
     "update": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {
@@ -56,10 +66,7 @@
     "delete": {
       "$or": [
         {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "usuario_id": "{{user.id}}"
+          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
         },
         {
           "user_condition": {

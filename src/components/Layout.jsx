@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Sliders } from "lucide-react";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
-import { useUserFilter } from "@/lib/UserFilterContext";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const mainItems = [
@@ -32,7 +32,7 @@ export default function Layout() {
   const [sidebarExpandido, setSidebarExpandido] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
-  const { isAdmin, filtroUsuario, setFiltroUsuario, usuarios, usuarioLogado } = useUserFilter();
+  const { isAdmin, filtroUnidade, setFiltroUnidade, unidades, usuarioLogado } = useUnidadeFilter();
 
   useEffect(() => {
     setMenuAberto(false);
@@ -66,22 +66,22 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* Seletor de usuário — somente master */}
+        {/* Seletor de unidade de negócio — somente master */}
         {isAdmin && sidebarExpandido && (
           <div className="px-3 pb-3">
             <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#7a8fa3" }}>
               Visualizando
             </label>
             <select
-              value={filtroUsuario}
-              onChange={(e) => setFiltroUsuario(e.target.value)}
+              value={filtroUnidade}
+              onChange={(e) => setFiltroUnidade(e.target.value)}
               className="w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
               style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
             >
-              <option value="todos">Todos os usuários</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.email}
+              <option value="todos">Todas as unidades</option>
+              {unidades.map((un) => (
+                <option key={un.id} value={un.id}>
+                  {un.nome}
                 </option>
               ))}
             </select>
@@ -155,15 +155,15 @@ export default function Layout() {
             <p className="font-bold text-sm truncate">Licitalerta360</p>
             {isAdmin && (
               <select
-                value={filtroUsuario}
-                onChange={(e) => setFiltroUsuario(e.target.value)}
+                value={filtroUnidade}
+                onChange={(e) => setFiltroUnidade(e.target.value)}
                 className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border focus:outline-none"
                 style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
               >
-                <option value="todos">Todos os usuários</option>
-                {usuarios.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name || u.email}
+                <option value="todos">Todas as unidades</option>
+                {unidades.map((un) => (
+                  <option key={un.id} value={un.id}>
+                    {un.nome}
                   </option>
                 ))}
               </select>
