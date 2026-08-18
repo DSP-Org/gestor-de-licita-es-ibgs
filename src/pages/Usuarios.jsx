@@ -164,6 +164,16 @@ export default function Usuarios({ embedded = false }) {
     }
   };
 
+  const alterarUnidade = async (usuario, novaUnidadeId) => {
+    setErro("");
+    try {
+      await base44.entities.User.update(usuario.id, { unidade_negocio_id: novaUnidadeId || null });
+      setUsuarios((atuais) => atuais.map((item) => item.id === usuario.id ? { ...item, unidade_negocio_id: novaUnidadeId || null } : item));
+    } catch (e) {
+      setErro(e.message || "Erro ao vincular o usuário à unidade.");
+    }
+  };
+
   const remover = async (u) => {
     if (!confirm(`Remover o usuário ${u.email}?`)) return;
     try {
@@ -362,9 +372,16 @@ export default function Usuarios({ embedded = false }) {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {unidades.find((un) => un.id === u.unidade_negocio_id)?.nome || "Sem unidade"}
-                  </p>
+                  <select
+                    value={u.unidade_negocio_id || ""}
+                    onChange={(e) => alterarUnidade(u, e.target.value)}
+                    className="mt-1 max-w-full px-1.5 py-1 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Sem unidade</option>
+                    {unidades.map((un) => (
+                      <option key={un.id} value={un.id}>{un.nome}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="hidden sm:block text-right">
                   <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${u.role === "admin" || u.approval_status === "approved" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
