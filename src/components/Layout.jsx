@@ -32,7 +32,7 @@ export default function Layout() {
   const [sidebarExpandido, setSidebarExpandido] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
-  const { isAdmin, filtroUnidade, setFiltroUnidade, unidades, usuarioLogado } = useUnidadeFilter();
+  const { isAdmin, filtroUnidade, setFiltroUnidade, unidades, unidadesPermitidas, trocarUnidadeAtiva, usuarioLogado } = useUnidadeFilter();
 
   useEffect(() => {
     setMenuAberto(false);
@@ -43,6 +43,13 @@ export default function Layout() {
   const moreActive = moreList.some((item) => location.pathname.startsWith(item.to));
 
   const userInitials = getInitials(usuarioLogado?.full_name || usuarioLogado?.email);
+
+  // Master vê o seletor pra recortar a visão (não altera o próprio cadastro).
+  // Usuário comum só vê o seletor se pertencer a mais de uma unidade — aí
+  // trocar de fato persiste a unidade ativa dele.
+  const mostrarSeletorUnidade = isAdmin || unidadesPermitidas.length > 1;
+  const opcoesSeletorUnidade = isAdmin ? unidades : unidadesPermitidas;
+  const trocarUnidadeSelecionada = (id) => (isAdmin ? setFiltroUnidade(id) : trocarUnidadeAtiva(id));
 
   return (
     <>
@@ -66,20 +73,20 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* Seletor de unidade de negócio — somente master */}
-        {isAdmin && sidebarExpandido && (
+        {/* Seletor de unidade de negócio */}
+        {mostrarSeletorUnidade && sidebarExpandido && (
           <div className="px-3 pb-3">
             <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#7a8fa3" }}>
-              Visualizando
+              {isAdmin ? "Visualizando" : "Unidade ativa"}
             </label>
             <select
               value={filtroUnidade}
-              onChange={(e) => setFiltroUnidade(e.target.value)}
+              onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
               className="w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
               style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
             >
-              <option value="todos">Todas as unidades</option>
-              {unidades.map((un) => (
+              {isAdmin && <option value="todos">Todas as unidades</option>}
+              {opcoesSeletorUnidade.map((un) => (
                 <option key={un.id} value={un.id}>
                   {un.nome}
                 </option>
@@ -153,15 +160,15 @@ export default function Layout() {
           </div>
           <div className="min-w-0 leading-tight flex-1">
             <p className="font-bold text-sm truncate">Licitalerta360</p>
-            {isAdmin && (
+            {mostrarSeletorUnidade && (
               <select
                 value={filtroUnidade}
-                onChange={(e) => setFiltroUnidade(e.target.value)}
+                onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
                 className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border focus:outline-none"
                 style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
               >
-                <option value="todos">Todas as unidades</option>
-                {unidades.map((un) => (
+                {isAdmin && <option value="todos">Todas as unidades</option>}
+                {opcoesSeletorUnidade.map((un) => (
                   <option key={un.id} value={un.id}>
                     {un.nome}
                   </option>

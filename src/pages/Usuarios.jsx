@@ -13,7 +13,7 @@ export default function Usuarios({ embedded = false }) {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [role, setRole] = useState("user");
-  const [unidadeId, setUnidadeId] = useState("");
+  const [unidadeIds, setUnidadeIds] = useState([]);
   const [invitando, setInvitando] = useState(false);
   const [liberarJa, setLiberarJa] = useState(true);
   const [msg, setMsg] = useState("");
@@ -84,6 +84,10 @@ export default function Usuarios({ embedded = false }) {
     setNovaUnidadeNome(unidade.nome);
   };
 
+  const toggleUnidadeForm = (id) => {
+    setUnidadeIds((atual) => (atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id]));
+  };
+
   const rodarMigracao = async () => {
     if (!confirm("Isso cria uma unidade para cada usuário sem unidade e migra os dados existentes (licitações, buscas, favoritos, destinatários) para as unidades correspondentes. Pode ser executado mais de uma vez sem duplicar nada. Continuar?")) return;
     setMigrando(true);
@@ -124,12 +128,15 @@ export default function Usuarios({ embedded = false }) {
         // Convite tradicional — usuário define a própria senha depois
         await base44.users.inviteUser(alvo, role);
       }
-      // Atualiza role, unidade de negócio e status de aprovação
+      // Atualiza role, unidades de negócio e status de aprovação
       const encontrados = toArray(await base44.entities.User.filter({ email: alvo }));
       if (encontrados[0]) {
         const atualizacoes = {};
         if (encontrados[0].role !== role) atualizacoes.role = role;
-        if (unidadeId && encontrados[0].unidade_negocio_id !== unidadeId) atualizacoes.unidade_negocio_id = unidadeId;
+        if (unidadeIds.length > 0) {
+          atualizacoes.unidades_negocio_ids = unidadeIds;
+          atualizacoes.unidade_negocio_id = unidadeIds[0];
+        }
         if (liberarJa) atualizacoes.approval_status = "approved";
         if (Object.keys(atualizacoes).length > 0) {
           await base44.entities.User.update(encontrados[0].id, atualizacoes);
@@ -145,7 +152,7 @@ export default function Usuarios({ embedded = false }) {
       setEmail("");
       setSenha("");
       setConfirmarSenha("");
-      setUnidadeId("");
+      setUnidadeIds([]);
       carregar();
     } catch (e) {
       setErro(e.message || "Erro ao criar usuário.");
@@ -164,11 +171,19 @@ export default function Usuarios({ embedded = false }) {
     }
   };
 
-  const alterarUnidade = async (usuario, novaUnidadeId) => {
+  // Alterna a unidade dada dentro de unidades_negocio_ids (as permitidas do
+  // usuário). Se a unidade ativa (unidade_negocio_id) deixar de estar entre
+  // as permitidas, escolhe outra permitida ou fica sem nenhuma.
+  const toggleMembroUnidade = async (usuario, unidadeId) => {
     setErro("");
+    const atuais = Array.isArray(usuario.unidades_negocio_ids) ? usuario.unidades_negocio_ids : [];
+    const novasIds = atuais.includes(unidadeId) ? atuais.filter((id) => id !== unidadeId) : [...atuais, unidadeId];
+    const novaAtiva = novasIds.includes(usuario.unidade_negocio_id) ? usuario.unidade_negocio_id : (novasIds[0] || null);
     try {
-      await base44.entities.User.update(usuario.id, { unidade_negocio_id: novaUnidadeId || null });
-      setUsuarios((atuais) => atuais.map((item) => item.id === usuario.id ? { ...item, unidade_negocio_id: novaUnidadeId || null } : item));
+      await base44.entities.User.update(usuario.id, { unidades_negocio_ids: novasIds, unidade_negocio_id: novaAtiva });
+      setUsuarios((atuaisLista) => atuaisLista.map((item) =>
+        item.id === usuario.id ? { ...item, unidades_negocio_ids: novasIds, unidade_negocio_id: novaAtiva } : item
+      ));
     } catch (e) {
       setErro(e.message || "Erro ao vincular o usuário à unidade.");
     }
@@ -196,8 +211,9 @@ export default function Usuarios({ embedded = false }) {
       <div className="bg-card border rounded-lg p-4 space-y-3">
         <h3 className="font-heading font-semibold flex items-center gap-2"><Building2 className="w-4 h-4" /> Unidades de Negócio</h3>
         <p className="text-xs text-muted-foreground">
-          Cada usuário pertence a uma unidade. Dados (licitações, buscas, favoritos, destinatários) são
-          compartilhados entre todos os usuários da mesma unidade.
+          Um usuário pode pertencer a mais de uma unidade, mas atua em uma unidade ativa por vez (alterna pelo
+          seletor no menu). Dados (licitações, buscas, favoritos, destinatários) são compartilhados entre todos
+          os usuários que estão com a mesma unidade ativa.
         </p>
         <form onSubmit={salvarUnidade} className="flex gap-2">
           <input
@@ -290,16 +306,6 @@ export default function Usuarios({ embedded = false }) {
             <option value="user">Usuário (vê só os da unidade)</option>
             <option value="admin">Admin (vê tudo)</option>
           </select>
-          <select
-            value={unidadeId}
-            onChange={(e) => setUnidadeId(e.target.value)}
-            className="px-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Sem unidade</option>
-            {unidades.map((un) => (
-              <option key={un.id} value={un.id}>{un.nome}</option>
-            ))}
-          </select>
           <button
             type="submit"
             disabled={invitando}
@@ -308,6 +314,31 @@ export default function Usuarios({ embedded = false }) {
             {invitando ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
             {senha ? "Criar com senha" : liberarJa ? "Criar" : "Convidar"}
           </button>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            Unidades (a primeira marcada vira a unidade ativa)
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {unidades.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Cadastre uma unidade acima primeiro.</p>
+            ) : (
+              unidades.map((un) => (
+                <button
+                  key={un.id}
+                  type="button"
+                  onClick={() => toggleUnidadeForm(un.id)}
+                  className={`text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
+                    unidadeIds.includes(un.id)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {un.nome}
+                </button>
+              ))
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="relative">
@@ -372,16 +403,36 @@ export default function Usuarios({ embedded = false }) {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                  <select
-                    value={u.unidade_negocio_id || ""}
-                    onChange={(e) => alterarUnidade(u, e.target.value)}
-                    className="mt-1 max-w-full px-1.5 py-1 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Sem unidade</option>
-                    {unidades.map((un) => (
-                      <option key={un.id} value={un.id}>{un.nome}</option>
-                    ))}
-                  </select>
+                  <details className="mt-1 text-xs">
+                    <summary className="cursor-pointer list-none inline-flex items-center gap-1 text-muted-foreground hover:text-foreground">
+                      <Building2 className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {(u.unidades_negocio_ids || []).length > 0
+                          ? unidades
+                              .filter((un) => (u.unidades_negocio_ids || []).includes(un.id))
+                              .map((un) => (un.id === u.unidade_negocio_id ? `${un.nome} (ativa)` : un.nome))
+                              .join(", ")
+                          : "Sem unidade"}
+                      </span>
+                    </summary>
+                    <div className="mt-1.5 flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30 max-w-xs">
+                      {unidades.map((un) => {
+                        const membro = (u.unidades_negocio_ids || []).includes(un.id);
+                        return (
+                          <button
+                            key={un.id}
+                            type="button"
+                            onClick={() => toggleMembroUnidade(u, un.id)}
+                            className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${
+                              membro ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"
+                            }`}
+                          >
+                            {un.nome}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </details>
                 </div>
                 <div className="hidden sm:block text-right">
                   <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${u.role === "admin" || u.approval_status === "approved" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
