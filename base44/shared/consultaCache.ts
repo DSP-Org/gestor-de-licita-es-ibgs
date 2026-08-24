@@ -61,8 +61,8 @@ export async function consultarComCache(base44: any, filtros: any, ttlHoras?: nu
         expira_em,
       });
     }
-  } catch {
-    // Se a gravação do cache falhar, ainda retornamos o resultado da API.
+  } catch (e) {
+    console.warn(`[ConsultaCache] Falha ao ${cache ? 'atualizar' : 'criar'} cache:`, e instanceof Error ? e.message : String(e));
   }
 
   return resultado;

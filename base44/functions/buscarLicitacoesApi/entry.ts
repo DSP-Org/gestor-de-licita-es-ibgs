@@ -1,11 +1,31 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { consultarComCache } from "../../shared/consultaCache.ts";
 
+function validarData(data: string): boolean {
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return false;
+  const d = new Date(data + "T00:00:00Z");
+  return !isNaN(d.getTime());
+}
+
 function datasNoIntervalo(inicio: string, fim: string): string[] {
+  if (!validarData(inicio) || !validarData(fim)) {
+    throw new Error("Datas inválidas. Use formato YYYY-MM-DD");
+  }
+
   const datas: string[] = [];
   const start = new Date(inicio + "T00:00:00-03:00");
   const end = new Date(fim + "T00:00:00-03:00");
+
+  if (start > end) {
+    throw new Error("data_inicio não pode ser após data_fim");
+  }
+
   const limite = 31; // máximo de 31 dias por consulta
+  const diffDias = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDias > limite) {
+    throw new Error(`Intervalo máximo é ${limite} dias (você pediu ${diffDias})`);
+  }
+
   let count = 0;
   for (let d = new Date(start); d <= end && count < limite; d.setDate(d.getDate() + 1)) {
     datas.push(d.toISOString().split("T")[0]);
@@ -59,6 +79,8 @@ export default async function(req) {
     const data = await consultarComCache(base44, body);
     return Response.json(data);
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    const erroMsg = error instanceof Error ? error.message : String(error);
+    console.error("[BuscarLicitacoesApi] Erro:", erroMsg);
+    return Response.json({ error: erroMsg }, { status: 400 });
   }
 }
