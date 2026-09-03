@@ -48,6 +48,23 @@ enxerga os mesmos dados.
 - **Master**: `nailton.alsampaio@gmail.com` (hardcoded nas regras RLS de várias entidades) — bypassa RLS, pode ver/editar tudo, único que cria/edita `UnidadeNegocio`.
 - Migração de dados antigos (usuário → unidade): função [`migrarUnidadesNegocio`](../base44/functions/migrarUnidadesNegocio/entry.ts), disparada por botão em `Usuarios.jsx`. Escrita em massa — não rodar sem confirmação explícita do usuário.
 - No frontend: `src/lib/escopoUnidade.js` + `src/lib/UnidadeFilterContext.jsx` (hook `useUnidadeFilter`) — trocam o antigo `escopoUsuario.js`/`UserFilterContext.jsx`. Seletor de unidade fica no Layout (era "escolher usuário", virou "escolher unidade" para o master).
+  - Master: rótulo "Visualizando", com "Todas as unidades" + 1 opção por unidade; troca é só recorte local (`setFiltroUnidade`), não persiste.
+  - Usuário comum: só aparece se ele pertencer a ≥1 unidade. Com exatamente 1, mostra o nome como texto fixo (sem dropdown). Com 2+, dropdown funcional que persiste via [`trocarUnidadeAtiva`](../base44/functions/trocarUnidadeAtiva/entry.ts).
+  - `UnidadeFilterContext` expõe `recarregarUnidades()` — precisa ser chamado por qualquer tela que crie/edite/exclua uma `UnidadeNegocio` (hoje só [Usuarios.jsx](../src/pages/Usuarios.jsx)), senão o seletor do Layout fica com a lista velha até reload da página (a lista de unidades é carregada só uma vez no mount do provider).
+- Exclusão de `UnidadeNegocio`: botão em [Usuarios.jsx](../src/pages/Usuarios.jsx), visível só pro master (RLS de `delete` já restringe ao master mesmo sem o botão). Hoje só avisa quantos usuários ficam vinculados a uma unidade fantasma — não bloqueia nem desvincula nada automaticamente. Foi exatamente uma exclusão assim (de fora desta sessão) que causou o bug descrito abaixo.
+
+### Bug ativo: vínculo de unidade quebrado para todos os usuários comuns (não corrigido)
+
+Diagnosticado em 2026-09-03, ainda não corrigido em produção.
+
+- Só existe **1** `UnidadeNegocio` real: "IBGR - Licitações" (`6a98c63939159bbbf678d767`).
+- **Nenhum dos 9 usuários** (master incluído) aponta pra ela — cada um tem `unidade_negocio_id`/`unidades_negocio_ids` referenciando um ID de unidade que já foi apagada (sobra de uma migração/limpeza anterior, provavelmente de quando `migrarUnidadesNegocio` criava 1 unidade por usuário).
+- Quase nenhum dado está vinculado a nenhuma unidade: `Licitacao` ~4999/5000 com `unidade_negocio_id: null`, `BuscaSalva` 22/23, `FavoritaLista` 2/2, `Destinatario` 8/8. Os poucos registros vinculados apontam pra uma unidade fantasma, não pra "IBGR - Licitações".
+- Efeito prático: usuários comuns não enxergam quase nada via RLS hoje (RLS compara igualdade exata, não resolve `null` nem uma unidade inexistente). Só o master vê tudo porque bypassa RLS.
+- **Não rodar `migrarUnidadesNegocio` pra resolver isso** — ela cria uma unidade nova por usuário sem `unidade_negocio_id` (e todos já têm um valor, só que inválido), então re-fragmentaria em vez de consolidar.
+- Fix já escrito e validado (dry-run confirmou os alvos) em [scripts/corrigir_vinculo_unidade.ts](../scripts/corrigir_vinculo_unidade.ts): repontam os 9 usuários + linkam via `updateMany` em loop todo registro órfão/fantasma nas 4 entidades pra "IBGR - Licitações". Rodar com `cat scripts/corrigir_vinculo_unidade.ts | base44 exec --privileged`.
+- **Ainda não executado**: o classificador de segurança do Claude Code bloqueia esse comando por ser escrita em massa em produção sem uma confirmação explícita "nomeando" o escopo (tabelas + quantidade + unidade-alvo) — um "sim, pode rodar" genérico no chat não passa. Precisa ser rodado manualmente pelo usuário, ou reautorizado de forma bem explícita numa sessão futura.
+- Ferramenta paliativa já construída em [BancoLicitacoes.jsx](../src/pages/BancoLicitacoes.jsx) (aba "Novas"): checkbox "Sem unidade" (só master) troca a consulta pra trazer até 5000 `Licitacao` com `unidade_negocio_id` vazio ignorando status/oculto, e com itens selecionados aparece um seletor "Atribuir à unidade..." + botão que vincula em lote (500 por chamada via `bulkUpdate`). Cobre só `Licitacao` — os outros 3 registros pequenos (`BuscaSalva`/`FavoritaLista`/`Destinatario`) não têm UI equivalente, resolvem via o script acima.
 
 ## Entidades (`base44/entities/`)
 
@@ -78,7 +95,8 @@ sincronização manual na UI (que passa `buscaId`/`buscaIds` no payload).
 - Consulta por **data de inserção** na API (não data de publicação real — a API não fornece essa data; carimbamos `data_publicacao` no banco com a própria data de inserção pedida).
 - Sem `ultima_sincronizacao` (busca nova): consulta hoje-2, hoje-1, hoje (3 dias fixos).
 - Com `ultima_sincronizacao`: pula dias já cobertos, mas sempre reconsulta o dia da última sync + hoje. **Teto de 3 dias de retrocesso** — se uma busca ficar mais de 3 dias sem rodar, licitações inseridas nesse intervalo "cego" nunca são recuperadas retroativamente. Decisão consciente/aceita (não é bug a corrigir agora).
-- Paginação travada em 5 páginas × 100/página = máx. 500 resultados por dia por busca; excedente é descartado silenciosamente (risco só em buscas muito amplas).
+- Paginação travada em 5 páginas × 100/página = máx. 500 resultados por dia por busca; excedente é descartado silenciosamente (risco só em buscas muito amplas). Confirmado ativo em 2026-09-03: a busca real "Atualização - MG" (UF=MG, sem palavra-chave) tinha 519 resultados no dia segundo a própria API, ou seja, já perdia ~19/dia. Testei a API ao vivo (`data_insercao` em dias diferentes = conjuntos de IDs sem sobreposição, contagens diferentes) — o filtro de data é respeitado corretamente, não é bug da API.
+- Mitigação pro caso "Atualização - MG" (busca ampla sem quase filtro nenhum): [BuscaForm.jsx](../src/components/buscas/BuscaForm.jsx) agora exige UF preenchido + pelo menos 2 critérios no total (UF conta como 1) antes de salvar uma `BuscaSalva`. Só vale daqui pra frente — não corrige buscas já salvas fora dessa regra.
 
 **Deduplicação** (linhas ~107-119 do entry.ts): filtra no banco os `id_licitacao` já existentes **na mesma unidade_negocio_id** antes de criar. Efeitos:
 - Escopo é por unidade, não por busca: se duas buscas da mesma unidade encontram a mesma licitação, só a primeira a rodar cria o registro (fica com `busca_origem` dela); a segunda não duplica nem notifica de novo.
