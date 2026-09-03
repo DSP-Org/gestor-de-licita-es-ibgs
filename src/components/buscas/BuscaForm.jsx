@@ -64,6 +64,19 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
       setErro("Informe o nome da busca para salvar.");
       return;
     }
+    if (!form.uf?.trim()) {
+      setErro("Selecione ao menos um estado (UF) — sem isso a busca varre o país todo a cada sincronização.");
+      return;
+    }
+    const criteriosPreenchidos =
+      (form.uf?.trim() ? 1 : 0) +
+      (form.palavra_chave?.trim() ? 1 : 0) +
+      (form.modalidade?.trim() ? 1 : 0) +
+      (form.municipio_ibge?.trim() ? 1 : 0);
+    if (criteriosPreenchidos < 2) {
+      setErro("Preencha ao menos 2 critérios (UF, palavra-chave, modalidade ou município) para evitar buscas amplas demais.");
+      return;
+    }
     setErro("");
     setSalvando(true);
     try {
@@ -91,9 +104,12 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
+      <p className="text-xs text-muted-foreground">
+        Estado é obrigatório e é preciso preencher pelo menos mais 1 critério (palavra-chave, modalidade ou município) — evita sincronizar o país inteiro por acidente.
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-muted-foreground">Estado (UF)</label>
+          <label className="text-xs font-medium text-muted-foreground">Estado (UF) *</label>
           <UfMultiSelect value={form.uf || ""} onChange={(v) => set("uf", v)} />
         </div>
         <div>
