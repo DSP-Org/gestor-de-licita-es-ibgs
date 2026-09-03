@@ -27,7 +27,7 @@ export default function BancoLicitacoes() {
   const [aba, setAba] = useState("novas");
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState(null);
-  const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
+  const { isAdmin, filtroUnidade, usuarioLogado, unidades } = useUnidadeFilter();
 
   // ---------- Aba "Novas" (sincronização automática) ----------
   const [novas, setNovas] = useState([]);
@@ -40,6 +40,11 @@ export default function BancoLicitacoes() {
   const [compartilhar, setCompartilhar] = useState(null);
   const [selecionadasNovas, setSelecionadasNovas] = useState(new Set());
   const [filtroOrigem, setFiltroOrigem] = useState(null);
+  // Admin: mostra só registros sem unidade vinculada (legado da migração pra
+  // multi-tenant) pra poder selecionar e atribuir em massa a uma unidade real.
+  const [filtroSemUnidade, setFiltroSemUnidade] = useState(false);
+  const [unidadeParaAtribuir, setUnidadeParaAtribuir] = useState("");
+  const [atribuindoUnidade, setAtribuindoUnidade] = useState(false);
   // Carregadas uma vez e compartilhadas por todos os cards, para o seletor de
   // lista não disparar uma consulta por licitação.
   const [listasFavoritas, setListasFavoritas] = useState([]);
@@ -51,12 +56,17 @@ export default function BancoLicitacoes() {
     try {
       // Filtra APENAS licitações com status_leitura = "nova"
       // oculto: descartadas continuam no banco, mas somem das listagens.
-      const filtro = { status_leitura: "nova", oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
+      // Modo "sem unidade" (admin): ignora status/oculto pra achar todo o
+      // backlog órfão, e pede o teto de leitura da API pra caber tudo de uma vez.
+      const modoSemUnidade = isAdmin && filtroSemUnidade;
+      const filtro = modoSemUnidade
+        ? { unidade_negocio_id: null }
+        : { status_leitura: "nova", oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
 
       const lista = await base44.entities.Licitacao.filter(
         filtro,
         "-created_date",
-        500
+        modoSemUnidade ? 5000 : 500
       );
       setNovas(toArray(lista));
     } finally {
@@ -89,7 +99,7 @@ export default function BancoLicitacoes() {
       .filter(escopoUnidade(isAdmin, filtroUnidade), "ordem", 100)
       .then((res) => setListasFavoritas(toArray(res).sort((a, b) => (a.ordem || 0) - (b.ordem || 0))))
       .catch(() => setListasFavoritas([]));
-  }, [filtroUnidade, isAdmin, usuarioLogado]);
+  }, [filtroUnidade, isAdmin, usuarioLogado, filtroSemUnidade]);
 
   const buscasFiltradas = useMemo(
     () => buscasSalvas.filter((b) => pertenceAUnidade(b, filtroUnidade)),
@@ -256,6 +266,32 @@ export default function BancoLicitacoes() {
     setFavoritando({ modo: "atualizar", itens: itensSelecionadosNovas() });
 
   const enviarSelecionadasNovas = () => setCompartilhar(itensSelecionadosNovas());
+
+  // Admin: vincula as licitações selecionadas (tipicamente sem unidade) à
+  // unidade escolhida. bulkUpdate aceita até 500 por chamada, daí o lote.
+  const atribuirUnidadeSelecionadas = async () => {
+    if (!unidadeParaAtribuir) return;
+    const itens = itensSelecionadosNovas();
+    setAtribuindoUnidade(true);
+    try {
+      for (let i = 0; i < itens.length; i += 500) {
+        const lote = itens.slice(i, i + 500);
+        await base44.entities.Licitacao.bulkUpdate(
+          lote.map((item) => ({ id: item.id, unidade_negocio_id: unidadeParaAtribuir }))
+        );
+      }
+      setNovas((prev) =>
+        filtroSemUnidade
+          ? prev.filter((item) => !selecionadasNovas.has(item.id_licitacao))
+          : prev.map((item) =>
+              selecionadasNovas.has(item.id_licitacao) ? { ...item, unidade_negocio_id: unidadeParaAtribuir } : item
+            )
+      );
+      setSelecionadasNovas(new Set());
+    } finally {
+      setAtribuindoUnidade(false);
+    }
+  };
 
   const renderActionsNova = (licitacao) => (
     <div className="flex flex-wrap items-center gap-3">
@@ -688,10 +724,21 @@ export default function BancoLicitacoes() {
               <option value="perdida">Perdida</option>
               <option value="descartada">Descartada</option>
             </select>
+            {isAdmin && (
+              <label className="flex items-center gap-1.5 text-sm px-2 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={filtroSemUnidade}
+                  onChange={(e) => setFiltroSemUnidade(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                Sem unidade
+              </label>
+            )}
           </div>
 
           {!novasLoading && novasFiltradas.length > 0 && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -701,12 +748,36 @@ export default function BancoLicitacoes() {
                 Selecionar todas
               </label>
               {selecionadasNovas.size > 0 && (
-                <AtualizacaoBulkActions
-                  quantidade={selecionadasNovas.size}
-                  onSend={enviarSelecionadasNovas}
-                  onSave={salvarSelecionadasNovas}
-                  onDelete={excluirSelecionadasNovas}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  {isAdmin && (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={unidadeParaAtribuir}
+                        onChange={(e) => setUnidadeParaAtribuir(e.target.value)}
+                        className="px-2 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <option value="">Atribuir à unidade...</option>
+                        {unidades.map((un) => (
+                          <option key={un.id} value={un.id}>{un.nome}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={atribuirUnidadeSelecionadas}
+                        disabled={!unidadeParaAtribuir || atribuindoUnidade}
+                        className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 sm:px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+                      >
+                        {atribuindoUnidade ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        Atribuir ({selecionadasNovas.size})
+                      </button>
+                    </div>
+                  )}
+                  <AtualizacaoBulkActions
+                    quantidade={selecionadasNovas.size}
+                    onSend={enviarSelecionadasNovas}
+                    onSave={salvarSelecionadasNovas}
+                    onDelete={excluirSelecionadasNovas}
+                  />
+                </div>
               )}
             </div>
           )}
