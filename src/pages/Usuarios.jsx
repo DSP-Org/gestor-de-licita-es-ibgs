@@ -3,8 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { UserPlus, Trash2, Shield, User as UserIcon, Loader2, Mail, KeyRound, Eye, EyeOff, Building2, Plus, Pencil, RefreshCw } from "lucide-react";
 import AprovacaoUsuario from "@/components/usuarios/AprovacaoUsuario";
 import { toArray } from "@/lib/toArray";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 
 export default function Usuarios({ embedded = false }) {
+  // isAdmin aqui reflete o master (único e-mail com RLS de escrita em
+  // UnidadeNegocio) — só ele pode ver/usar a exclusão de unidade.
+  const { isAdmin: isMaster } = useUnidadeFilter();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
@@ -82,6 +86,24 @@ export default function Usuarios({ embedded = false }) {
   const editarUnidade = (unidade) => {
     setEditandoUnidade(unidade);
     setNovaUnidadeNome(unidade.nome);
+  };
+
+  const removerUnidade = async (unidade) => {
+    const vinculados = usuarios.filter((u) => (u.unidades_negocio_ids || []).includes(unidade.id)).length;
+    const aviso = vinculados > 0
+      ? `${vinculados} usuário(s) ainda estão vinculados a "${unidade.nome}" — as licitações, buscas e favoritos dessa unidade continuam no banco, só deixam de aparecer no seletor. `
+      : "";
+    if (!confirm(`${aviso}Excluir a unidade "${unidade.nome}"? Essa ação não pode ser desfeita.`)) return;
+    try {
+      await base44.entities.UnidadeNegocio.delete(unidade.id);
+      if (editandoUnidade?.id === unidade.id) {
+        setEditandoUnidade(null);
+        setNovaUnidadeNome("");
+      }
+      carregarUnidades();
+    } catch (e) {
+      setErro(e.message || "Erro ao excluir unidade de negócio.");
+    }
   };
 
   const toggleUnidadeForm = (id) => {
@@ -250,14 +272,27 @@ export default function Usuarios({ embedded = false }) {
         ) : (
           <div className="flex flex-wrap gap-2">
             {unidades.map((un) => (
-              <button
+              <div
                 key={un.id}
-                onClick={() => editarUnidade(un)}
-                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/70"
-                title="Editar"
+                className="inline-flex items-center gap-1 text-xs pl-2.5 pr-1.5 py-1.5 rounded-full bg-muted"
               >
-                <Building2 className="w-3 h-3" /> {un.nome}
-              </button>
+                <button
+                  onClick={() => editarUnidade(un)}
+                  className="inline-flex items-center gap-1.5 hover:opacity-70"
+                  title="Editar"
+                >
+                  <Building2 className="w-3 h-3" /> {un.nome}
+                </button>
+                {isMaster && (
+                  <button
+                    onClick={() => removerUnidade(un)}
+                    className="p-1 rounded-full hover:bg-red-100 hover:text-red-600"
+                    title="Excluir unidade"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         )}
