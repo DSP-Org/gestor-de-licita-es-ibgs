@@ -45,9 +45,11 @@ export default function Layout() {
   const userInitials = getInitials(usuarioLogado?.full_name || usuarioLogado?.email);
 
   // Master vê o seletor pra recortar a visão (não altera o próprio cadastro).
-  // Usuário comum só vê o seletor se pertencer a mais de uma unidade — aí
-  // trocar de fato persiste a unidade ativa dele.
-  const mostrarSeletorUnidade = isAdmin || unidadesPermitidas.length > 1;
+  // Usuário comum vê a própria unidade sempre que tiver ao menos uma — com só
+  // uma, não faz sentido oferecer uma troca que não existe, então mostra o
+  // nome como texto fixo em vez de dropdown.
+  const mostrarSeletorUnidade = isAdmin || unidadesPermitidas.length >= 1;
+  const unidadeUnicaSemEscolha = !isAdmin && unidadesPermitidas.length === 1;
   const opcoesSeletorUnidade = isAdmin ? unidades : unidadesPermitidas;
   const trocarUnidadeSelecionada = (id) => (isAdmin ? setFiltroUnidade(id) : trocarUnidadeAtiva(id));
 
@@ -79,19 +81,25 @@ export default function Layout() {
             <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#7a8fa3" }}>
               {isAdmin ? "Visualizando" : "Unidade ativa"}
             </label>
-            <select
-              value={filtroUnidade}
-              onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
-              className="w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
-              style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
-            >
-              {isAdmin && <option value="todos">Todas as unidades</option>}
-              {opcoesSeletorUnidade.map((un) => (
-                <option key={un.id} value={un.id}>
-                  {un.nome}
-                </option>
-              ))}
-            </select>
+            {unidadeUnicaSemEscolha ? (
+              <p className="w-full px-2 py-1.5 text-xs rounded-lg border truncate" style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}>
+                {unidadesPermitidas[0]?.nome}
+              </p>
+            ) : (
+              <select
+                value={filtroUnidade}
+                onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
+              >
+                {isAdmin && <option value="todos">Todas as unidades</option>}
+                {opcoesSeletorUnidade.map((un) => (
+                  <option key={un.id} value={un.id}>
+                    {un.nome}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
@@ -161,19 +169,25 @@ export default function Layout() {
           <div className="min-w-0 leading-tight flex-1">
             <p className="font-bold text-sm truncate">Licitalerta360</p>
             {mostrarSeletorUnidade && (
-              <select
-                value={filtroUnidade}
-                onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
-                className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border focus:outline-none"
-                style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
-              >
-                {isAdmin && <option value="todos">Todas as unidades</option>}
-                {opcoesSeletorUnidade.map((un) => (
-                  <option key={un.id} value={un.id}>
-                    {un.nome}
-                  </option>
-                ))}
-              </select>
+              unidadeUnicaSemEscolha ? (
+                <p className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border truncate" style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}>
+                  {unidadesPermitidas[0]?.nome}
+                </p>
+              ) : (
+                <select
+                  value={filtroUnidade}
+                  onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
+                  className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border focus:outline-none"
+                  style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
+                >
+                  {isAdmin && <option value="todos">Todas as unidades</option>}
+                  {opcoesSeletorUnidade.map((un) => (
+                    <option key={un.id} value={un.id}>
+                      {un.nome}
+                    </option>
+                  ))}
+                </select>
+              )
             )}
           </div>
           {permissao !== "granted" && permissao !== "unsupported" && (

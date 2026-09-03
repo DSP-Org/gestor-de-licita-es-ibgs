@@ -14,34 +14,47 @@ export function UnidadeFilterProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [trocandoUnidade, setTrocandoUnidade] = useState(false);
 
+  // Recarrega a lista de unidades usada pelo seletor do Layout. Extraído do
+  // useEffect de mount para poder ser chamado de novo por quem cria/edita/exclui
+  // uma unidade em outra tela (Usuarios.jsx) — sem isso o seletor ficava com
+  // dados velhos (ex: unidade excluída continuando a aparecer) até recarregar a página.
+  const recarregarUnidades = async (usuarioAtual) => {
+    const u = usuarioAtual ?? usuarioLogado;
+    const isMaster = u?.email === "nailton.alsampaio@gmail.com";
+    if (isMaster) {
+      try {
+        const res = await base44.entities.UnidadeNegocio.list();
+        setUnidades(toArray(res).filter((un) => un && un.id));
+      } catch (err) {
+        console.error("Erro ao carregar unidades de negócio:", err);
+        setUnidades([]);
+      }
+    } else {
+      const permitidas = Array.isArray(u?.unidades_negocio_ids) ? u.unidades_negocio_ids : [];
+      if (permitidas.length === 0) {
+        setUnidadesPermitidas([]);
+        return;
+      }
+      try {
+        const res = await base44.entities.UnidadeNegocio.filter({ id: { $in: permitidas } });
+        setUnidadesPermitidas(toArray(res).filter((un) => un && un.id));
+      } catch (err) {
+        console.error("Erro ao carregar unidades permitidas:", err);
+        setUnidadesPermitidas([]);
+      }
+    }
+  };
+
   useEffect(() => {
-    base44.auth.me().then((u) => {
+    base44.auth.me().then(async (u) => {
       setUsuarioLogado(u);
       const isMaster = u?.email === "nailton.alsampaio@gmail.com";
       setIsAdmin(isMaster);
 
-      if (isMaster) {
-        // Master: começa com "todos", pode selecionar qualquer unidade
-        setFiltroUnidade("todos");
-        base44.entities.UnidadeNegocio.list()
-          .then((res) => setUnidades(toArray(res).filter((un) => un && un.id)))
-          .catch((err) => {
-            console.error("Erro ao carregar unidades de negócio:", err);
-            setUnidades([]);
-          });
-      } else {
-        // Usuário normal: sempre filtrado para a própria unidade ATIVA (OBRIGATÓRIO)
-        setFiltroUnidade(u?.unidade_negocio_id);
-        const permitidas = Array.isArray(u?.unidades_negocio_ids) ? u.unidades_negocio_ids : [];
-        if (permitidas.length > 0) {
-          base44.entities.UnidadeNegocio.filter({ id: { $in: permitidas } })
-            .then((res) => setUnidadesPermitidas(toArray(res).filter((un) => un && un.id)))
-            .catch((err) => {
-              console.error("Erro ao carregar unidades permitidas:", err);
-              setUnidadesPermitidas([]);
-            });
-        }
-      }
+      // Master: começa com "todos", pode selecionar qualquer unidade
+      // Usuário normal: sempre filtrado para a própria unidade ATIVA (OBRIGATÓRIO)
+      setFiltroUnidade(isMaster ? "todos" : u?.unidade_negocio_id);
+      await recarregarUnidades(u);
       setLoading(false);
     }).catch((err) => {
       console.error("Erro ao carregar usuário:", err);
@@ -75,6 +88,7 @@ export function UnidadeFilterProvider({ children }) {
     trocarUnidadeAtiva,
     trocandoUnidade,
     loading,
+    recarregarUnidades,
   };
 
   return (

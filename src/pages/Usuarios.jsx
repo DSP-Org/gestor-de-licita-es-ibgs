@@ -8,7 +8,7 @@ import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 export default function Usuarios({ embedded = false }) {
   // isAdmin aqui reflete o master (único e-mail com RLS de escrita em
   // UnidadeNegocio) — só ele pode ver/usar a exclusão de unidade.
-  const { isAdmin: isMaster } = useUnidadeFilter();
+  const { isAdmin: isMaster, recarregarUnidades } = useUnidadeFilter();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
@@ -76,6 +76,7 @@ export default function Usuarios({ embedded = false }) {
       setNovaUnidadeNome("");
       setEditandoUnidade(null);
       carregarUnidades();
+      recarregarUnidades();
     } catch (e) {
       setErro(e.message || "Erro ao salvar unidade de negócio.");
     } finally {
@@ -101,6 +102,7 @@ export default function Usuarios({ embedded = false }) {
         setNovaUnidadeNome("");
       }
       carregarUnidades();
+      recarregarUnidades();
     } catch (e) {
       setErro(e.message || "Erro ao excluir unidade de negócio.");
     }
@@ -119,6 +121,7 @@ export default function Usuarios({ embedded = false }) {
       if (res.data?.error) throw new Error(res.data.error);
       setResultadoMigracao(res.data);
       carregarUnidades();
+      recarregarUnidades();
       carregar();
     } catch (e) {
       setResultadoMigracao({ error: e.message });
