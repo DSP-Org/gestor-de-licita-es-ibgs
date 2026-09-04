@@ -265,7 +265,10 @@ export default function BancoLicitacoes() {
     const nomeBuscaEspecifica = buscaAtivaSelecionada?.nome?.trim().toLowerCase() || null;
 
     return lista.filter((l) => {
-      if (!pertenceAUnidade(l, filtroUnidade)) return false;
+      // Itens do cache global (sem unidade_negocio_id) já foram pré-filtrados
+      // pelos critérios das buscas ativas em carregarAtivas — não passam pelo
+      // filtro de unidade porque não pertencem a uma unidade específica.
+      if (l.unidade_negocio_id && !pertenceAUnidade(l, filtroUnidade)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
 
