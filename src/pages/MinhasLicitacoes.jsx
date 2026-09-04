@@ -62,6 +62,9 @@ export default function MinhasLicitacoes() {
   const [corLista, setCorLista] = useState("blue");
   const [editandoLista, setEditandoLista] = useState(null);
   const [compartilharLista, setCompartilharLista] = useState(false);
+  const [filtroUF, setFiltroUF] = useState("todos");
+  const [filtroPessoa, setFiltroPessoa] = useState("todos");
+  const [usuarios, setUsuarios] = useState([]);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
   const carregar = async () => {
@@ -78,6 +81,10 @@ export default function MinhasLicitacoes() {
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
       setListas(listasOrdenadas);
+      try {
+        const usersData = await base44.entities.User.list();
+        setUsuarios(toArray(usersData));
+      } catch { setUsuarios([]); }
     } finally {
       setLoading(false);
     }
@@ -107,6 +114,8 @@ export default function MinhasLicitacoes() {
 
     return resultado.filter((l) => {
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+      if (filtroUF !== "todos" && l.uf !== filtroUF) return false;
+      if (filtroPessoa !== "todos" && l.usuario_id !== filtroPessoa && l.created_by_id !== filtroPessoa) return false;
       if (ocultarPassadas && (l.abertura_datetime || l.abertura)) {
         const dt = parseDataAbertura(l.abertura_datetime, l.abertura);
         if (dt && dt < hojeZeroHora) return false;
@@ -124,13 +133,13 @@ export default function MinhasLicitacoes() {
       }
       return true;
     });
-  }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas]);
+  }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas, filtroUF, filtroPessoa]);
 
   // Seleção em lote não faz sentido sobreviver a uma troca de filtro/pasta/modo
   // (os itens visíveis mudam por baixo do usuário) — limpa nesses casos.
   useEffect(() => {
     setSelecionados(new Set());
-  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo]);
+  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo, filtroUF, filtroPessoa]);
 
   const toggleSelecao = (idLicitacao, marcado) => {
     setSelecionados((prev) => {
@@ -226,6 +235,48 @@ export default function MinhasLicitacoes() {
       porStatus,
     };
   }, [filtradas]);
+
+  // Cards do Painel — prazos de abertura e novidades da semana
+  const painelStats = useMemo(() => {
+    const hojeSP = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    const agora = new Date(`${hojeSP}T00:00:00-03:00`);
+    const amanha = new Date(agora); amanha.setDate(agora.getDate() + 1);
+    const limite3 = new Date(agora); limite3.setDate(agora.getDate() + 3);
+    const limite7 = new Date(agora); limite7.setDate(agora.getDate() + 7);
+    const semanaAtras = new Date(agora); semanaAtras.setDate(agora.getDate() - 7);
+
+    let novasSemana = 0;
+    let totalEmAberto = 0;
+    let abreHoje = 0;
+    let ab3dias = 0;
+    let ab7dias = 0;
+
+    filtradas.forEach((l) => {
+      const st = l.status || "interessado";
+      if (st !== "ganha" && st !== "perdida" && st !== "descartada") totalEmAberto++;
+
+      const criado = l.created_date ? new Date(l.created_date) : null;
+      if (criado && criado >= semanaAtras) novasSemana++;
+
+      const dt = parseDataAbertura(l.abertura_datetime, l.abertura);
+      if (!dt) return;
+      if (dt >= agora && dt < amanha) abreHoje++;
+      if (dt >= agora && dt <= limite3) ab3dias++;
+      if (dt >= agora && dt <= limite7) ab7dias++;
+    });
+
+    return { novasSemana, totalEmAberto, abreHoje, ab3dias, ab7dias };
+  }, [filtradas]);
+
+  const ufsDisponiveis = useMemo(() => {
+    const set = new Set(licitacoes.map((l) => l.uf).filter(Boolean));
+    return Array.from(set).sort();
+  }, [licitacoes]);
+
+  const usuariosComLicitacoes = useMemo(() => {
+    const ids = new Set(licitacoes.map((l) => l.usuario_id || l.created_by_id).filter(Boolean));
+    return usuarios.filter((u) => ids.has(u.id));
+  }, [licitacoes, usuarios]);
 
   const handleSave = async (dados) => {
     const { id, created_date, updated_date, created_by_id, ...rest } = dados;
@@ -379,34 +430,41 @@ export default function MinhasLicitacoes() {
         </div>
       </div>
 
-      {/* Métricas e Indicadores de Desempenho do Painel */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Cards do Painel — prazos e novidades */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard
-          icon={Bookmark}
-          label="Total em Gestão"
-          value={stats.total}
-          subtitle={`${stats.porStatus["interessado"]?.count || 0} em triagem`}
+          icon={Calendar}
+          label="Novas da Semana"
+          value={painelStats.novasSemana}
+          subtitle="favoritadas em 7 dias"
           color="bg-status-blue/10 text-status-blue"
         />
         <StatCard
-          icon={TrendingUp}
-          label="Pipeline em Disputa"
-          value={formatarMoeda(stats.valorEmDisputa)}
-          subtitle={`${(stats.porStatus["participando"]?.count || 0) + (stats.porStatus["acompanhando"]?.count || 0)} oportunidades ativas`}
-          color="bg-status-amber/10 text-status-amber"
-        />
-        <StatCard
-          icon={CheckCircle2}
-          label="Total Ganho 🎉"
-          value={formatarMoeda(stats.valorGanho)}
-          subtitle={`${stats.porStatus["ganha"]?.count || 0} licitações conquistadas`}
+          icon={Bookmark}
+          label="Total em Aberto"
+          value={painelStats.totalEmAberto}
+          subtitle="sem ganha/perdida"
           color="bg-primary/10 text-primary"
         />
         <StatCard
-          icon={Wallet}
-          label="Taxa de Sucesso"
-          value={`${stats.taxaConversao}%`}
-          subtitle={`de ${((stats.porStatus["ganha"]?.count || 0) + (stats.porStatus["perdida"]?.count || 0))} disputas finalizadas`}
+          icon={Clock}
+          label="Abre Hoje"
+          value={painelStats.abreHoje}
+          subtitle="disputa hoje"
+          color="bg-destructive/10 text-destructive"
+        />
+        <StatCard
+          icon={AlertCircle}
+          label="Abre até 3 dias"
+          value={painelStats.ab3dias}
+          subtitle="urgente"
+          color="bg-status-amber/10 text-status-amber"
+        />
+        <StatCard
+          icon={Calendar}
+          label="Abre em 7 dias"
+          value={painelStats.ab7dias}
+          subtitle="próxima semana"
           color="bg-purple-50 text-purple-600 dark:bg-purple-950/40"
         />
       </div>
@@ -571,6 +629,28 @@ export default function MinhasLicitacoes() {
               ))}
             </select>
 
+            <select
+              value={filtroUF}
+              onChange={(e) => setFiltroUF(e.target.value)}
+              className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="todos">Todos os estados</option>
+              {ufsDisponiveis.map((uf) => (
+                <option key={uf} value={uf}>{uf}</option>
+              ))}
+            </select>
+
+            <select
+              value={filtroPessoa}
+              onChange={(e) => setFiltroPessoa(e.target.value)}
+              className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="todos">Todas as pessoas</option>
+              {usuariosComLicitacoes.map((u) => (
+                <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+              ))}
+            </select>
+
             {/* Alternador de visualizações: Kanban, Cards e Tabela */}
             <div className="flex items-center gap-1 border rounded-lg p-1 bg-background shrink-0">
               <button
@@ -705,12 +785,12 @@ export default function MinhasLicitacoes() {
           <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
           <h3 className="font-semibold text-lg">Nenhuma licitação encontrada</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            {busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim
+            {busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos"
               ? "Tente ajustar os filtros ou a pasta selecionada."
               : "Favorite licitações no banco inicial para acompanhá-las em seu funil de disputas."}
           </p>
           <div className="flex items-center justify-center gap-2 pt-2">
-            {(busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim) ? (
+            {(busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos") ? (
               <button
                 onClick={() => {
                   setBusca("");
@@ -719,6 +799,8 @@ export default function MinhasLicitacoes() {
                   setOcultarPassadas(false);
                   setDataAberturaIni("");
                   setDataAberturaFim("");
+                  setFiltroUF("todos");
+                  setFiltroPessoa("todos");
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border rounded-lg hover:bg-muted"
               >
