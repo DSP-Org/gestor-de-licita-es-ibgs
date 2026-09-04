@@ -16,6 +16,7 @@ export default function LicitacoesVisualizacao({
   renderGestao,
   loading,
   vazio,
+  mensagemVazio,
 }) {
   const [modo, setModo] = useState("cards");
   const [colunasVisiveis, setColunasVisiveis] = useState(
@@ -31,6 +32,17 @@ export default function LicitacoesVisualizacao({
   }
 
   if (licitacoes.length === 0 || vazio) {
+    if (mensagemVazio) {
+      return (
+        <div className="py-8">
+          {typeof mensagemVazio === "string" ? (
+            <div className="text-center py-16 text-muted-foreground">{mensagemVazio}</div>
+          ) : (
+            mensagemVazio
+          )}
+        </div>
+      );
+    }
     return (
       <div className="text-center py-20 text-muted-foreground">
         Nenhuma licitação encontrada.

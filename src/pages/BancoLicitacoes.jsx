@@ -24,6 +24,39 @@ import { calcularUrgenciaAbertura } from "@/lib/prazosLicitacao";
 
 const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
+export const combinaComPalavraChave = (l, palavraChave, modoPalavras) => {
+  const termos = (palavraChave || "").split(",").map((t) => t.trim()).filter(Boolean);
+  if (termos.length === 0) return true;
+  const texto = `${l.titulo || ""} ${l.objeto || ""}`.toLowerCase();
+  const positivos = [];
+  const negativos = [];
+  termos.forEach((termo) => {
+    const negativo = termo.startsWith("-");
+    const limpo = (negativo ? termo.slice(1) : termo).replace(/^"|"$/g, "").trim().toLowerCase();
+    if (!limpo) return;
+    (negativo ? negativos : positivos).push(limpo);
+  });
+  if (negativos.some((n) => texto.includes(n))) return false;
+  if (positivos.length === 0) return true;
+  return modoPalavras === "todas" ? positivos.every((p) => texto.includes(p)) : positivos.some((p) => texto.includes(p));
+};
+
+// Converte uma busca salva no formato unificado de validação de filtros.
+export const filtrosDaBusca = (b) => ({
+  ufs: (b.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
+  modalidades: (b.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
+  municipioIbge: b.municipio_ibge || "",
+  palavraChave: b.palavra_chave || "",
+  modoPalavras: b.modo_palavras || "qualquer",
+});
+
+export const combinaComFiltros = (l, f) => {
+  if (f.ufs.length && !f.ufs.includes(l.uf)) return false;
+  if (f.modalidades.length && !f.modalidades.includes(String(l.id_tipo))) return false;
+  if (f.municipioIbge && l.municipio_IBGE !== f.municipioIbge) return false;
+  return combinaComPalavraChave(l, f.palavraChave, f.modoPalavras);
+};
+
 export default function BancoLicitacoes() {
   const [aba, setAba] = useState("novas");
   const [busca, setBusca] = useState("");
@@ -156,11 +189,21 @@ export default function BancoLicitacoes() {
     [buscasSalvas, filtroUnidade],
   );
 
+  const filtrosDasBuscasAtivas = useMemo(
+    () => buscasFiltradas.map(filtrosDaBusca),
+    [buscasFiltradas],
+  );
+
   useEffect(() => {
     setBuscasSelecionadas([]);
   }, [buscasFiltradas]);
 
   const filtrarLista = (lista) => {
+    // REGRA DE NEGÓCIO: as abas do funil (novas, triagem, descartadas) só exibem
+    // oportunidades que atendem aos critérios de buscas salvas ativas da unidade.
+    // Se não houver buscas ativas ou se a busca foi excluída, nada é exibido.
+    if (filtrosDasBuscasAtivas.length === 0) return [];
+
     const agora = new Date();
     const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
 
@@ -168,6 +211,11 @@ export default function BancoLicitacoes() {
       if (!pertenceAUnidade(l, filtroUnidade)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
+
+      // Precisa casar com ao menos uma busca ativa da unidade
+      const casaComAlgumaBusca = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
+      if (!casaComAlgumaBusca) return false;
+
       // Se não for favorita e a data de abertura já passou, não exibe em Novas
       if (!l.favorito && l.abertura_datetime && aba === "novas") {
         const dtAbertura = new Date(l.abertura_datetime);
@@ -182,14 +230,25 @@ export default function BancoLicitacoes() {
     });
   };
 
-  const novasFiltradas = useMemo(() => filtrarLista(novas), [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba]);
-  const triagemFiltradas = useMemo(() => filtrarLista(triagem), [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba]);
-  const descartadasFiltradas = useMemo(() => filtrarLista(descartadas), [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba]);
+  const novasFiltradas = useMemo(
+    () => filtrarLista(novas),
+    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas]
+  );
+  const triagemFiltradas = useMemo(
+    () => filtrarLista(triagem),
+    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas]
+  );
+  const descartadasFiltradas = useMemo(
+    () => filtrarLista(descartadas),
+    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas]
+  );
 
-  // Contagem por origem. Respeita unidade, status e termo de busca, mas de
-  // propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
+  // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
+  // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
   // origem zeraria as demais e não haveria como trocar de seleção.
   const porBuscaOrigem = useMemo(() => {
+    if (filtrosDasBuscasAtivas.length === 0) return {};
+
     const agora = new Date();
     const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     const grupos = {};
@@ -197,6 +256,9 @@ export default function BancoLicitacoes() {
       .filter((l) => {
         if (!pertenceAUnidade(l, filtroUnidade)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+        const casaComAlgumaBusca = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
+        if (!casaComAlgumaBusca) return false;
+
         if (!l.favorito && l.abertura_datetime) {
           const dtAbertura = new Date(l.abertura_datetime);
           if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) return false;
@@ -213,7 +275,7 @@ export default function BancoLicitacoes() {
         grupos[key] = (grupos[key] || 0) + 1;
       });
     return grupos;
-  }, [novas, filtroUnidade, filtroStatus, busca]);
+  }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
@@ -582,39 +644,6 @@ export default function BancoLicitacoes() {
       modoPalavras: buscaSelecionada.modo_palavras || "qualquer",
     };
   }, [buscaSelecionada, filtroModoAcervo]);
-
-  const combinaComPalavraChave = (l, palavraChave, modoPalavras) => {
-    const termos = (palavraChave || "").split(",").map((t) => t.trim()).filter(Boolean);
-    if (termos.length === 0) return true;
-    const texto = `${l.titulo || ""} ${l.objeto || ""}`.toLowerCase();
-    const positivos = [];
-    const negativos = [];
-    termos.forEach((termo) => {
-      const negativo = termo.startsWith("-");
-      const limpo = (negativo ? termo.slice(1) : termo).replace(/^"|"$/g, "").trim().toLowerCase();
-      if (!limpo) return;
-      (negativo ? negativos : positivos).push(limpo);
-    });
-    if (negativos.some((n) => texto.includes(n))) return false;
-    if (positivos.length === 0) return true;
-    return modoPalavras === "todas" ? positivos.every((p) => texto.includes(p)) : positivos.some((p) => texto.includes(p));
-  };
-
-  // Converte uma busca salva no mesmo formato de filtro usado pelo modo "config".
-  const filtrosDaBusca = (b) => ({
-    ufs: (b.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
-    modalidades: (b.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
-    municipioIbge: b.municipio_ibge || "",
-    palavraChave: b.palavra_chave || "",
-    modoPalavras: b.modo_palavras || "qualquer",
-  });
-
-  const combinaComFiltros = (l, f) => {
-    if (f.ufs.length && !f.ufs.includes(l.uf)) return false;
-    if (f.modalidades.length && !f.modalidades.includes(String(l.id_tipo))) return false;
-    if (f.municipioIbge && l.municipio_IBGE !== f.municipioIbge) return false;
-    return combinaComPalavraChave(l, f.palavraChave, f.modoPalavras);
-  };
 
   // O acervo vem do ConsultaCache, que é global por design (economiza chamadas à
   // API entre usuários). Para não expor o banco inteiro, o recorte padrão é a
@@ -1034,6 +1063,19 @@ export default function BancoLicitacoes() {
             licitacoes={novasFiltradas}
             loading={novasLoading}
             vazio={novasFiltradas.length === 0}
+            mensagemVazio={
+              buscasFiltradas.length === 0 ? (
+                <div className="max-w-md mx-auto text-center space-y-3 p-6 bg-card border rounded-2xl shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-foreground">Nenhuma busca ativa configurada</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Para visualizar oportunidades aqui, é necessário ter ao menos uma busca ativa salva para a sua unidade. Cadastre ou ative suas buscas em <b>Configurações</b>.
+                  </p>
+                </div>
+              ) : null
+            }
             onRowClick={setSelecionada}
             selecionados={selecionadasNovas}
             onToggleSelecao={toggleSelecaoNova}
@@ -1111,6 +1153,19 @@ export default function BancoLicitacoes() {
             licitacoes={triagemFiltradas}
             loading={triagemLoading}
             vazio={triagemFiltradas.length === 0}
+            mensagemVazio={
+              buscasFiltradas.length === 0 ? (
+                <div className="max-w-md mx-auto text-center space-y-3 p-6 bg-card border rounded-2xl shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-foreground">Nenhuma busca ativa configurada</h4>
+                  <p className="text-sm text-muted-foreground">
+                    As oportunidades em triagem seguem as buscas ativas da sua unidade. Cadastre ou ative buscas em <b>Configurações</b> para gerenciar o funil.
+                  </p>
+                </div>
+              ) : null
+            }
             onRowClick={setSelecionada}
             selecionados={selecionadasTriagem}
             onToggleSelecao={toggleSelecaoTriagem}
@@ -1173,6 +1228,19 @@ export default function BancoLicitacoes() {
             licitacoes={descartadasFiltradas}
             loading={descartadasLoading}
             vazio={descartadasFiltradas.length === 0}
+            mensagemVazio={
+              buscasFiltradas.length === 0 ? (
+                <div className="max-w-md mx-auto text-center space-y-3 p-6 bg-card border rounded-2xl shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-semibold text-foreground">Nenhuma busca ativa configurada</h4>
+                  <p className="text-sm text-muted-foreground">
+                    O histórico de descarte é filtrado pelas buscas ativas da sua unidade. Cadastre ou ative buscas em <b>Configurações</b> para gerenciar os itens.
+                  </p>
+                </div>
+              ) : null
+            }
             onRowClick={setSelecionada}
             selecionados={selecionadasDescartadas}
             onToggleSelecao={toggleSelecaoDescartadas}
