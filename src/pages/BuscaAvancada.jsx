@@ -44,11 +44,11 @@ export default function BuscaAvancada() {
     palavrasChave: [],
     dataAberturaInicio: "",
     dataAberturaFim: "",
+    dataPublicacaoInicio: "",
+    dataPublicacaoFim: "",
   });
   const [inputPalavraChave, setInputPalavraChave] = useState("");
   const [buscarAPI, setBuscarAPI] = useState(false);
-  const [dataPublicacaoAPIInicio, setDataPublicacaoAPIInicio] = useState("");
-  const [dataPublicacaoAPIFim, setDataPublicacaoAPIFim] = useState("");
   const [buscarPNCP, setBuscarPNCP] = useState(false);
 
   const [licitacoes, setLicitacoes] = useState([]);
@@ -67,9 +67,10 @@ export default function BuscaAvancada() {
   const filtrosAvancadosAtivos = useMemo(() => {
     let count = 0;
     if (filtros.dataAberturaInicio || filtros.dataAberturaFim) count++;
+    if (filtros.dataPublicacaoInicio || filtros.dataPublicacaoFim) count++;
     if (buscarAPI || buscarPNCP) count++;
     return count;
-  }, [filtros.dataAberturaInicio, filtros.dataAberturaFim, buscarAPI, buscarPNCP]);
+  }, [filtros.dataAberturaInicio, filtros.dataAberturaFim, filtros.dataPublicacaoInicio, filtros.dataPublicacaoFim, buscarAPI, buscarPNCP]);
 
   useEffect(() => {
     if (!usuarioLogado) return;
@@ -174,6 +175,22 @@ export default function BuscaAvancada() {
           return dataAbertura && dataAbertura <= dataFim;
         });
       }
+      if (filtros.dataPublicacaoInicio) {
+        const pubInicio = new Date(filtros.dataPublicacaoInicio + "T00:00:00");
+        resultado = resultado.filter(l => {
+          if (!l.data_publicacao) return false;
+          const dataPub = new Date(l.data_publicacao + "T00:00:00");
+          return dataPub >= pubInicio;
+        });
+      }
+      if (filtros.dataPublicacaoFim) {
+        const pubFim = new Date(filtros.dataPublicacaoFim + "T23:59:59");
+        resultado = resultado.filter(l => {
+          if (!l.data_publicacao) return false;
+          const dataPub = new Date(l.data_publicacao + "T00:00:00");
+          return dataPub <= pubFim;
+        });
+      }
       if (buscarAPI) {
         try {
           const ufsParaBuscar = filtros.ufs.length > 0 ? filtros.ufs : [undefined];
@@ -185,8 +202,8 @@ export default function BuscaAvancada() {
 
           const chamadasApi = ufsParaBuscar.map(uf =>
             buscarLicitacoes({
-              data_inicio: dataPublicacaoAPIInicio || undefined,
-              data_fim: dataPublicacaoAPIFim || undefined,
+              data_inicio: filtros.dataPublicacaoInicio || undefined,
+              data_fim: filtros.dataPublicacaoFim || undefined,
               uf: uf || undefined,
               modalidade: modalidadeParaBuscar,
               palavra_chave: palavraChaveParaBuscar,
@@ -219,7 +236,7 @@ export default function BuscaAvancada() {
           const chamadasPncp = ufsParaBuscar.map(uf =>
             buscarLicitacoes({
               fonte: "pncp",
-              data_insercao: dataPublicacaoAPIInicio || undefined,
+              data_insercao: filtros.dataPublicacaoInicio || undefined,
               uf: uf || undefined,
               modalidade: modalidadesCodigos.join(","),
               pagina: 1,
@@ -259,12 +276,12 @@ export default function BuscaAvancada() {
       palavrasChave: [],
       dataAberturaInicio: "",
       dataAberturaFim: "",
+      dataPublicacaoInicio: "",
+      dataPublicacaoFim: "",
     });
     setInputPalavraChave("");
     setBuscarAPI(false);
     setBuscarPNCP(false);
-    setDataPublicacaoAPIInicio("");
-    setDataPublicacaoAPIFim("");
     setLicitacoes([]);
     setSelecionados(new Set());
     setErro("");
@@ -418,6 +435,7 @@ export default function BuscaAvancada() {
   const totalFiltrosAtivos =
     filtros.ufs.length + filtros.modalidades.length + filtros.palavrasChave.length +
     (filtros.dataAberturaInicio ? 1 : 0) + (filtros.dataAberturaFim ? 1 : 0) +
+    (filtros.dataPublicacaoInicio ? 1 : 0) + (filtros.dataPublicacaoFim ? 1 : 0) +
     (buscarAPI ? 1 : 0) + (buscarPNCP ? 1 : 0);
 
   return (
@@ -614,24 +632,19 @@ export default function BuscaAvancada() {
                 </div>
               </div>
 
-              {/* Fontes externas — datas de publicação */}
-              {(buscarAPI || buscarPNCP) && (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Início</label>
-                      <input type="date" value={dataPublicacaoAPIInicio} onChange={(e) => setDataPublicacaoAPIInicio(e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Fim</label>
-                      <input type="date" value={dataPublicacaoAPIFim} onChange={(e) => setDataPublicacaoAPIFim(e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    💡 Se não preencher as datas, a busca considera o dia de hoje com resposta instantânea.
-                  </p>
+              {/* Datas de publicação */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Início</label>
+                  <input type="date" value={filtros.dataPublicacaoInicio} onChange={(e) => handleMudarFiltro("dataPublicacaoInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
                 </div>
-              )}
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Fim</label>
+                  <input type="date" value={filtros.dataPublicacaoFim} onChange={(e) => handleMudarFiltro("dataPublicacaoFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                </div>
+              </div>
+
+
             </div>
           )}
         </div>
