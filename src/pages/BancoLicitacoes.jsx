@@ -20,6 +20,7 @@ import { toArray } from "@/lib/toArray";
 import { MODALIDADES, buscarLicitacoes } from "@/shared/alertaApi";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
+import { calcularUrgenciaAbertura } from "@/lib/prazosLicitacao";
 
 const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
@@ -348,6 +349,7 @@ export default function BancoLicitacoes() {
   const [filtroModalidade, setFiltroModalidade] = useState("");
   const [buscasSalvasAcervo, setBuscasSalvasAcervo] = useState([]);
   const [filtroBuscaId, setFiltroBuscaId] = useState("");
+  const [filtroUrgenciaAcervo, setFiltroUrgenciaAcervo] = useState("todos");
   const [filtroModoAcervo, setFiltroModoAcervo] = useState("config"); // "config" (busca salva) ou "livre" (filtros manuais)
   const [filtroPalavraChaveLivre, setFiltroPalavraChaveLivre] = useState("");
   const [filtroModoPalavrasLivre, setFiltroModoPalavrasLivre] = useState("qualquer");
@@ -511,17 +513,23 @@ export default function BancoLicitacoes() {
         // as buscas salvas do usuário. Sem buscas salvas, nada é exibido.
         return false;
       }
+      if (filtroUrgenciaAcervo !== "todos") {
+        const urg = calcularUrgenciaAbertura(l.abertura_datetime, l.abertura);
+        if (filtroUrgenciaAcervo === "hoje" && urg.tipo !== "hoje") return false;
+        if (filtroUrgenciaAcervo === "urgente" && urg.tipo !== "hoje" && urg.tipo !== "urgente") return false;
+        if (filtroUrgenciaAcervo === "em_breve" && urg.tipo !== "hoje" && urg.tipo !== "urgente" && urg.tipo !== "em_breve") return false;
+      }
       if (!termo) return true;
       return [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [acervo, busca, ufsLivreSelecionadas, cidadesLivreSelecionadas, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos, filtrosDoUsuario]);
+  }, [acervo, busca, ufsLivreSelecionadas, cidadesLivreSelecionadas, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos, filtrosDoUsuario, filtroUrgenciaAcervo]);
 
   useEffect(() => {
     setPagina(1);
     setSelecionadosAcervo(new Set());
-  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre]);
+  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId, filtroUrgenciaAcervo, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre]);
 
   useEffect(() => {
     setFiltroCidade("");
@@ -814,6 +822,8 @@ export default function BancoLicitacoes() {
                   buscasSalvas={buscasSalvasAcervo}
                   filtroBuscaId={filtroBuscaId}
                   onChangeBuscaId={setFiltroBuscaId}
+                  filtroUrgencia={filtroUrgenciaAcervo}
+                  onChangeUrgencia={setFiltroUrgenciaAcervo}
                 />
               </div>
 

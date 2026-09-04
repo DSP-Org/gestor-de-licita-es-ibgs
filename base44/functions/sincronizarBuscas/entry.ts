@@ -32,6 +32,7 @@ export default async function(req) {
     // horários oferecidos pela interface, e aqui cada busca só roda no horário
     // que o usuário configurou. Sincronização manual sempre traz buscaIds e
     // portanto ignora este filtro — o botão funciona a qualquer hora.
+    let horaAtual = null;
     if (!idsSelecionados) {
       // formatToParts evita variações de locale (pt-BR chega a devolver "14 h").
       const partes = new Intl.DateTimeFormat("en-GB", {
@@ -39,7 +40,7 @@ export default async function(req) {
         hour: "2-digit",
         hour12: false,
       }).formatToParts(new Date());
-      const horaAtual = (partes.find((p) => p.type === "hour")?.value || "").padStart(2, "0");
+      horaAtual = (partes.find((p) => p.type === "hour")?.value || "").padStart(2, "0");
       buscas = buscas.filter(
         (busca) => String(busca.horario_sincronizacao || "09:00").slice(0, 2).padStart(2, "0") === horaAtual,
       );
@@ -277,6 +278,98 @@ export default async function(req) {
           }
         } catch (errLimpeza) {
           console.warn(`[Housekeeping] Erro ao limpar vencidas para busca ${busca.nome}:`, errLimpeza);
+        }
+
+        // Alerta de Prazo Crítico (≤ 24h a 48h): notifica sobre pregões iminentes favoritados
+        try {
+          if (busca.notificar_email !== false) {
+            const limitePrazoCritico = new Date(hojeZeroHora.getTime() + 48 * 60 * 60 * 1000); // próximas 48h
+
+            const favoritadasAtivas = await base44.asServiceRole.entities.Licitacao.filter({
+              unidade_negocio_id: busca.unidade_negocio_id,
+              favorito: true,
+              status: { $in: ["interessado", "acompanhando", "participando"] },
+              oculto: { $ne: true },
+            }, "-abertura_datetime", 100);
+
+            const criticas = (favoritadasAtivas || []).filter((l) => {
+              if (!l.abertura_datetime) return false;
+              const dt = new Date(l.abertura_datetime);
+              return !isNaN(dt.getTime()) && dt >= hojeZeroHora && dt <= limitePrazoCritico;
+            });
+
+            if (criticas.length > 0) {
+              const cardsCriticos = criticas.map((l, i) => {
+                const dt = new Date(l.abertura_datetime);
+                const ehHoje = dt < new Date(hojeZeroHora.getTime() + 24 * 60 * 60 * 1000);
+                const badgeLabel = ehHoje ? "🚨 ABRE HOJE" : "⚠️ ABRE AMANHÃ";
+                const badgeBg = ehHoje ? "#ef4444" : "#f59e0b";
+
+                return `<tr><td style="padding:0 24px 12px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${badgeBg};border-radius:8px;">
+                    <tr><td style="padding:16px;">
+                      <div style="margin-bottom:8px;">
+                        <span style="background:${badgeBg};color:#ffffff;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:9999px;">${badgeLabel}</span>
+                      </div>
+                      <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#111827;">${i + 1}. ${escapaHTML(l.titulo)}</p>
+                      <p style="margin:0 0 6px;font-size:13px;color:#4b5563;">Órgão: ${escapaHTML(l.orgao) || "—"} · ${escapaHTML(l.uf || "")} - ${escapaHTML(l.municipio || "")}</p>
+                      <p style="margin:0;font-size:13px;color:#1f2937;font-weight:600;">Data/Hora Abertura: ${escapaHTML(l.abertura) || "—"}</p>
+                    </td></tr>
+                  </table>
+                </td></tr>`;
+              }).join("");
+
+              const corpoCritico = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+        <tr><td style="background:#b91c1c;padding:24px;">
+          <h1 style="margin:0;color:#ffffff;font-size:18px;">⚠️ ALERTA DE PREGÃO IMINENTE (≤ 24h/48h)</h1>
+          <p style="margin:4px 0 0;color:#fca5a5;font-size:13px;">Unidade / Busca: ${escapaHTML(busca.nome)}</p>
+        </td></tr>
+        <tr><td style="padding:20px 24px 12px;">
+          <p style="margin:0;font-size:14px;color:#374151;">Você possui <b>${criticas.length} licitação(ões) favoritada(s)</b> com abertura nas próximas 24h a 48h. Prepare sua proposta e certidões:</p>
+        </td></tr>
+        ${cardsCriticos}
+        <tr><td style="padding:16px 24px 24px;">
+          <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:16px;">Alerta Automático Licitalerta360</p>
+          <p style="margin:0;font-size:11px;color:#9ca3af;">Data5 Tecnologia</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+              const valores = Array.isArray(busca.destinatarios_email) && busca.destinatarios_email.length > 0
+                ? busca.destinatarios_email
+                : [donoId];
+              const destinatariosAlerta = [];
+              for (const v of valores) {
+                if (typeof v === "string" && v.includes("@")) {
+                  destinatariosAlerta.push(v);
+                  continue;
+                }
+                try {
+                  const u = await base44.asServiceRole.entities.User.get(v);
+                  if (u?.email) destinatariosAlerta.push(u.email);
+                } catch (_) {}
+              }
+
+              for (const to of [...new Set(destinatariosAlerta)]) {
+                try {
+                  await base44.asServiceRole.integrations.Core.SendEmail({
+                    to,
+                    subject: `⚠️ ALERTA DE PREGÃO IMINENTE (${criticas.length}) — ${busca.nome}`,
+                    body: corpoCritico,
+                  });
+                } catch (eSend) {
+                  console.error(`[Alerta Critico] Erro ao enviar para ${to}:`, eSend);
+                }
+              }
+            }
+          }
+        } catch (errCritico) {
+          console.warn(`[Alerta Critico] Erro ao processar alertas de prazo para busca ${busca.nome}:`, errCritico);
         }
 
         await base44.asServiceRole.entities.BuscaSalva.update(busca.id, {
