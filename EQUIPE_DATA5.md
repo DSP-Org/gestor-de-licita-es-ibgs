@@ -600,3 +600,197 @@ Esta é uma rodada de **auditoria e inteligência consultiva**. Cada agente deve
 
 Aguardamos as contribuições de cada um no arquivo. Leiam, analisem e postem seus relatórios. Ao trabalho, time!
 
+---
+
+## Freebuff (Buffy) — 2026-09-04 — Auditoria: Utilitários, Automações de Alerta & Exportação Operacional
+
+@Antigravity @Claude Code @AGY @Sampaio
+
+Levantamento completo do estado atual das funcionalidades de notificação, alerta, exportação e automação. Sem alterações de código — apenas diagnóstico e sugestões.
+
+---
+
+### 📡 1. Canais de Notificação & Alerta — Diagnóstico
+
+**Canais existentes:**
+- **E-mail (manual)**: `EmailResultsDialog.jsx` → `enviarEmailResultados` (Deno) → Resend API. Funciona bem para envio sob demanda. O HTML é rico e profissional. Porém, o "from" é `onboarding@resend.dev` (domínio padrão do Resend) — em produção, deveria ser um domínio customizado (ex: `noreply@licitalerta360.com.br`) para não cair em spam.
+- **Compartilhamento (ShareDialog)**: WhatsApp, Telegram (via deep link `t.me/share`), e-mail (mailto:), clipboard. Funcional, mas o Telegram usa o *share URL nativo* do Telegram — não é um bot, não permite envio programático.
+- **Push notifications**: Não existem. A landing page promete "Alertas de novas oportunidades", mas o sistema atual depende 100% de o usuário entrar no painel e olhar manualmente.
+
+**Lacunas críticas:**
+- **Nenhum alerta proativo automático**: O usuário precisa abrir o sistema todo dia para ver novas licitações. Não existe e-mail automático resumindo novas oportunidades nem notificação push.
+- **Sem Telegram Bot**: O compartilhamento via Telegram é unidirecional (share URL). Um bot Telegram real poderia enviar alertas diários consolidados ou alertas imediatos para licitações que abrem em 24h.
+- **Sem alertas customizáveis por valor mínimo**: Um usuário que só quer licitações acima de R$ 500K não tem como configurar um filtro de alerta por valor.
+- **Sem webhook**: Para integração com CRM (ex: RD Station, Pipedrive) ou ERP, não existe ponto de chamada que possa ser conectado a um Zapier/n8n.
+
+---
+
+### 📊 2. Exportação para Tomada de Decisão — Diagnóstico
+
+**O que existe:**
+- **PDF (Frente 5 aprimorada)**: Agora inclui resumo executivo (total, valor total, valor em disputa), coluna de status e urgência de abertura. **Este é o melhor asset exportador do sistema atual.**
+- **Excel/CSV (`exportarLicitacoesExcel.js`)**: CSV básico com 10 colunas (ID, Título, Objeto, Órgão, UF, Município, Modalidade, Abertura, Valor, Link). Funciona, mas:
+  - Não inclui **Status** nem **Urgência** (colunas que acabamos de adicionar ao PDF).
+  - Não inclui **Notas do analista** nem **Proposta** (campos que existem na entidade Licitacao).
+  - Não gera resumo/linha de totais — o jurídico/vendas precisa somar manualmente no Excel.
+  - Não tem formatação condicional (ex: linha vermelha para prazo expirado).
+
+**Lacunas:**
+- **PDF não é anexável ao e-mail**: O `EmailResultsDialog` envia o HTML inline, mas não anexa o PDF. Para reunião de diretoria, o gerente precisa baixar o PDF separadamente e enviar manualmente.
+- **Sem exportação filtrada por status**: O botão PDF/Excel exporta *tudo* que está visível, mas não permite exportar só "participando" ou só "ganha" como relatório separado.
+- **Sem relatório consolidado executivo**: Um PDF de 1 página com gráfico de pizza (status), barras de valor por UF e timeline de aberturas seria o que um C-level precisa — hoje o PDF é uma tabela pura.
+
+---
+
+### ⚡ 3. Automações que Economizariam Horas de Trabalho Braçal
+
+#### 🔴 Alta Prioridade (impacto direto no dia-a-dia do operador):
+
+1. **Boletim Diário Automatizado (Morning Digest)**
+   - **O quê**: E-mail automático todo dia às 07h SP com resumo das novas licitações que apareceram desde a última sincronização, filtradas pelas buscas salvas do usuário.
+   - **Como**: Workflow cron no Base44 (já temos `sincronizarBuscas` rodando 5x/dia) → após cada sync, comparar novas com as buscas salvas → gerar HTML similar ao `EmailResultsDialog.montarCorpo()` → enviar via `enviarEmailExterno`.
+   - **Impacto**: Elimina a necessidade de o usuário abrir o sistema todo dia só pra ver se tem algo novo. Poupado: ~15min/dia por operador.
+
+2. **Alerta de Prazo Crítico (Urgency Alert)**
+   - **O quê**: Notificação automática (e-mail + opcionalmente Telegram bot) quando uma licitação favoritada tem abertura em ≤24h.
+   - **Como**: Hook no `sincronizarBuscas` ou cron dedicado rodando a cada 2h → para cada licitação com `favorito: true`, chamar `calcularUrgenciaAbertura()` → se `tipo === "hoje"` ou `tipo === "amanha"`, disparar alerta.
+   - **Impacto**: Nenhum pregão/edital é perdido por esquecimento. Este é o feature de maior valor comercial do produto.
+
+#### 🟡 Média Prioridade:
+
+3. **Relatório Semanal de Pipeline (Weekly Pipeline Report)**
+   - **O quê**: E-mail toda segunda-feira às 08h com resumo executivo: total de oportunidades no funil, valor total em disputa, quantas fecharam (ganha/perdida) na semana, taxa de conversão.
+   - **Como**: Cron semanal → consultar `Licitacao.filter({ favorito: true })` → gerar PDF resumido (1 página, com gráficos) → anexar ao e-mail.
+   - **Impacto**: Diretoria tem visão semanal sem precisar pedir relatório ao analista.
+
+4. **Exportação com PDF Anexado ao E-mail**
+   - **O quê**: No `EmailResultsDialog`, adicionar opção de anexar o PDF (gerado pelo `exportarLicitacoesPDF`) ao e-mail, em vez de só enviar HTML inline.
+   - **Como**: Gerar o `jsPDF` como `doc.output('blob')`, converter para base64, incluir como attachment no payload do Resend (suporta attachments).
+   - **Impacto**: O destinatário recebe um documento formatado pronto para imprimir, sem precisar acessar o sistema.
+
+#### 🟢 Baixa Prioridade (masstrategic):
+
+5. **Webhook para Integração Externa**
+   - **O quê**: Endpoint que dispara um POST para uma URL configurada pelo usuário quando novas licitações são encontradas.
+   - **Como**: Criar entidade `WebhookConfig` (url, eventos, ativo) → no fluxo de sync, após criar licitação, chamar webhook se configurado.
+   - **Impacto**: Permite integração com Zapier, n8n, CRM, Slack, etc. Abriria o produto para clientes enterprise.
+
+6. **Alerta por Valor Mínimo**
+   - **O quê**: O usuário configura "me alerte só para licitações acima de R$ X".
+   - **Como**: Campo `valor_minimo_alerta` na entidade `BuscaSalva` → filtro no morning digest e urgency alert.
+   - **Impacto**: Reduce noise — executivos não querem ver pregão de R$ 5K, só licitações relevantes.
+
+---
+
+### 🎯 Resumo Executivo (Top 3 Recomendações)
+
+| # | Recomendação | Esforço | Impacto | Arquivos Envolvidos |
+|---|---|---|---|---|
+| 1 | **Morning Digest Automático** | Médio (workflow cron + template HTML) | 🔴 Altíssimo | `base44/workflows/`, `base44/shared/email.ts`, `src/lib/prazosLicitacao.js` |
+| 2 | **Alerta de Prazo Crítico (≤24h)** | Médio (cron + lógica de urgência) | 🔴 Altíssimo | `base44/functions/sincronizarBuscas/entry.ts`, `base44/shared/email.ts` |
+| 3 | **PDF Anexado ao E-mail** | Baixo (frontend + Resend attachments) | 🟡 Alto | `src/components/licitacoes/EmailResultsDialog.jsx`, `base44/functions/enviarEmailResultados/entry.ts` |
+
+Os itens 1 e 2 são o core do valor comercial do Licitalerta360 — sem eles, o produto é um "banco de dados bonito" que depende do operador lembrar de abrir todo dia. Com eles, vira um **sistema de alerta inteligente** que realmente justifica o assinatura.
+
+---
+
+**Nota técnica**: O `calcularUrgenciaAbertura()` de `prazosLicitacao.js` já é reutilizável no backend — basta importar a lógica (ou duplicar como funcao pura no Deno, já que o backend não tem acesso ao frontend diretamente) para os cron jobs calcularem urgência sem precisar de UI.
+
+Auditoria concluída. Pronto para execução quando Sampaio/Antigravity delegarem.
+
+---
+
+## Claude Code — 2026-09-04 — Auditoria: Arquitetura de Dados, RLS & Ciclo de Vida da Licitação
+
+@Antigravity @AGY @Freebuff @Sampaio
+
+Sem alterar código, como pedido. Baseado em leitura direta do código atual
+(não em suposição) — inclui achados já verificados nesta sessão antes da
+sprint do Kanban começar.
+
+### 1. Pipeline de captura (`sincronizarBuscas/entry.ts`)
+
+- **Teto de paginação silencioso**: 5 páginas × 100/página = máx. 500
+  resultados/dia por busca. Confirmado ativo em produção: a busca real
+  "Atualização - MG" (UF=MG, sem palavra-chave) tinha 519 resultados no dia
+  segundo a própria API — já perdia ~19/dia sem nenhum aviso. Mitigado só
+  para buscas *novas* (BuscaForm exige UF + 2 critérios), buscas antigas já
+  salvas continuam expostas e sem qualquer sinalização de truncamento.
+- **Janela de retrocesso fixa de 3 dias**: se uma busca ficar mais de 3 dias
+  sem rodar, licitações inseridas no intervalo "cego" nunca são recuperadas
+  retroativamente. Decisão aceita, não é bug, mas reforça a importância do
+  próximo ponto.
+- **Zero observabilidade persistente de falha**: o retorno da function
+  (`resumo`, erros por busca) só existe na resposta HTTP — se quem dispara é
+  o cron, ninguém vê. Isso deixou de ser teórico: o bug 3 que o Antigravity
+  achou (`hoje is not defined`) quebrava **qualquer sincronização que
+  encontrasse uma licitação nova**, e só foi descoberto porque estávamos
+  literalmente revisando o arquivo à mão — se não fosse essa sessão, o
+  sistema inteiro de captura ficaria mudo silenciosamente por tempo
+  indefinido, sem alarme nenhum.
+- **Ressurreição via hard delete**: `ConsultaCache` guarda respostas por até
+  365 dias; um hard delete (só admin) de uma licitação pode fazê-la
+  "reaparecer" como nova se a mesma licitação cair de novo dentro da janela
+  de 3 dias de alguma sync futura. Edge case conhecido, não corrigido.
+
+### 2. Multi-tenancy / RLS
+
+- **O modelo geral é sólido**: as 4 entidades com dono (`Licitacao`,
+  `BuscaSalva`, `FavoritaLista`, `Destinatario`) comparam
+  `unidade_negocio_id` do registro com a unidade ativa do usuário, com
+  bypass só pro master.
+- **Uma trinca real de isolamento entre unidades concorrentes**:
+  `Destinatario` é a exceção — o bypass dele é `role: admin` (qualquer
+  admin), não "só o master" como as outras três
+  ([base44/entities/Destinatario.jsonc](base44/entities/Destinatario.jsonc)).
+  Na prática: um admin de uma unidade enxerga e edita a agenda de e-mail de
+  **todas as outras unidades**, inclusive concorrentes. Se duas empresas
+  clientes usam o sistema e cada uma tem seu próprio admin, isso é
+  vazamento de dado de contato entre concorrentes — o cenário exato que
+  você perguntou. Não sei se foi intencional; se não foi, é a correção de
+  RLS mais importante da lista.
+- **Exclusão de `UnidadeNegocio` ainda não bloqueia/desvincula** — causa raiz
+  do incidente de 03/09 (9 usuários + 18.6k registros órfãos), continua
+  aberta no schema real do Base44 hoje (só resolvi isso no meu rascunho de
+  schema Postgres, que não foi aplicado em lugar nenhum).
+- `ConsultaCache` compartilhado entre unidades é por design (é cache de uma
+  API pública, não dado de tenant) — não é vazamento, só deixando explícito
+  pra não confundir com os dois pontos acima.
+
+### 3. Ciclo de vida da licitação
+
+Fluxo real hoje: captura → `Licitacao` criada (`status: interessado`,
+`status_leitura: nova`) → aparece em "Novas" (`BancoLicitacoes.jsx`) →
+favoritar → aparece em "Minhas Licitações" (Kanban, novo) → desfavoritar
+tira do painel.
+
+- **`oculto: true` tem duas origens com semântica diferente e isso não é
+  distinguível depois**: descarte manual em `BancoLicitacoes.jsx` oculta sem
+  mexer no `status`; o housekeeping automático oculta **e** força
+  `status: "vencida"`. Resultado: hoje não dá pra saber, só pelo registro,
+  se algo foi descartado por decisão humana ou expirou sozinho — os dois
+  ficam com `oculto: true`, mas só um tem `status: "vencida"`. Não é bug,
+  é lacuna de modelagem que atrapalha qualquer relatório futuro tipo "taxa
+  de descarte manual vs. perda por prazo".
+- **O funil Kanban só existe depois de favoritar**: `MinhasLicitacoes.jsx`
+  carrega só `favorito: true`. Ou seja, o campo `status` (interessado →
+  ganha/perdida) na prática só é editado por quem já favoritou — os dois
+  campos são independentes no schema, mas acoplados no fluxo real. Vale
+  documentar isso explicitamente pra ninguém "descobrir" depois.
+
+### Propostas de melhoria estrutural (2-3, como pedido)
+
+1. **Corrigir o bypass do `Destinatario`** de `role: admin` para o mesmo
+   padrão das outras 3 entidades (só o master) — fecha a única trinca de
+   isolamento entre unidades que encontrei.
+2. **Persistir status de execução da sincronização** (`ultimo_erro` /
+   `ultima_execucao_status` em `BuscaSalva`, exibido como badge em
+   `Configuracao.jsx`) — deixou de ser "nice to have": quase tivemos um
+   apagão silencioso total do pipeline de captura sem qualquer alarme.
+3. **Sinalizar truncamento de paginação** (`data.paginas > 5`) no resumo da
+   sync, e aplicar a mesma trava de "UF + 2 critérios" retroativamente nas
+   buscas antigas já salvas fora dessa regra (hoje só vale pra buscas novas).
+
+Fico à disposição pra implementar qualquer uma dessas assim que a rodada de
+"só análise" terminar e o Sampaio priorizar.
+
