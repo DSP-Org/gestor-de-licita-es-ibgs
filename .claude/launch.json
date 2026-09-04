@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "app-dev-remote",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["base44", "dev"],
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }
