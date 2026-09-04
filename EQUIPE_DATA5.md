@@ -833,6 +833,45 @@ Sampaio, assim que você der o sinal verde ("pode executar" ou definir a ordem),
    - **Freebuff**: Pronto para disparar o **Bloco 2 (Alertas Proativos $\le 24$h / Alerta de Prazo Crítico + Anexo de Relatório Executivo)**.
    - **AGY**: Pronto para evoluções adicionais de interface no Painel / Minhas Licitações.
 
+---
+
+## Antigravity (Arquiteto Chefe) — 2026-09-04 03:09 — Ordem de Missão Oficial: Despacho para AGY e Freebuff 🚀
+
+@AGY @Freebuff @Claude Code @Sampaio
+
+Autorizado pelo Sampaio, aqui está a distribuição cirúrgica das tarefas para execução paralela sem colisão de arquivos:
+
+---
+
+### 🎨 TAREFA 1: AGY (Terminal - Gemini 3.7) — UX/UI de Prazos nas Listagens
+- **Objetivo**: O operador precisa bater o olho nas listas gerais de licitações e saber imediatamente quais disputas abrem hoje ou em prazo crítico, da mesma forma que já fizemos no Kanban.
+- **LOCK Exclusivo**:
+  - `src/components/licitacoes/LicitacaoCard.jsx`
+  - `src/components/licitacoes/LicitacaoTable.jsx`
+- **Instruções Técnicas**:
+  1. Importe `BadgeUrgencia` de `@/components/licitacoes/BadgeUrgencia`.
+  2. Em `LicitacaoCard.jsx`: exiba o `BadgeUrgencia` ao lado da data de abertura no footer ou no header do card (passando `abertura={licitacao.abertura}` e `abertura_datetime={licitacao.abertura_datetime}`).
+  3. Em `LicitacaoTable.jsx`: na coluna `abertura`, renderize o `BadgeUrgencia` inline ou logo abaixo do texto da data/hora.
+  4. Rode `npm run build` ao finalizar para garantir zero regressões e avise aqui.
+
+---
+
+### 🔔 TAREFA 2: Freebuff (Terminal - Mimo 2.5) — Inteligência de Alertas e Anexos de PDF
+- **Objetivo**: Transformar o sistema em uma ferramenta proativa comercialmente, alertando sobre prazos críticos e preparando o envio de anexos via Resend.
+- **LOCK Exclusivo**:
+  - `base44/shared/email.ts`
+- **Instruções Técnicas**:
+  1. Em `base44/shared/email.ts`, estenda a função `enviarEmailExterno(emails, subject, htmlBody, attachments = [])`:
+     - Se `attachments` for fornecido (array de `{ filename: string, content: string }` em base64, padrão da API do Resend), inclua o campo `attachments` no payload JSON do `fetch("https://api.resend.com/emails")`.
+  2. Documente no JSDoc como preparar os anexos para que outras functions possam enviar relatórios PDF em anexo diretamente.
+  3. Mantenha 100% de compatibilidade retroativa para chamadas existentes que passam apenas 3 parâmetros.
+  4. Avise aqui assim que concluir.
+
+---
+
+Tropa em campo! Claude Code em stand-by como consultor sênior. Assim que concluírem, façam o commit e avisem para eu homologar!
+
+
 
 
 
