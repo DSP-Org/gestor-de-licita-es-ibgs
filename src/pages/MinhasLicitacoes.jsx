@@ -64,6 +64,7 @@ export default function MinhasLicitacoes() {
   const [compartilharLista, setCompartilharLista] = useState(false);
   const [filtroUF, setFiltroUF] = useState("todos");
   const [filtroPessoa, setFiltroPessoa] = useState("todos");
+  const [filtroRapido, setFiltroRapido] = useState("todos");
   const [usuarios, setUsuarios] = useState([]);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
@@ -111,6 +112,10 @@ export default function MinhasLicitacoes() {
 
     const hojeSPString = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const hojeZeroHora = new Date(`${hojeSPString}T00:00:00-03:00`);
+    const amanha = new Date(hojeZeroHora); amanha.setDate(hojeZeroHora.getDate() + 1);
+    const limite3 = new Date(hojeZeroHora); limite3.setDate(hojeZeroHora.getDate() + 3);
+    const limite7 = new Date(hojeZeroHora); limite7.setDate(hojeZeroHora.getDate() + 7);
+    const semanaAtras = new Date(hojeZeroHora); semanaAtras.setDate(hojeZeroHora.getDate() - 7);
 
     return resultado.filter((l) => {
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
@@ -131,15 +136,33 @@ export default function MinhasLicitacoes() {
         const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao}`.toLowerCase();
         if (!txt.includes(q)) return false;
       }
+
+      // Filtros rápidos (cards do painel)
+      if (filtroRapido === "abertas") {
+        const st = l.status || "interessado";
+        if (st === "ganha" || st === "perdida" || st === "descartada") return false;
+      } else if (filtroRapido === "novas") {
+        const criado = l.created_date ? new Date(l.created_date) : null;
+        if (!criado || criado < semanaAtras) return false;
+      } else if (filtroRapido === "hoje") {
+        const dt = parseDataAbertura(l.abertura_datetime, l.abertura);
+        if (!dt || dt < hojeZeroHora || dt >= amanha) return false;
+      } else if (filtroRapido === "3dias") {
+        const dt = parseDataAbertura(l.abertura_datetime, l.abertura);
+        if (!dt || dt < hojeZeroHora || dt > limite3) return false;
+      } else if (filtroRapido === "7dias") {
+        const dt = parseDataAbertura(l.abertura_datetime, l.abertura);
+        if (!dt || dt < hojeZeroHora || dt > limite7) return false;
+      }
       return true;
     });
-  }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas, filtroUF, filtroPessoa]);
+  }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas, filtroUF, filtroPessoa, filtroRapido]);
 
   // Seleção em lote não faz sentido sobreviver a uma troca de filtro/pasta/modo
   // (os itens visíveis mudam por baixo do usuário) — limpa nesses casos.
   useEffect(() => {
     setSelecionados(new Set());
-  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo, filtroUF, filtroPessoa]);
+  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo, filtroUF, filtroPessoa, filtroRapido]);
 
   const toggleSelecao = (idLicitacao, marcado) => {
     setSelecionados((prev) => {
@@ -430,42 +453,47 @@ export default function MinhasLicitacoes() {
         </div>
       </div>
 
-      {/* Cards do Painel — prazos e novidades */}
+      {/* Cards do Painel — prazos e novidades (clicáveis = filtros rápidos) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard
-          icon={Calendar}
-          label="Novas da Semana"
-          value={painelStats.novasSemana}
-          subtitle="favoritadas em 7 dias"
-          color="bg-status-blue/10 text-status-blue"
-        />
         <StatCard
           icon={Bookmark}
           label="Total em Aberto"
           value={painelStats.totalEmAberto}
-          subtitle="sem ganha/perdida"
           color="bg-primary/10 text-primary"
+          active={filtroRapido === "abertas"}
+          onClick={() => setFiltroRapido(filtroRapido === "abertas" ? "todos" : "abertas")}
+        />
+        <StatCard
+          icon={Calendar}
+          label="Novas da Semana"
+          value={painelStats.novasSemana}
+          color="bg-status-blue/10 text-status-blue"
+          active={filtroRapido === "novas"}
+          onClick={() => setFiltroRapido(filtroRapido === "novas" ? "todos" : "novas")}
         />
         <StatCard
           icon={Clock}
           label="Abre Hoje"
           value={painelStats.abreHoje}
-          subtitle="disputa hoje"
           color="bg-destructive/10 text-destructive"
+          active={filtroRapido === "hoje"}
+          onClick={() => setFiltroRapido(filtroRapido === "hoje" ? "todos" : "hoje")}
         />
         <StatCard
           icon={AlertCircle}
-          label="Abre até 3 dias"
+          label="Abre em 3 dias"
           value={painelStats.ab3dias}
-          subtitle="urgente"
           color="bg-status-amber/10 text-status-amber"
+          active={filtroRapido === "3dias"}
+          onClick={() => setFiltroRapido(filtroRapido === "3dias" ? "todos" : "3dias")}
         />
         <StatCard
           icon={Calendar}
           label="Abre em 7 dias"
           value={painelStats.ab7dias}
-          subtitle="próxima semana"
           color="bg-purple-50 text-purple-600 dark:bg-purple-950/40"
+          active={filtroRapido === "7dias"}
+          onClick={() => setFiltroRapido(filtroRapido === "7dias" ? "todos" : "7dias")}
         />
       </div>
 
@@ -787,12 +815,12 @@ export default function MinhasLicitacoes() {
           <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
           <h3 className="font-semibold text-lg">Nenhuma licitação encontrada</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            {busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos"
+            {busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos" || filtroRapido !== "todos"
               ? "Tente ajustar os filtros ou a pasta selecionada."
               : "Favorite licitações no banco inicial para acompanhá-las em seu funil de disputas."}
           </p>
           <div className="flex items-center justify-center gap-2 pt-2">
-            {(busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos") ? (
+            {(busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos" || filtroRapido !== "todos") ? (
               <button
                 onClick={() => {
                   setBusca("");
@@ -803,6 +831,7 @@ export default function MinhasLicitacoes() {
                   setDataAberturaFim("");
                   setFiltroUF("todos");
                   setFiltroPessoa("todos");
+                  setFiltroRapido("todos");
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border rounded-lg hover:bg-muted"
               >
@@ -995,18 +1024,25 @@ export default function MinhasLicitacoes() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, subtitle, color }) {
+function StatCard({ icon: Icon, label, value, color, active = false, onClick }) {
   return (
-    <div className="bg-card border rounded-xl p-4 flex items-center gap-3.5 shadow-sm hover:shadow-md transition-shadow">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`bg-card border rounded-xl p-4 flex items-center gap-3 shadow-sm transition-all text-left ${
+        active
+          ? "border-primary ring-2 ring-primary/30 shadow-md"
+          : "border-border hover:shadow-md hover:border-primary/30"
+      }`}
+    >
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground truncate">{label}</p>
         <p className="text-lg sm:text-xl font-bold leading-tight mt-0.5">{value}</p>
-        {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
       </div>
-    </div>
+    </button>
   );
 }
 
