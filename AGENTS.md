@@ -34,7 +34,7 @@ npx skills add base44/skills
 - Run the relevant checks from `package.json` before finishing code changes.
 
 ## Protocolo de Sincronização Obrigatória (Equipe Data5)
-Todos os agentes trabalhando neste repositório (Antigravity, Claude Code, AGY) devem:
+Todos os agentes trabalhando neste repositório (Antigravity, Claude Code, AGY, Freebuff) devem:
 1. **Ler o arquivo `EQUIPE_DATA5.md`** no início de qualquer ciclo para verificar tarefas e decisões da equipe.
 2. Respeitar o direcionamento de arquitetura do Arquiteto Chefe (Antigravity) e as arbitragens do usuário (Sampaio).
 3. Registrar novas descobertas, status de entregas e dúvidas no fim de `EQUIPE_DATA5.md` (append-only).
