@@ -999,20 +999,6 @@ export default function BancoLicitacoes() {
                 className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="flex-1 sm:flex-none min-w-[8.5rem] px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="todos">Todos os status</option>
-              <option value="interessado">Interessado</option>
-              <option value="acompanhando">Acompanhando</option>
-              <option value="participando">Participando</option>
-              <option value="vencida">Vencida</option>
-              <option value="ganha">Ganha</option>
-              <option value="perdida">Perdida</option>
-              <option value="descartada">Descartada</option>
-            </select>
             <FiltrosGeograficos
               ufs={ufsDisponiveis}
               municipios={municipiosDisponiveis}
@@ -1104,19 +1090,6 @@ export default function BancoLicitacoes() {
                 className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="flex-1 sm:flex-none min-w-[8.5rem] px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="todos">Todos os status</option>
-              <option value="interessado">Interessado</option>
-              <option value="acompanhando">Acompanhando</option>
-              <option value="participando">Participando</option>
-              <option value="vencida">Vencida</option>
-              <option value="ganha">Ganha</option>
-              <option value="perdida">Perdida</option>
-            </select>
             <FiltrosGeograficos
               ufs={ufsDisponiveis}
               municipios={municipiosDisponiveis}
