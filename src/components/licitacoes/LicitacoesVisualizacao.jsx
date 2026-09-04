@@ -14,6 +14,7 @@ export default function LicitacoesVisualizacao({
   renderActions,
   // Controles de estado (lista, status, leitura) exibidos no corpo do card.
   renderGestao,
+  mostrarStatus = true,
   loading,
   vazio,
   mensagemVazio,
@@ -94,6 +95,7 @@ export default function LicitacoesVisualizacao({
               selecionado={selecionados?.has(l.id_licitacao)}
               onToggleSelecao={onToggleSelecao}
               gestao={renderGestao?.(l)}
+              mostrarStatus={mostrarStatus}
               action={
                 (renderActions || onDelete) && (
                   <div className="flex flex-wrap items-center gap-3">

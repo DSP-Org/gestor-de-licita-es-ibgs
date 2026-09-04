@@ -1102,7 +1102,7 @@ export default function BancoLicitacoes() {
             selecionados={selecionadasNovas}
             onToggleSelecao={toggleSelecaoNova}
             renderActions={(lic) => renderActionsFunil(lic, "novas")}
-            renderGestao={renderGestaoFunil}
+            mostrarStatus={false}
           />
         </>
       ) : aba === "triagem" ? (

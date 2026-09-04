@@ -35,6 +35,7 @@ export default function LicitacaoCard({
   selecionado,
   onToggleSelecao,
   gestao,
+  mostrarStatus = true,
 }) {
   const isNova = licitacao.status_leitura === "nova";
   const linkEdital = licitacao.link_externo || licitacao.link;
@@ -108,7 +109,9 @@ export default function LicitacaoCard({
                 {licitacao.tipo}
               </span>
             )}
-            {licitacao.status && <StatusBadge status={licitacao.status} />}
+            {mostrarStatus && licitacao.status && !isNova && licitacao.status !== "interessado" && (
+              <StatusBadge status={licitacao.status} />
+            )}
           </div>
         </div>
 
