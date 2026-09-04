@@ -36,8 +36,48 @@ export default function LicitacaoCard({
   onToggleSelecao,
   gestao,
   mostrarStatus = true,
+  tagEstado = null,
 }) {
-  const isNova = licitacao.status_leitura === "nova";
+  // Resolução dinâmica do estado do funil/ciclo de vida
+  // Suporta prop customizada `tagEstado` ou auto-resolução pelos atributos do objeto
+  const tagResolvida = (() => {
+    if (tagEstado) return tagEstado;
+    if (licitacao.oculto) {
+      return {
+        label: "Descartada",
+        icone: "🗑️",
+        className: "bg-rose-600 text-white ring-rose-600/30",
+      };
+    }
+    if (licitacao.favorito) {
+      return {
+        label: "Minha",
+        icone: "⭐",
+        className: "bg-amber-500 text-white ring-amber-500/30",
+      };
+    }
+    if (
+      licitacao.status_leitura === "vista" ||
+      licitacao.status_leitura === "lida" ||
+      licitacao.status === "em_analise"
+    ) {
+      return {
+        label: "Em Triagem",
+        icone: "⏱️",
+        className: "bg-blue-600 text-white ring-blue-600/30",
+      };
+    }
+    if (licitacao.status_leitura === "nova") {
+      return {
+        label: "Nova",
+        icone: "✨",
+        className: "bg-primary text-primary-foreground ring-primary/30",
+      };
+    }
+    return null;
+  })();
+
+  const isNova = tagResolvida?.label === "Nova" || licitacao.status_leitura === "nova";
   const linkEdital = licitacao.link_externo || licitacao.link;
 
   // Extrai nome do portal oficial de disputa (BLL, Comprasnet, Licitações-e, etc.)
@@ -54,9 +94,12 @@ export default function LicitacaoCard({
 
   return (
     <div className="relative group">
-      {isNova && (
-        <div className="absolute -top-2.5 right-6 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider font-extrabold px-3 py-0.5 rounded-full shadow-md z-10 border-2 border-background ring-1 ring-primary/20">
-          ✨ Nova
+      {tagResolvida && (
+        <div
+          className={`absolute -top-2.5 right-6 text-[10.5px] uppercase tracking-wider font-extrabold px-3 py-0.5 rounded-full shadow-md z-10 border-2 border-background ring-1 ${tagResolvida.className}`}
+        >
+          {tagResolvida.icone && <span className="mr-1">{tagResolvida.icone}</span>}
+          {tagResolvida.label}
         </div>
       )}
 

@@ -590,6 +590,8 @@ export default function BancoLicitacoes() {
   const [filtroPalavraChaveLivre, setFiltroPalavraChaveLivre] = useState("");
   const [filtroModoPalavrasLivre, setFiltroModoPalavrasLivre] = useState("qualquer");
   const [salvasIds, setSalvasIds] = useState(new Set());
+  const [licitacoesBancoMap, setLicitacoesBancoMap] = useState(new Map());
+  const [filtroEstadoAcervo, setFiltroEstadoAcervo] = useState("todas");
   const [pagina, setPagina] = useState(1);
   const porPagina = 30;
   const [buscandoApi, setBuscandoApi] = useState(false);
@@ -611,20 +613,31 @@ export default function BancoLicitacoes() {
     if (!usuarioLogado) return;
     (async () => {
       try {
-        const [cachesList, salvasList] = await Promise.all([
+        const [cachesList, licitacoesDbList] = await Promise.all([
           // O acervo é o banco global consolidado (ConsultaCache): compartilhado
           // entre usuários de propósito, para economizar chamadas à API.
           base44.entities.ConsultaCache.list("-updated_date", 500),
-          // Já as licitações salvas marcam o que ESTA unidade favoritou, então
-          // precisam respeitar o seletor — senão o master vê "Favoritada" em
-          // itens que outra unidade favoritou.
+          // Carrega as licitações cadastradas da unidade para resolver o ciclo de vida
+          // (Minhas, Em triagem, Descartadas, Novas) no Acervo Geral.
           base44.entities.Licitacao.filter(
-            { oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) },
+            escopoUnidade(isAdmin, filtroUnidade),
             "-updated_date",
-            500,
+            1000,
           ),
         ]);
-        setSalvasIds(new Set(toArray(salvasList).map((l) => l.id_licitacao)));
+        const listaDb = toArray(licitacoesDbList);
+        const mapDb = new Map();
+        const idsSalvas = new Set();
+        for (const l of listaDb) {
+          if (l.id_licitacao) {
+            mapDb.set(String(l.id_licitacao), l);
+            if (!l.oculto && l.favorito) {
+              idsSalvas.add(l.id_licitacao);
+            }
+          }
+        }
+        setLicitacoesBancoMap(mapDb);
+        setSalvasIds(idsSalvas);
 
         const mapa = new Map();
         for (const cache of toArray(cachesList)) {
@@ -701,7 +714,34 @@ export default function BancoLicitacoes() {
     return Array.from(new Set(acervo.map((l) => l.tipo).filter(Boolean))).sort();
   }, [acervo]);
 
-  const acervoFiltrado = useMemo(() => {
+  // Função para resolver o estado exato de uma licitação no Acervo
+  const obterEstadoAcervo = useCallback(
+    (l) => {
+      const doBanco = licitacoesBancoMap.get(String(l.id_licitacao));
+      if (doBanco) {
+        if (doBanco.oculto) return "descartadas";
+        if (doBanco.favorito) return "minhas";
+        if (
+          doBanco.status_leitura === "vista" ||
+          doBanco.status_leitura === "lida" ||
+          doBanco.status === "em_analise"
+        ) {
+          return "triagem";
+        }
+        if (doBanco.status_leitura === "nova") return "novas";
+      }
+      // Se não está cadastrada no banco ainda (apenas em cache global),
+      // verifica se o próprio item possui marcação ou é considerado nova
+      if (l.oculto) return "descartadas";
+      if (l.favorito) return "minhas";
+      if (l.status_leitura === "vista" || l.status_leitura === "lida") return "triagem";
+      return "novas";
+    },
+    [licitacoesBancoMap]
+  );
+
+  // Itens base que passam pelos critérios de busca/filtros/urgência
+  const acervoBase = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return acervo.filter((l) => {
       if (configFiltros) {
@@ -729,10 +769,28 @@ export default function BancoLicitacoes() {
     });
   }, [acervo, busca, ufsLivreSelecionadas, cidadesLivreSelecionadas, filtroModalidade, configFiltros, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtrosLivrePreenchidos, filtrosDoUsuario, filtroUrgenciaAcervo]);
 
+  // Contadores dinâmicos para as pílulas de estado no Acervo Geral
+  const contadoresEstadoAcervo = useMemo(() => {
+    const counts = { todas: acervoBase.length, novas: 0, triagem: 0, descartadas: 0, minhas: 0 };
+    for (const l of acervoBase) {
+      const estado = obterEstadoAcervo(l);
+      if (counts[estado] !== undefined) {
+        counts[estado] += 1;
+      }
+    }
+    return counts;
+  }, [acervoBase, obterEstadoAcervo]);
+
+  // Aplica o filtro de estado selecionado nas pílulas (Todas, Novas, Em Triagem, Descartadas, Minhas)
+  const acervoFiltrado = useMemo(() => {
+    if (filtroEstadoAcervo === "todas") return acervoBase;
+    return acervoBase.filter((l) => obterEstadoAcervo(l) === filtroEstadoAcervo);
+  }, [acervoBase, filtroEstadoAcervo, obterEstadoAcervo]);
+
   useEffect(() => {
     setPagina(1);
     setSelecionadosAcervo(new Set());
-  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId, filtroUrgenciaAcervo, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre]);
+  }, [busca, filtroUf, filtroCidade, filtroModalidade, filtroBuscaId, filtroUrgenciaAcervo, filtroModoAcervo, filtroPalavraChaveLivre, filtroModoPalavrasLivre, filtroEstadoAcervo]);
 
   useEffect(() => {
     setFiltroCidade("");
@@ -1290,6 +1348,9 @@ export default function BancoLicitacoes() {
                   onChangeBuscaId={setFiltroBuscaId}
                   filtroUrgencia={filtroUrgenciaAcervo}
                   onChangeUrgencia={setFiltroUrgenciaAcervo}
+                  filtroEstado={filtroEstadoAcervo}
+                  onChangeEstado={setFiltroEstadoAcervo}
+                  contadoresEstado={contadoresEstadoAcervo}
                 />
               </div>
 
@@ -1343,6 +1404,35 @@ export default function BancoLicitacoes() {
             onRowClick={setSelecionada}
             selecionados={selecionadosAcervo}
             onToggleSelecao={toggleSelecaoAcervo}
+            tagEstado={(lic) => {
+              const estado = obterEstadoAcervo(lic);
+              if (estado === "descartadas") {
+                return {
+                  label: "Descartada",
+                  icone: "🗑️",
+                  className: "bg-rose-600 text-white ring-rose-600/30",
+                };
+              }
+              if (estado === "minhas") {
+                return {
+                  label: "Minha",
+                  icone: "⭐",
+                  className: "bg-amber-500 text-white ring-amber-500/30",
+                };
+              }
+              if (estado === "triagem") {
+                return {
+                  label: "Em Triagem",
+                  icone: "⏱️",
+                  className: "bg-blue-600 text-white ring-blue-600/30",
+                };
+              }
+              return {
+                label: "Nova",
+                icone: "✨",
+                className: "bg-primary text-primary-foreground ring-primary/30",
+              };
+            }}
             renderActions={(lic) => {
               const jaSalva = salvasIds.has(lic.id_licitacao);
               return jaSalva ? (
