@@ -632,6 +632,14 @@ export default function BancoLicitacoes() {
             }
           }
         }
+        // Inclui também as licitações já salvas na base (Licitacao) que não
+        // estão no cache global — se atenderem aos critérios de uma busca
+        // configurada, precisam aparecer no Acervo.
+        for (const l of listaDb) {
+          if (l.id_licitacao && !mapa.has(l.id_licitacao) && !l.oculto) {
+            mapa.set(l.id_licitacao, l);
+          }
+        }
         setAcervo(Array.from(mapa.values()));
       } catch (e) {
         setErro(e.message || "Erro ao carregar o banco de licitações.");
