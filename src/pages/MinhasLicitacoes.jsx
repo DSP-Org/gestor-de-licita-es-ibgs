@@ -49,6 +49,7 @@ export default function MinhasLicitacoes() {
   const [listaSelecionada, setListaSelecionada] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [ocultarPassadas, setOcultarPassadas] = useState(false);
+  const [selecionados, setSelecionados] = useState(new Set());
   const [busca, setBusca] = useState("");
   const [dataAberturaIni, setDataAberturaIni] = useState("");
   const [dataAberturaFim, setDataAberturaFim] = useState("");
@@ -124,6 +125,74 @@ export default function MinhasLicitacoes() {
       return true;
     });
   }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas]);
+
+  // Seleção em lote não faz sentido sobreviver a uma troca de filtro/pasta/modo
+  // (os itens visíveis mudam por baixo do usuário) — limpa nesses casos.
+  useEffect(() => {
+    setSelecionados(new Set());
+  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo]);
+
+  const toggleSelecao = (idLicitacao, marcado) => {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      if (marcado) novo.add(idLicitacao);
+      else novo.delete(idLicitacao);
+      return novo;
+    });
+  };
+
+  const licsSelecionadas = () => licitacoes.filter((l) => selecionados.has(l.id_licitacao));
+
+  const handleBulkMoverPara = async (novaListaId) => {
+    const alvo = licsSelecionadas();
+    if (alvo.length === 0) return;
+    try {
+      await Promise.all(
+        alvo.map((l) =>
+          base44.entities.Licitacao.update(l.id, { lista_favorita_id: novaListaId || "", favorito: true })
+        )
+      );
+      setLicitacoes((prev) =>
+        prev.map((l) => (selecionados.has(l.id_licitacao) ? { ...l, lista_favorita_id: novaListaId || "" } : l))
+      );
+    } catch (err) {
+      console.error("Erro ao mover selecionadas:", err);
+      carregar();
+    } finally {
+      setSelecionados(new Set());
+    }
+  };
+
+  const handleBulkMudarStatus = async (novoStatus) => {
+    const alvo = licsSelecionadas();
+    if (!novoStatus || alvo.length === 0) return;
+    setLicitacoes((prev) =>
+      prev.map((l) => (selecionados.has(l.id_licitacao) ? { ...l, status: novoStatus } : l))
+    );
+    try {
+      await Promise.all(alvo.map((l) => base44.entities.Licitacao.update(l.id, { status: novoStatus })));
+    } catch (err) {
+      console.error("Erro ao mudar status em lote:", err);
+      carregar();
+    } finally {
+      setSelecionados(new Set());
+    }
+  };
+
+  const handleBulkDesfavoritar = async () => {
+    const alvo = licsSelecionadas();
+    if (alvo.length === 0) return;
+    if (!confirm(`Remover ${alvo.length} licitação(ões) selecionada(s) do painel?`)) return;
+    try {
+      await Promise.all(alvo.map((l) => base44.entities.Licitacao.update(l.id, { favorito: false })));
+      setLicitacoes((prev) => prev.filter((l) => !selecionados.has(l.id_licitacao)));
+    } catch (err) {
+      console.error("Erro ao desfavoritar em lote:", err);
+      carregar();
+    } finally {
+      setSelecionados(new Set());
+    }
+  };
 
   // Estatísticas e Funil
   const stats = useMemo(() => {
@@ -570,6 +639,74 @@ export default function MinhasLicitacoes() {
         </div>
       </div>
 
+      {/* Barra de Ações em Lote — só faz sentido em Cards/Tabela; o Kanban já resolve status via drag & drop */}
+      {modo !== "kanban" && !loading && filtradas.length > 0 && (
+        <div className="bg-card border rounded-xl p-3 sm:p-4 shadow-sm flex flex-wrap items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={selecionados.size > 0 && selecionados.size === filtradas.length}
+              onChange={(e) =>
+                setSelecionados(e.target.checked ? new Set(filtradas.map((l) => l.id_licitacao)) : new Set())
+              }
+              className="w-4 h-4 rounded cursor-pointer"
+            />
+            <span>{selecionados.size > 0 ? `${selecionados.size} selecionada(s)` : "Selecionar todas"}</span>
+          </label>
+
+          {selecionados.size > 0 && (
+            <>
+              <div className="h-4 w-px bg-border hidden sm:block" />
+
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  handleBulkMoverPara(e.target.value === "sem-lista" ? null : e.target.value);
+                  e.target.value = "";
+                }}
+                className="text-xs px-2.5 py-1.5 border rounded-lg bg-background cursor-pointer"
+              >
+                <option value="" disabled>Mover para pasta...</option>
+                <option value="sem-lista">⭐ Sem Lista</option>
+                {listas.map((lista) => (
+                  <option key={lista.id} value={lista.id}>📁 {lista.nome}</option>
+                ))}
+              </select>
+
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  handleBulkMudarStatus(e.target.value);
+                  e.target.value = "";
+                }}
+                className="text-xs px-2.5 py-1.5 border rounded-lg bg-background cursor-pointer"
+              >
+                <option value="" disabled>Mudar status...</option>
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+
+              <button
+                onClick={handleBulkDesfavoritar}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border hover:bg-red-50 hover:text-red-600 text-muted-foreground"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Desfavoritar selecionadas
+              </button>
+
+              <button
+                onClick={() => setSelecionados(new Set())}
+                className="text-xs text-muted-foreground hover:text-foreground ml-auto"
+              >
+                Limpar seleção
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Conteúdo Principal do Painel */}
       {loading ? (
         <div className="text-center py-24 text-muted-foreground">Carregando painel de acompanhamento...</div>
@@ -625,6 +762,8 @@ export default function MinhasLicitacoes() {
               <LicitacaoCard
                 licitacao={lic}
                 onClick={() => setSelecionada(lic)}
+                selecionado={selecionados.has(lic.id_licitacao)}
+                onToggleSelecao={toggleSelecao}
                 gestao={
                   <GestaoRapida
                     licitacao={lic}
@@ -665,6 +804,8 @@ export default function MinhasLicitacoes() {
         <LicitacaoTable
           licitacoes={filtradas}
           onRowClick={(lic) => setSelecionada(lic)}
+          selecionados={selecionados}
+          onToggleSelecao={toggleSelecao}
           action={(lic) => (
             <div className="flex items-center gap-2">
               <button
