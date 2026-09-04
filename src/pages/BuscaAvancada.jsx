@@ -309,6 +309,54 @@ export default function BuscaAvancada() {
     alert("Funcionalidade de envio em desenvolvimento");
   }
 
+  // Mover para Em Triagem
+  async function handleMoverParaTriagem(licacao) {
+    try {
+      if (licacao.id) {
+        await base44.entities.Licitacao.update(licacao.id, {
+          status_leitura: "vista",
+          status: "em_analise",
+          oculto: false,
+        });
+      } else {
+        // Se for resultado novo da API externa que ainda não existe no banco local
+        const novaCriada = await base44.entities.Licitacao.create({
+          unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
+          id_licitacao: licacao.id_licitacao,
+          titulo: licacao.titulo,
+          objeto: licacao.objeto,
+          uf: licacao.uf,
+          municipio: licacao.municipio,
+          municipio_ibge: licacao.municipio_IBGE,
+          orgao: licacao.orgao,
+          abertura_datetime: licacao.abertura_datetime,
+          abertura: licacao.abertura,
+          tipo: licacao.tipo,
+          id_tipo: licacao.id_tipo,
+          valor: licacao.valor,
+          link: licacao.link,
+          link_externo: licacao.linkExterno || licacao.link_externo,
+          status: "em_analise",
+          status_leitura: "vista",
+          oculto: false,
+          favorito: false,
+        });
+        licacao.id = novaCriada.id;
+      }
+      setLicitacoes((prev) =>
+        prev.map((l) =>
+          (l.id_licitacao === licacao.id_licitacao || l.id === licacao.id)
+            ? { ...l, status_leitura: "vista", status: "em_analise" }
+            : l
+        )
+      );
+      alert("Licitação enviada para Em Triagem!");
+    } catch (err) {
+      console.error("Erro ao mover para triagem:", err);
+      alert("Erro ao enviar para triagem: " + err.message);
+    }
+  }
+
   // Favoritar abre o seletor de lista. Antes passava id_licitacao onde o SDK
   // espera o id do registro, então a gravação não acontecia.
   const handleFavoritarLicitacao = (licacao) => setFavoritando([licacao]);
@@ -606,7 +654,9 @@ export default function BuscaAvancada() {
             onToggleSelecao={handleToggleSelecao}
             renderActions={(lic) => (
               <AtualizacaoActions
+                modo="busca"
                 onSend={() => handleEnviarLicitacao(lic)}
+                onTriagem={() => handleMoverParaTriagem(lic)}
                 onSave={() => handleFavoritarLicitacao(lic)}
                 onDelete={() => handleDelete(lic)}
               />

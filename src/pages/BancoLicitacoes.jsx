@@ -4,7 +4,7 @@ import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade, unidadeEfetiva, pertenceAUnidade } from "@/lib/escopoUnidade";
 import {
   Search, Star, Check, Loader2, Database, ChevronLeft, ChevronRight,
-  FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles, Trash2,
+  FileDown, Sheet, Mail, Zap, AlertCircle, Sparkles, Trash2, Clock, Undo2,
 } from "lucide-react";
 import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
@@ -33,6 +33,17 @@ export default function BancoLicitacoes() {
   // ---------- Aba "Novas" (sincronização automática) ----------
   const [novas, setNovas] = useState([]);
   const [novasLoading, setNovasLoading] = useState(true);
+
+  // ---------- Aba "Em Triagem / Analisar" ----------
+  const [triagem, setTriagem] = useState([]);
+  const [triagemLoading, setTriagemLoading] = useState(false);
+  const [selecionadasTriagem, setSelecionadasTriagem] = useState(new Set());
+
+  // ---------- Aba "Descartadas" ----------
+  const [descartadas, setDescartadas] = useState([]);
+  const [descartadasLoading, setDescartadasLoading] = useState(false);
+  const [selecionadasDescartadas, setSelecionadasDescartadas] = useState(new Set());
+
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState(null);
@@ -55,14 +66,11 @@ export default function BancoLicitacoes() {
   const carregarNovas = async () => {
     setNovasLoading(true);
     try {
-      // Filtra APENAS licitações com status_leitura = "nova"
-      // oculto: descartadas continuam no banco, mas somem das listagens.
-      // Modo "sem unidade" (admin): ignora status/oculto pra achar todo o
-      // backlog órfão, e pede o teto de leitura da API pra caber tudo de uma vez.
+      // Filtra APENAS licitações com status_leitura = "nova", não favoritadas e não ocultas
       const modoSemUnidade = isAdmin && filtroSemUnidade;
       const filtro = modoSemUnidade
         ? { unidade_negocio_id: null }
-        : { status_leitura: "nova", oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
+        : { status_leitura: "nova", oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
 
       const lista = await base44.entities.Licitacao.filter(
         filtro,
@@ -75,10 +83,49 @@ export default function BancoLicitacoes() {
     }
   };
 
+  const carregarTriagem = async () => {
+    setTriagemLoading(true);
+    try {
+      // Itens em análise / triagem: status_leitura != "nova", não ocultos e não favoritados
+      const filtro = {
+        status_leitura: { $in: ["vista", "lida"] },
+        oculto: { $ne: true },
+        favorito: { $ne: true },
+        ...escopoUnidade(isAdmin, filtroUnidade),
+      };
+      const lista = await base44.entities.Licitacao.filter(filtro, "-updated_date", 500);
+      setTriagem(toArray(lista));
+    } finally {
+      setTriagemLoading(false);
+    }
+  };
+
+  const carregarDescartadas = async () => {
+    setDescartadasLoading(true);
+    try {
+      // Itens descartados / ocultos
+      const filtro = {
+        oculto: true,
+        ...escopoUnidade(isAdmin, filtroUnidade),
+      };
+      const lista = await base44.entities.Licitacao.filter(filtro, "-updated_date", 500);
+      setDescartadas(toArray(lista));
+    } finally {
+      setDescartadasLoading(false);
+    }
+  };
+
+  const carregarTudo = () => {
+    carregarNovas();
+    carregarTriagem();
+    carregarDescartadas();
+  };
+
   const marcarLeitura = async (licId, novoStatus) => {
     try {
       await base44.entities.Licitacao.update(licId, { status_leitura: novoStatus });
-      carregarNovas(); // Recarrega para remover se marcou como vista/lida
+      carregarNovas();
+      carregarTriagem();
     } catch (e) {
       console.error("Erro ao marcar leitura:", e);
     }
@@ -87,6 +134,8 @@ export default function BancoLicitacoes() {
   useEffect(() => {
     if (!usuarioLogado) return;
     carregarNovas();
+    carregarTriagem();
+    carregarDescartadas();
 
     const filtroBuscas = { ativa: true, ...escopoUnidade(isAdmin, filtroUnidade) };
 
@@ -111,16 +160,16 @@ export default function BancoLicitacoes() {
     setBuscasSelecionadas([]);
   }, [buscasFiltradas]);
 
-  const novasFiltradas = useMemo(() => {
+  const filtrarLista = (lista) => {
     const agora = new Date();
     const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
 
-    return novas.filter((l) => {
+    return lista.filter((l) => {
       if (!pertenceAUnidade(l, filtroUnidade)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
       // Se não for favorita e a data de abertura já passou, não exibe em Novas
-      if (!l.favorito && l.abertura_datetime) {
+      if (!l.favorito && l.abertura_datetime && aba === "novas") {
         const dtAbertura = new Date(l.abertura_datetime);
         if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) return false;
       }
@@ -131,7 +180,11 @@ export default function BancoLicitacoes() {
       }
       return true;
     });
-  }, [novas, filtroStatus, busca, filtroUnidade, filtroOrigem]);
+  };
+
+  const novasFiltradas = useMemo(() => filtrarLista(novas), [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba]);
+  const triagemFiltradas = useMemo(() => filtrarLista(triagem), [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba]);
+  const descartadasFiltradas = useMemo(() => filtrarLista(descartadas), [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba]);
 
   // Contagem por origem. Respeita unidade, status e termo de busca, mas de
   // propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
@@ -239,48 +292,144 @@ export default function BancoLicitacoes() {
     setFavoritando(null);
   };
 
-  // Descartar apenas oculta: o registro continua no banco e só o administrador
-  // pode removê-lo de vez.
-  const handleDeleteNova = async (licitacao) => {
-    if (!window.confirm(`Descartar "${licitacao.titulo}"? Ela sai da sua lista, mas continua no banco.`)) return;
-    await base44.entities.Licitacao.update(licitacao.id, { oculto: true });
-    setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
-    setSelecionadasNovas((prev) => {
-      const nova = new Set(prev);
-      nova.delete(licitacao.id_licitacao);
-      return nova;
-    });
+  // Mover para Em Triagem (status_leitura: "vista", status: "em_analise")
+  const handleMoverParaTriagem = async (licitacao) => {
+    try {
+      await base44.entities.Licitacao.update(licitacao.id, {
+        status_leitura: "vista",
+        status: "em_analise",
+      });
+      // Atualiza os arrays locais imediatamente
+      setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setTriagem((prev) => [{ ...licitacao, status_leitura: "vista", status: "em_analise" }, ...prev]);
+      setSelecionadasNovas((prev) => {
+        const next = new Set(prev);
+        next.delete(licitacao.id_licitacao);
+        return next;
+      });
+    } catch (e) {
+      console.error("Erro ao mover para triagem:", e);
+    }
+  };
+
+  // Restaurar de Descartadas de volta para Novas
+  const handleRestaurar = async (licitacao) => {
+    try {
+      await base44.entities.Licitacao.update(licitacao.id, {
+        oculto: false,
+        status_leitura: "nova",
+        status: "interessado",
+      });
+      // Atualiza os arrays locais imediatamente
+      setDescartadas((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setNovas((prev) => [{ ...licitacao, oculto: false, status_leitura: "nova", status: "interessado" }, ...prev]);
+      setSelecionadasDescartadas((prev) => {
+        const next = new Set(prev);
+        next.delete(licitacao.id_licitacao);
+        return next;
+      });
+    } catch (e) {
+      console.error("Erro ao restaurar licitação:", e);
+    }
+  };
+
+  // Descartar (ocultar) de Novas ou de Triagem
+  const handleDeleteItem = async (licitacao) => {
+    if (!window.confirm(`Descartar "${licitacao.titulo}"? Ela irá para a aba Descartadas.`)) return;
+    try {
+      await base44.entities.Licitacao.update(licitacao.id, { oculto: true });
+      setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setTriagem((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setDescartadas((prev) => [{ ...licitacao, oculto: true }, ...prev]);
+      setSelecionadasNovas((prev) => {
+        const next = new Set(prev);
+        next.delete(licitacao.id_licitacao);
+        return next;
+      });
+      setSelecionadasTriagem((prev) => {
+        const next = new Set(prev);
+        next.delete(licitacao.id_licitacao);
+        return next;
+      });
+    } catch (e) {
+      console.error("Erro ao descartar licitação:", e);
+    }
   };
 
   const excluirDefinitivamente = async (licitacao) => {
     if (!isAdmin) return;
     if (!window.confirm(`Excluir "${licitacao.titulo}" DEFINITIVAMENTE do banco? Esta ação não pode ser desfeita.`)) return;
-    await base44.entities.Licitacao.delete(licitacao.id);
-    setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
+    try {
+      await base44.entities.Licitacao.delete(licitacao.id);
+      setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setTriagem((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setDescartadas((prev) => prev.filter((l) => l.id !== licitacao.id));
+    } catch (e) {
+      console.error("Erro ao excluir do banco:", e);
+    }
   };
 
-  const toggleSelecaoNova = (idLicitacao, marcada) => {
-    setSelecionadasNovas((prev) => {
+  const toggleSelecao = (setFunc) => (idLicitacao, marcada) => {
+    setFunc((prev) => {
       const nova = new Set(prev);
       marcada ? nova.add(idLicitacao) : nova.delete(idLicitacao);
       return nova;
     });
   };
 
+  const toggleSelecaoNova = toggleSelecao(setSelecionadasNovas);
+  const toggleSelecaoTriagem = toggleSelecao(setSelecionadasTriagem);
+  const toggleSelecaoDescartadas = toggleSelecao(setSelecionadasDescartadas);
+
   const itensSelecionadosNovas = () => novas.filter((item) => selecionadasNovas.has(item.id_licitacao));
+  const itensSelecionadosTriagem = () => triagem.filter((item) => selecionadasTriagem.has(item.id_licitacao));
+  const itensSelecionadosDescartadas = () => descartadas.filter((item) => selecionadasDescartadas.has(item.id_licitacao));
 
   const excluirSelecionadasNovas = async () => {
-    if (!window.confirm(`Descartar ${selecionadasNovas.size} licitação(ões)? Elas saem da sua lista, mas continuam no banco.`)) return;
+    if (!window.confirm(`Descartar ${selecionadasNovas.size} licitação(ões)? Elas irão para a aba Descartadas.`)) return;
     const itens = itensSelecionadosNovas();
     await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, oculto: true })));
     setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
+    setDescartadas((prev) => [...itens.map((i) => ({ ...i, oculto: true })), ...prev]);
     setSelecionadasNovas(new Set());
+  };
+
+  const excluirSelecionadasTriagem = async () => {
+    if (!window.confirm(`Descartar ${selecionadasTriagem.size} licitação(ões)? Elas irão para a aba Descartadas.`)) return;
+    const itens = itensSelecionadosTriagem();
+    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, oculto: true })));
+    setTriagem((prev) => prev.filter((item) => !selecionadasTriagem.has(item.id_licitacao)));
+    setDescartadas((prev) => [...itens.map((i) => ({ ...i, oculto: true })), ...prev]);
+    setSelecionadasTriagem(new Set());
+  };
+
+  const moverSelecionadasTriagem = async () => {
+    const itens = itensSelecionadosNovas();
+    await base44.entities.Licitacao.bulkUpdate(
+      itens.map((item) => ({ id: item.id, status_leitura: "vista", status: "em_analise" }))
+    );
+    setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
+    setTriagem((prev) => [...itens.map((i) => ({ ...i, status_leitura: "vista", status: "em_analise" })), ...prev]);
+    setSelecionadasNovas(new Set());
+  };
+
+  const restaurarSelecionadasDescartadas = async () => {
+    const itens = itensSelecionadosDescartadas();
+    await base44.entities.Licitacao.bulkUpdate(
+      itens.map((item) => ({ id: item.id, oculto: false, status_leitura: "nova", status: "interessado" }))
+    );
+    setDescartadas((prev) => prev.filter((item) => !selecionadasDescartadas.has(item.id_licitacao)));
+    setNovas((prev) => [...itens.map((i) => ({ ...i, oculto: false, status_leitura: "nova", status: "interessado" })), ...prev]);
+    setSelecionadasDescartadas(new Set());
   };
 
   const salvarSelecionadasNovas = () =>
     setFavoritando({ modo: "atualizar", itens: itensSelecionadosNovas() });
+  const salvarSelecionadasTriagem = () =>
+    setFavoritando({ modo: "atualizar", itens: itensSelecionadosTriagem() });
 
   const enviarSelecionadasNovas = () => setCompartilhar(itensSelecionadosNovas());
+  const enviarSelecionadasTriagem = () => setCompartilhar(itensSelecionadosTriagem());
 
   // Admin: vincula as licitações selecionadas (tipicamente sem unidade) à
   // unidade escolhida. bulkUpdate aceita até 500 por chamada, daí o lote.
@@ -308,35 +457,38 @@ export default function BancoLicitacoes() {
     }
   };
 
-  const renderActionsNova = (licitacao) => (
-    <div className="flex flex-wrap items-center gap-3">
+  const renderActionsFunil = (licitacao, modoTab = "novas") => (
+    <div className="flex flex-wrap items-center gap-3 w-full">
       <AtualizacaoActions
+        modo={modoTab}
         onSend={() => setCompartilhar([licitacao])}
         onSave={() => handleSaveManual(licitacao)}
-        onDelete={() => handleDeleteNova(licitacao)}
+        onDelete={() => handleDeleteItem(licitacao)}
+        onTriagem={modoTab === "novas" ? () => handleMoverParaTriagem(licitacao) : null}
+        onRestaurar={modoTab === "descartadas" ? () => handleRestaurar(licitacao) : null}
       />
       {isAdmin && (
         <button
           onClick={() => excluirDefinitivamente(licitacao)}
-          title="Excluir do banco (somente administrador)"
-          className="inline-flex items-center text-muted-foreground hover:text-red-600 sm:gap-1.5 sm:text-xs"
+          title="Excluir do banco definitivamente (somente administrador)"
+          className="inline-flex items-center text-muted-foreground hover:text-red-600 sm:gap-1.5 sm:text-xs ml-auto pt-1"
         >
-          <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir do banco</span>
+          <Trash2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Excluir do banco</span>
         </button>
       )}
     </div>
   );
 
   // Triagem direto no card: lista de favoritos, status de gestão e leitura.
-  // A licitação some da aba só na próxima carga, para dar chance de desfazer.
-  const renderGestaoNova = (licitacao, opcoes) => (
+  const renderGestaoFunil = (licitacao, opcoes) => (
     <GestaoRapida
       licitacao={licitacao}
       listas={listasFavoritas}
       empilhado={opcoes?.empilhado}
-      onUpdated={(id, campo, valor) =>
-        setNovas((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)))
-      }
+      onUpdated={(id, campo, valor) => {
+        setNovas((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)));
+        setTriagem((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)));
+      }}
     />
   );
 
@@ -581,52 +733,135 @@ export default function BancoLicitacoes() {
   // registro acontece em confirmarFavoritar, no modo "criar".
   const salvar = (lic) => setFavoritando({ modo: "criar", itens: [lic] });
 
-  const listaNavegacao = aba === "novas" ? novasFiltradas : aba === "acervo" ? paginadas : [];
+  const listaNavegacao =
+    aba === "novas"
+      ? novasFiltradas
+      : aba === "triagem"
+      ? triagemFiltradas
+      : aba === "descartadas"
+      ? descartadasFiltradas
+      : aba === "acervo"
+      ? paginadas
+      : [];
   const idxSelecionada = selecionada
     ? listaNavegacao.findIndex((l) => l.id_licitacao === selecionada.id_licitacao)
     : -1;
+
+  const countAbaAtual =
+    aba === "novas"
+      ? novasFiltradas.length
+      : aba === "triagem"
+      ? triagemFiltradas.length
+      : aba === "descartadas"
+      ? descartadasFiltradas.length
+      : acervoFiltrado.length;
+
+  const labelAbaAtual =
+    aba === "novas"
+      ? "novas"
+      : aba === "triagem"
+      ? "em triagem"
+      : aba === "descartadas"
+      ? "descartadas"
+      : "no acervo";
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-heading text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Database className="w-5 h-5" /> Licitações
+            <Database className="w-5 h-5 text-primary" /> Licitações
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Novidades da sincronização automática e o acervo que corresponde às suas buscas, em um só lugar.
+            Funil completo de triagem: avalie oportunidades, envie para suas listas ou descarte com 1 clique.
           </p>
         </div>
-        {/* O contador acompanha a aba ativa e usa as listas já filtradas */}
-        <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
+        {/* Contador dinâmico da aba ativa */}
+        <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-xs shrink-0">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            {aba === "novas" ? <Sparkles className="w-5 h-5" /> : <Database className="w-5 h-5" />}
+            {aba === "novas" ? (
+              <Sparkles className="w-5 h-5" />
+            ) : aba === "triagem" ? (
+              <Clock className="w-5 h-5 text-blue-600" />
+            ) : aba === "descartadas" ? (
+              <Trash2 className="w-5 h-5 text-rose-500" />
+            ) : (
+              <Database className="w-5 h-5" />
+            )}
           </div>
           <div>
-            <p className="text-xl font-bold leading-none">
-              {aba === "novas" ? novasFiltradas.length : acervoFiltrado.length}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {aba === "novas" ? "novas" : "no acervo"}
-            </p>
+            <p className="text-xl font-bold leading-none">{countAbaAtual}</p>
+            <p className="text-xs text-muted-foreground mt-1">{labelAbaAtual}</p>
           </div>
         </div>
       </div>
 
-      {/* Abas */}
+      {/* Abas do Funil de Triagem */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className="inline-flex items-center border rounded-lg overflow-hidden bg-card shadow-sm">
+        <div className="inline-flex items-center border rounded-xl overflow-hidden bg-card shadow-xs p-1 gap-1">
           <button
             onClick={() => setAba("novas")}
-            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium ${aba === "novas" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+              aba === "novas"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+            }`}
           >
             <Sparkles className="w-4 h-4" /> Novas
+            {novasFiltradas.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                aba === "novas" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"
+              }`}>
+                {novasFiltradas.length}
+              </span>
+            )}
           </button>
+
+          <button
+            onClick={() => setAba("triagem")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+              aba === "triagem"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+            }`}
+          >
+            <Clock className="w-4 h-4" /> Em Triagem / Analisar
+            {triagemFiltradas.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                aba === "triagem" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+              }`}>
+                {triagemFiltradas.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setAba("descartadas")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+              aba === "descartadas"
+                ? "bg-muted-foreground/80 text-background shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+            }`}
+          >
+            <Trash2 className="w-4 h-4" /> Descartadas
+            {descartadasFiltradas.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                aba === "descartadas" ? "bg-background/30 text-background" : "bg-muted text-muted-foreground"
+              }`}>
+                {descartadasFiltradas.length}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={() => setAba("acervo")}
-            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l ${aba === "acervo" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all border-l ml-1 pl-3 ${
+              aba === "acervo"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+            }`}
           >
-            <Database className="w-4 h-4" /> Acervo
+            <Database className="w-4 h-4" /> Acervo Geral
           </button>
         </div>
       </div>
@@ -747,6 +982,7 @@ export default function BancoLicitacoes() {
             )}
           </div>
 
+          {/* Barra de Seleção e Ações em Massa (Novas) */}
           {!novasLoading && novasFiltradas.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
               <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -755,7 +991,7 @@ export default function BancoLicitacoes() {
                   checked={novasFiltradas.length > 0 && novasFiltradas.every((item) => selecionadasNovas.has(item.id_licitacao))}
                   onChange={(e) => novasFiltradas.forEach((item) => toggleSelecaoNova(item.id_licitacao, e.target.checked))}
                 />
-                Selecionar todas
+                Selecionar todas ({novasFiltradas.length})
               </label>
               {selecionadasNovas.size > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -783,7 +1019,9 @@ export default function BancoLicitacoes() {
                   )}
                   <AtualizacaoBulkActions
                     quantidade={selecionadasNovas.size}
+                    modo="novas"
                     onSend={enviarSelecionadasNovas}
+                    onTriagem={moverSelecionadasTriagem}
                     onSave={salvarSelecionadasNovas}
                     onDelete={excluirSelecionadasNovas}
                   />
@@ -799,8 +1037,146 @@ export default function BancoLicitacoes() {
             onRowClick={setSelecionada}
             selecionados={selecionadasNovas}
             onToggleSelecao={toggleSelecaoNova}
-            renderActions={renderActionsNova}
-            renderGestao={renderGestaoNova}
+            renderActions={(lic) => renderActionsFunil(lic, "novas")}
+            renderGestao={renderGestaoFunil}
+          />
+        </>
+      ) : aba === "triagem" ? (
+        <>
+          {/* Informações da Aba Triagem */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/50 border border-blue-200/60 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Oportunidades em Triagem / Análise</h3>
+                <p className="text-xs text-muted-foreground">
+                  Licitações que estão sendo analisadas pela equipe antes de aprovar para Minhas Licitações ou descartar.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtros de Triagem */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-xs">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar em triagem por título, órgão, cidade..."
+                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+              className="flex-1 sm:flex-none min-w-[8.5rem] px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="todos">Todos os status</option>
+              <option value="interessado">Interessado</option>
+              <option value="acompanhando">Acompanhando</option>
+              <option value="participando">Participando</option>
+              <option value="vencida">Vencida</option>
+              <option value="ganha">Ganha</option>
+              <option value="perdida">Perdida</option>
+            </select>
+          </div>
+
+          {/* Ações em Massa (Triagem) */}
+          {!triagemLoading && triagemFiltradas.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={triagemFiltradas.length > 0 && triagemFiltradas.every((item) => selecionadasTriagem.has(item.id_licitacao))}
+                  onChange={(e) => triagemFiltradas.forEach((item) => toggleSelecaoTriagem(item.id_licitacao, e.target.checked))}
+                />
+                Selecionar todas ({triagemFiltradas.length})
+              </label>
+              {selecionadasTriagem.size > 0 && (
+                <AtualizacaoBulkActions
+                  quantidade={selecionadasTriagem.size}
+                  modo="triagem"
+                  onSend={enviarSelecionadasTriagem}
+                  onSave={salvarSelecionadasTriagem}
+                  onDelete={excluirSelecionadasTriagem}
+                />
+              )}
+            </div>
+          )}
+
+          <LicitacoesVisualizacao
+            licitacoes={triagemFiltradas}
+            loading={triagemLoading}
+            vazio={triagemFiltradas.length === 0}
+            onRowClick={setSelecionada}
+            selecionados={selecionadasTriagem}
+            onToggleSelecao={toggleSelecaoTriagem}
+            renderActions={(lic) => renderActionsFunil(lic, "triagem")}
+            renderGestao={renderGestaoFunil}
+          />
+        </>
+      ) : aba === "descartadas" ? (
+        <>
+          {/* Informações da Aba Descartadas */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-rose-50/50 border border-rose-200/60 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Licitações Descartadas</h3>
+                <p className="text-xs text-muted-foreground">
+                  Itens descartados durante a triagem. Você pode restaurar qualquer licitação a qualquer momento para voltar a analisá-la.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtros Descartadas */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-xs">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar nas descartadas..."
+                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+
+          {/* Ações em Massa (Descartadas) */}
+          {!descartadasLoading && descartadasFiltradas.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={descartadasFiltradas.length > 0 && descartadasFiltradas.every((item) => selecionadasDescartadas.has(item.id_licitacao))}
+                  onChange={(e) => descartadasFiltradas.forEach((item) => toggleSelecaoDescartadas(item.id_licitacao, e.target.checked))}
+                />
+                Selecionar todas ({descartadasFiltradas.length})
+              </label>
+              {selecionadasDescartadas.size > 0 && (
+                <AtualizacaoBulkActions
+                  quantidade={selecionadasDescartadas.size}
+                  modo="descartadas"
+                  onRestaurar={restaurarSelecionadasDescartadas}
+                />
+              )}
+            </div>
+          )}
+
+          <LicitacoesVisualizacao
+            licitacoes={descartadasFiltradas}
+            loading={descartadasLoading}
+            vazio={descartadasFiltradas.length === 0}
+            onRowClick={setSelecionada}
+            selecionados={selecionadasDescartadas}
+            onToggleSelecao={toggleSelecaoDescartadas}
+            renderActions={(lic) => renderActionsFunil(lic, "descartadas")}
           />
         </>
       ) : (
@@ -922,10 +1298,24 @@ export default function BancoLicitacoes() {
         <LicitacaoDetailDialog
           licitacao={selecionada}
           onClose={() => setSelecionada(null)}
-          onSave={aba === "novas" ? handleSaveNova : async (dados) => { await salvar(dados); setSelecionada(null); }}
+          onSave={
+            aba === "acervo"
+              ? async (dados) => {
+                  await salvar(dados);
+                  setSelecionada(null);
+                }
+              : async (dados) => {
+                  const { id, created_date, updated_date, created_by_id, ...rest } = dados;
+                  if (selecionada?.id) {
+                    await base44.entities.Licitacao.update(selecionada.id, rest);
+                  }
+                  setSelecionada(null);
+                  carregarTudo();
+                }
+          }
           onPrev={idxSelecionada > 0 ? () => setSelecionada(listaNavegacao[idxSelecionada - 1]) : null}
           onNext={idxSelecionada >= 0 && idxSelecionada < listaNavegacao.length - 1 ? () => setSelecionada(listaNavegacao[idxSelecionada + 1]) : null}
-          onMarcarLeitura={aba === "novas" ? marcarLeitura : null}
+          onMarcarLeitura={aba !== "acervo" ? marcarLeitura : null}
         />
       )}
 

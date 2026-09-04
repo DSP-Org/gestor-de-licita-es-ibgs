@@ -1,5 +1,7 @@
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import BadgeUrgencia from "@/components/licitacoes/BadgeUrgencia";
+import ObjetoExpandivel from "@/components/licitacoes/ObjetoExpandivel";
+import { ExternalLink, Building2 } from "lucide-react";
 
 export function StatusBadge({ status }) {
   const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
@@ -19,7 +21,6 @@ export function formatValor(valor) {
 
 export function formatDataBr(dataStr) {
   if (!dataStr) return "—";
-  // Aceita "dd/mm/aaaa", "aaaa-mm-dd" e timestamps ISO completos (created_date).
   const texto = String(dataStr);
   if (texto.includes("/")) return texto;
   const partes = texto.split("T")[0].split("-");
@@ -31,13 +32,12 @@ export default function LicitacaoCard({
   licitacao,
   onClick,
   action,
-  // Opcionais: usados pelo LicitacoesVisualizacao. FavoritasTab passa só
-  // licitacao/onClick/action e continua funcionando sem eles.
   selecionado,
   onToggleSelecao,
   gestao,
 }) {
   const isNova = licitacao.status_leitura === "nova";
+  const linkEdital = licitacao.link_externo || licitacao.link;
 
   return (
     <div className="relative">
@@ -51,7 +51,8 @@ export default function LicitacaoCard({
         onClick={onClick}
       >
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        {/* Header com Título e Status */}
+        
+        {/* Header com Checkbox, Título, Status e Link Direto do Edital */}
         <div className="flex items-start justify-between gap-3">
           {onToggleSelecao && (
             <input
@@ -62,20 +63,42 @@ export default function LicitacaoCard({
               className="w-4 h-4 mt-1 rounded cursor-pointer shrink-0"
             />
           )}
-          <div className="flex-1">
-            <h3 className="font-heading font-bold text-lg leading-tight text-foreground">{licitacao.titulo}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-heading font-bold text-base sm:text-lg leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+              {licitacao.titulo}
+            </h3>
+            {licitacao.orgao && (
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-medium truncate">
+                <Building2 className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                <span>{licitacao.orgao}</span>
+              </p>
+            )}
           </div>
-          {licitacao.status && (
-            <div className="shrink-0">
-              <StatusBadge status={licitacao.status} />
-            </div>
-          )}
+          <div className="flex flex-col items-end gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+            {licitacao.status && <StatusBadge status={licitacao.status} />}
+            {linkEdital && (
+              <a
+                href={linkEdital}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Acessar edital no portal oficial"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-full transition-colors"
+              >
+                <span>Edital</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
         </div>
 
-        {/* Objeto */}
+        {/* Objeto com expansão inline sem abrir modal */}
         {licitacao.objeto && (
-          <div className="bg-muted/30 rounded-lg p-3 border border-border/40">
-            <p className="text-sm leading-relaxed text-foreground">{licitacao.objeto}</p>
+          <div className="bg-muted/30 rounded-xl p-3 border border-border/40" onClick={(e) => e.stopPropagation()}>
+            <ObjetoExpandivel
+              texto={licitacao.objeto}
+              textClassName="text-xs text-foreground/90 leading-relaxed font-normal"
+              linhas="line-clamp-3"
+            />
           </div>
         )}
 
