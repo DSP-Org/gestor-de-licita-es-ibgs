@@ -42,14 +42,15 @@ export default function LicitacaoCard({
   return (
     <div className="relative">
       {isNova && (
-        <div className="absolute -top-2.5 -right-2.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg z-10 border-2 border-card">
+        <div className="absolute -top-2.5 -right-2.5 bg-primary text-primary-foreground text-[10px] uppercase tracking-wider font-extrabold px-3 py-1 rounded-full shadow-md z-10 border-2 border-background ring-1 ring-primary/20">
           ✨ Nova
         </div>
       )}
       <div
-        className="bg-card border border-border/60 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer flex flex-col gap-3 active:scale-[0.98] w-full"
+        className="bg-card border border-border/70 rounded-2xl p-5 shadow-xs hover:shadow-xl hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 cubic-bezier(0.32,0.72,0,1) cursor-pointer flex flex-col gap-3.5 active:scale-[0.99] w-full group relative overflow-hidden"
         onClick={onClick}
       >
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         {/* Header com Título e Status */}
         <div className="flex items-start justify-between gap-3">
           {onToggleSelecao && (

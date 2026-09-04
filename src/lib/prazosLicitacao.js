@@ -64,7 +64,7 @@ export function calcularUrgenciaAbertura(abertura_datetime, abertura) {
       tipo: "hoje",
       label: hora && hora !== "00:00" ? `Hoje às ${hora}` : "Abre Hoje!",
       diasRestantes: 0,
-      colorClass: "bg-red-100 text-red-700 border-red-300 font-bold animate-pulse dark:bg-red-950/50 dark:text-red-300",
+      colorClass: "bg-rose-50 text-rose-700 border-rose-200/80 shadow-[0_0_12px_rgba(244,63,94,0.15)] animate-pulse dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60",
       urgente: true,
       dtAbertura,
     };
@@ -75,7 +75,7 @@ export function calcularUrgenciaAbertura(abertura_datetime, abertura) {
       tipo: "amanha",
       label: "Abre Amanhã",
       diasRestantes: 1,
-      colorClass: "bg-amber-100 text-amber-800 border-amber-300 font-semibold dark:bg-amber-950/50 dark:text-amber-300",
+      colorClass: "bg-amber-50/90 text-amber-800 border-amber-200/80 shadow-xs dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60",
       urgente: true,
       dtAbertura,
     };
@@ -86,7 +86,7 @@ export function calcularUrgenciaAbertura(abertura_datetime, abertura) {
       tipo: "urgente",
       label: `Em ${diffDias} dias`,
       diasRestantes: diffDias,
-      colorClass: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300",
+      colorClass: "bg-amber-50/60 text-amber-700 border-amber-200/60 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/40",
       urgente: true,
       dtAbertura,
     };
@@ -97,7 +97,7 @@ export function calcularUrgenciaAbertura(abertura_datetime, abertura) {
       tipo: "em_breve",
       label: `Em ${diffDias} dias`,
       diasRestantes: diffDias,
-      colorClass: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300",
+      colorClass: "bg-sky-50/70 text-sky-700 border-sky-200/70 dark:bg-sky-950/30 dark:text-sky-300 dark:border-sky-900/40",
       urgente: false,
       dtAbertura,
     };
@@ -107,7 +107,7 @@ export function calcularUrgenciaAbertura(abertura_datetime, abertura) {
     tipo: "futuro",
     label: `Em ${diffDias} dias`,
     diasRestantes: diffDias,
-    colorClass: "bg-muted text-muted-foreground border-transparent",
+    colorClass: "bg-slate-50 text-slate-600 border-slate-200/60 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
     urgente: false,
     dtAbertura,
   };

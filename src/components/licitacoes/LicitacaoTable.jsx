@@ -92,40 +92,41 @@ export default function LicitacaoTable({
   return (
     <>
       {/* Tabela — desktop */}
-      <div className="hidden md:block bg-card border rounded-lg overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-              {comSelecao && (
-                <th className="text-left font-medium px-3 py-2.5 w-10 sticky left-0 bg-muted/40">
-                  <input
-                    type="checkbox"
-                    checked={selecionados?.size === licitacoes.length && licitacoes.length > 0}
-                    onChange={(e) => licitacoes.forEach((l) => onToggleSelecao(l.id_licitacao, e.target.checked))}
-                    className="w-4 h-4 rounded cursor-pointer"
-                  />
-                </th>
-              )}
-              {colunasExibidas.map((col) => (
-                <th
-                  key={col.id}
-                  className={`text-left font-medium ${col.className} ${
-                    col.id === "licitacao" ? "sticky left-10 bg-muted/40 z-10" : ""
-                  }`}
+      <div className="hidden md:block bg-card border border-border/80 rounded-2xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/30 text-xs text-muted-foreground font-semibold tracking-tight">
+                {comSelecao && (
+                  <th className="text-left font-medium px-3.5 py-3 w-10 sticky left-0 bg-muted/30">
+                    <input
+                      type="checkbox"
+                      checked={selecionados?.size === licitacoes.length && licitacoes.length > 0}
+                      onChange={(e) => licitacoes.forEach((l) => onToggleSelecao(l.id_licitacao, e.target.checked))}
+                      className="w-4 h-4 rounded cursor-pointer"
+                    />
+                  </th>
+                )}
+                {colunasExibidas.map((col) => (
+                  <th
+                    key={col.id}
+                    className={`text-left font-semibold ${col.className} ${
+                      col.id === "licitacao" ? "sticky left-10 bg-muted/30 z-10" : ""
+                    }`}
+                  >
+                    {col.label}
+                  </th>
+                ))}
+                {(onDelete || renderActions || renderGestao) && <th className="w-10 px-1 py-3" />}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {licitacoes.map((l) => (
+                <tr
+                  key={l.id || l.id_licitacao}
+                  onClick={() => onRowClick?.(l)}
+                  className="hover:bg-primary/[0.02] transition-colors duration-150 cursor-pointer group"
                 >
-                  {col.label}
-                </th>
-              ))}
-              {(onDelete || renderActions || renderGestao) && <th className="w-10 px-1 py-2.5" />}
-            </tr>
-          </thead>
-          <tbody>
-            {licitacoes.map((l) => (
-              <tr
-                key={l.id || l.id_licitacao}
-                onClick={() => onRowClick?.(l)}
-                className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
-              >
                 {comSelecao && (
                   <td className="px-3 py-2.5 sticky left-0 bg-card z-10" onClick={(e) => e.stopPropagation()}>
                     <input
@@ -161,7 +162,8 @@ export default function LicitacaoTable({
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       {/* Cards — mobile */}

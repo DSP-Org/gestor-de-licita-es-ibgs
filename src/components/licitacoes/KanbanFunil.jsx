@@ -68,12 +68,13 @@ export default function KanbanFunil({
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               onClick={() => onSelect(lic)}
-                              className={`bg-card border rounded-lg p-3 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing space-y-2 group hover:border-primary/50 relative ${
+                              className={`bg-card border border-border/80 rounded-xl p-3.5 shadow-xs hover:shadow-lg transition-all duration-300 cursor-grab active:cursor-grabbing space-y-2.5 group hover:border-primary/40 relative overflow-hidden ${
                                 snapshot.isDragging
-                                  ? "shadow-2xl ring-2 ring-primary scale-[1.02] rotate-1 z-50 bg-card border-primary"
-                                  : ""
+                                  ? "shadow-2xl ring-2 ring-primary scale-[1.03] rotate-1 z-50 bg-card border-primary"
+                                  : "hover:-translate-y-0.5"
                               }`}
                             >
+                              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                               <div className="flex items-start justify-between gap-1.5">
                                 <p className="font-semibold text-xs leading-snug line-clamp-2 text-foreground flex-1">
                                   {lic.titulo}
