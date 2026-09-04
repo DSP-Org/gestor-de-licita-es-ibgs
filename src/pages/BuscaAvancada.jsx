@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { STATUS_OPTIONS } from "@/shared/alertaApi";
+import { STATUS_OPTIONS, MODALIDADES as MODALIDADES_API, buscarLicitacoes } from "@/shared/alertaApi";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
@@ -173,24 +173,41 @@ export default function BuscaAvancada() {
         });
       }
 
-      // TODO: Adicionar busca na API quando buscarAPI estiver ativado
+      // Busca integrada na API externa (Alerta Licitação)
       if (buscarAPI) {
         try {
-          const resApi = await base44.functions.buscarLicitacoesApi({
-            data_inicio: dataPublicacaoAPIInicio,
-            data_fim: dataPublicacaoAPIFim,
-            ufs: filtros.ufs,
-            modalidades: filtros.modalidades,
-            termos: filtros.palavrasChave
-          });
+          const ufsParaBuscar = filtros.ufs.length > 0 ? filtros.ufs : [undefined];
+          const modalidadesCodigos = filtros.modalidades
+            .map(modNome => MODALIDADES_API.find(m => m.nome.toLowerCase() === modNome.toLowerCase())?.id)
+            .filter(Boolean);
+          const modalidadeParaBuscar = modalidadesCodigos.length > 0 ? modalidadesCodigos.join(",") : undefined;
+          const palavraChaveParaBuscar = filtros.palavrasChave.length > 0 ? filtros.palavrasChave.join(", ") : undefined;
 
-          if (resApi?.licitacoes) {
-            const apiLicitacoes = toArray(resApi.licitacoes);
-            
+          // Executa as consultas na API para cada UF selecionada (ou consulta geral se nenhuma UF selecionada)
+          const chamadasApi = ufsParaBuscar.map(uf =>
+            buscarLicitacoes({
+              data_inicio: dataPublicacaoAPIInicio || undefined,
+              data_fim: dataPublicacaoAPIFim || undefined,
+              uf: uf || undefined,
+              modalidade: modalidadeParaBuscar,
+              palavra_chave: palavraChaveParaBuscar,
+              pagina: 1,
+              licitacoesPorPagina: 50,
+            })
+          );
+
+          const respostas = await Promise.all(chamadasApi);
+          const apiLicitacoes = [];
+          for (const res of respostas) {
+            if (res?.licitacoes) {
+              apiLicitacoes.push(...toArray(res.licitacoes));
+            }
+          }
+
+          if (apiLicitacoes.length > 0) {
             // Mesclar e remover duplicatas pelo id_licitacao
             const idsLocais = new Set(resultado.map(l => l.id_licitacao));
             const novasDaApi = apiLicitacoes.filter(l => !idsLocais.has(l.id_licitacao));
-            
             resultado = [...resultado, ...novasDaApi];
           }
         } catch (apiErr) {
