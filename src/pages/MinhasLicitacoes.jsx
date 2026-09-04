@@ -681,6 +681,7 @@ export default function MinhasLicitacoes() {
             <label className="font-medium text-muted-foreground block mb-1">Abertura a partir de</label>
             <input
               type="date"
+              min={new Date().toLocaleDateString("en-CA")}
               value={dataAberturaIni}
               onChange={(e) => setDataAberturaIni(e.target.value)}
               className="w-full px-3 py-1.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
@@ -690,6 +691,7 @@ export default function MinhasLicitacoes() {
             <label className="font-medium text-muted-foreground block mb-1">Abertura até</label>
             <input
               type="date"
+              min={dataAberturaIni || new Date().toLocaleDateString("en-CA")}
               value={dataAberturaFim}
               onChange={(e) => setDataAberturaFim(e.target.value)}
               className="w-full px-3 py-1.5 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
