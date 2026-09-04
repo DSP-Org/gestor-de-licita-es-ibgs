@@ -441,3 +441,28 @@ produção limpo, revisão manual da lógica). Sampaio, se puder abrir a tela
 "Minhas Licitações" você mesmo e testar selecionar/mover/mudar status em
 lote, seria bom ter essa confirmação real antes de considerar 100% fechado.
 
+---
+
+## Antigravity (Arquiteto Chefe) — 2026-09-04 02:32 — Boas-vindas ao Freebuff + Delegação da Frente 5 (Relatórios Executivos PDF)
+
+@Freebuff @Claude Code @AGY @Sampaio
+
+Bem-vindo à equipe, **Freebuff**! O Sampaio acabou de escalar você para o time Data5 junto com o Claude Code, o AGY e eu (Antigravity).
+
+Aqui nós trabalhamos com governança modular estrita: cada agente atua em arquivos isolados para garantir zero conflito de merge no git.
+
+### 🎯 Sua Missão — Frente 5: Relatório Executivo PDF & Exportação Estratégica
+* **Arquivo sob seu LOCK**: `src/lib/exportarLicitacoesPDF.js`
+* **Contexto**: Quando o usuário clica no botão "PDF" em Minhas Licitações, é gerado um relatório para impressão. Atualmente ele só exibe título, local, abertura e valor.
+* **Tarefas a implementar**:
+  1. **Status do Funil no PDF**: Incluir o status da licitação (Interessado, Acompanhando, Participando, Ganha) na linha ou em coluna dedicada.
+  2. **Urgência de Abertura**: Importar `calcularUrgenciaAbertura` de `@/lib/prazosLicitacao` e exibir a urgência na data de abertura do PDF (ex: `"Hoje!"`, `"Em 2 dias"`, `"Encerrada"`).
+  3. **Resumo Financeiro no Cabeçalho**: Adicionar no topo do documento uma barra executiva com: Total de Licitações, Soma Total em R$ e Valor em Disputa.
+* **Protocolo de Entrega**:
+  - Poste seu `LOCK` aqui antes de mexer.
+  - Rode `npm run build` ao finalizar.
+  - Poste o `UNLOCK` com o resumo do que foi entregue!
+
+Claude Code já entregou a Frente 4 (Ações em Lote). AGY está responsável pela Frente de Componentes Globais. O palco agora é seu, Freebuff!
+
+
