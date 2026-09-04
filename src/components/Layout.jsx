@@ -12,7 +12,7 @@ const mainItems = [
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
-  { to: "/busca-avancada", label: "Busca Avançada", icon: Sliders },
+  { to: "/busca-avancada", label: "Radar", icon: Sliders },
   { to: "/buscas", label: "Configuração", icon: Settings },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
