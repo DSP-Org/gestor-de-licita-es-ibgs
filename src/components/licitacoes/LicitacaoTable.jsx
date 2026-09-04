@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react";
 import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ObjetoExpandivel from "./ObjetoExpandivel";
 import MenuAcoes from "./MenuAcoes";
+import BadgeUrgencia from "./BadgeUrgencia";
 
 const renderColunaLicitacao = (l) => (
   <div className="space-y-1">
@@ -67,7 +68,12 @@ export default function LicitacaoTable({
     {
       id: "abertura",
       label: "Abertura",
-      render: (l) => l.aberturaComHora || l.abertura || "—",
+      render: (l) => (
+        <div className="flex flex-col gap-1 items-start">
+          <span>{l.aberturaComHora || l.abertura || "—"}</span>
+          <BadgeUrgencia abertura={l.abertura} abertura_datetime={l.abertura_datetime} />
+        </div>
+      ),
       className: "px-3 py-2.5 text-muted-foreground whitespace-nowrap",
     },
     {

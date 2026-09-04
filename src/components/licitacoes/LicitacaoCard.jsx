@@ -1,4 +1,5 @@
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
+import BadgeUrgencia from "@/components/licitacoes/BadgeUrgencia";
 
 export function StatusBadge({ status }) {
   const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
@@ -100,7 +101,10 @@ export default function LicitacaoCard({
           </div>
           <div>
             <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Abertura</span>
-            <p className="font-semibold text-foreground">{licitacao.abertura || "—"}</p>
+            <div className="flex flex-col gap-1 items-start">
+              <p className="font-semibold text-foreground">{licitacao.abertura || "—"}</p>
+              <BadgeUrgencia abertura={licitacao.abertura} abertura_datetime={licitacao.abertura_datetime} />
+            </div>
           </div>
           <div className="text-right">
             <span className="text-muted-foreground text-xs uppercase tracking-wide font-semibold block mb-1">Valor</span>
