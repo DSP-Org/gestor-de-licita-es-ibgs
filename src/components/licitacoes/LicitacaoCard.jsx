@@ -48,21 +48,21 @@ export default function LicitacaoCard({
       return {
         label: "Descartada",
         icone: "🗑️",
-        className: "bg-rose-600 text-white ring-rose-600/30",
+        className: "bg-destructive text-destructive-foreground ring-destructive/30",
       };
     }
     if (estado === "minhas") {
       return {
         label: "Minha",
         icone: "⭐",
-        className: "bg-amber-500 text-white ring-amber-500/30",
+        className: "bg-status-amber text-status-amber-foreground ring-status-amber/30",
       };
     }
     if (estado === "triagem") {
       return {
         label: "Em Triagem",
         icone: "⏱️",
-        className: "bg-blue-600 text-white ring-blue-600/30",
+        className: "bg-status-blue text-status-blue-foreground ring-status-blue/30",
       };
     }
     if (estado === "novas") {
@@ -146,7 +146,7 @@ export default function LicitacaoCard({
               </span>
             )}
             {licitacao.tipo && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold tracking-wider uppercase bg-blue-600 text-white shadow-xs">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold tracking-wider uppercase bg-status-blue text-status-blue-foreground shadow-xs">
                 {licitacao.tipo}
               </span>
             )}
@@ -184,7 +184,7 @@ export default function LicitacaoCard({
 
           <div>
             <span className="text-muted-foreground block text-[11px] font-medium">Valor Estimado</span>
-            <span className="font-extrabold text-base text-emerald-600 dark:text-emerald-400">
+            <span className="font-extrabold text-base text-primary">
               {formatValor(licitacao.valor)}
             </span>
           </div>
@@ -218,7 +218,7 @@ export default function LicitacaoCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Acessar edital no portal oficial"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 shadow-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-xs transition-colors"
               >
                 <Globe className="w-3.5 h-3.5" />
                 <span>Portal / Edital</span>
@@ -231,7 +231,7 @@ export default function LicitacaoCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Ver no Alerta Licitação"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Alerta</span>

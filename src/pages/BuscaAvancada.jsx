@@ -446,12 +446,12 @@ export default function BuscaAvancada() {
     (buscarAPI ? 1 : 0) + (buscarPNCP ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-[#F9F7F3] dark:bg-background">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
         {/* ===== HERO ===== */}
         <div className="mb-8 sm:mb-10">
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-emerald-700 dark:text-emerald-500 mb-2">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-primary mb-2">
             Radar de Oportunidades
           </p>
           <h1 className="font-heading text-2xl sm:text-4xl font-bold text-foreground leading-tight mb-2">
@@ -474,7 +474,7 @@ export default function BuscaAvancada() {
                 value={inputPalavraChave}
                 onChange={(e) => setInputPalavraChave(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && adicionarPalavraChave()}
-                className="w-full pl-9 pr-3 py-2.5 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
             {inputPalavraChave.trim() && (
@@ -491,7 +491,7 @@ export default function BuscaAvancada() {
           {filtros.palavrasChave.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {filtros.palavrasChave.map(palavra => (
-                <span key={palavra} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full text-xs font-medium">
+                <span key={palavra} className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
                   {palavra}
                   <button onClick={() => removerPalavraChave(palavra)} className="hover:opacity-70">
                     <X className="w-3 h-3" />
@@ -558,14 +558,14 @@ export default function BuscaAvancada() {
               onClick={() => setMostrarAvancados(!mostrarAvancados)}
               className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors shrink-0 ${
                 mostrarAvancados || filtrosAvancadosAtivos > 0
-                  ? "border-emerald-600 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                  ? "border-primary text-primary bg-primary/5"
                   : "border-border text-muted-foreground hover:bg-muted"
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Avançado</span>
               {filtrosAvancadosAtivos > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold">{filtrosAvancadosAtivos}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">{filtrosAvancadosAtivos}</span>
               )}
             </button>
 
@@ -585,7 +585,7 @@ export default function BuscaAvancada() {
             <button
               onClick={executarBusca}
               disabled={carregando}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg disabled:opacity-50 shrink-0"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50 shrink-0"
             >
               {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               <span className="hidden sm:inline">{carregando ? "Buscando..." : "Buscar"}</span>
@@ -609,7 +609,7 @@ export default function BuscaAvancada() {
                       value={buscaMunicipio}
                       onChange={(e) => setBuscaMunicipio(e.target.value)}
                       placeholder="Filtrar municípios..."
-                      className="w-full px-3 py-2 mb-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
+                      className="w-full px-3 py-2 mb-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto border border-border/60 rounded-lg p-2.5">
                       {municipiosOrdenados.length === 0 ? (
@@ -618,7 +618,7 @@ export default function BuscaAvancada() {
                         municipiosOrdenados.map(m => (
                           <label key={m} className="flex items-center gap-1.5 cursor-pointer text-xs">
                             <input type="checkbox" checked={filtros.municipios.includes(m)} onChange={() => toggleMunicipio(m)} className="w-3.5 h-3.5 rounded" />
-                            <span className={filtros.municipios.includes(m) ? "font-semibold text-emerald-700 dark:text-emerald-400" : ""}>{m}</span>
+                            <span className={filtros.municipios.includes(m) ? "font-semibold text-primary" : ""}>{m}</span>
                           </label>
                         ))
                       )}
@@ -631,11 +631,11 @@ export default function BuscaAvancada() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Início</label>
-                  <input type="date" value={filtros.dataAberturaInicio} onChange={(e) => handleMudarFiltro("dataAberturaInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                  <input type="date" value={filtros.dataAberturaInicio} onChange={(e) => handleMudarFiltro("dataAberturaInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Fim</label>
-                  <input type="date" value={filtros.dataAberturaFim} onChange={(e) => handleMudarFiltro("dataAberturaFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                  <input type="date" value={filtros.dataAberturaFim} onChange={(e) => handleMudarFiltro("dataAberturaFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 </div>
               </div>
 
@@ -643,11 +643,11 @@ export default function BuscaAvancada() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Início</label>
-                  <input type="date" value={filtros.dataPublicacaoInicio} onChange={(e) => handleMudarFiltro("dataPublicacaoInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                  <input type="date" value={filtros.dataPublicacaoInicio} onChange={(e) => handleMudarFiltro("dataPublicacaoInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Fim</label>
-                  <input type="date" value={filtros.dataPublicacaoFim} onChange={(e) => handleMudarFiltro("dataPublicacaoFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                  <input type="date" value={filtros.dataPublicacaoFim} onChange={(e) => handleMudarFiltro("dataPublicacaoFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
                 </div>
               </div>
 
@@ -671,7 +671,7 @@ export default function BuscaAvancada() {
                 {ultimaAtualizacao && (
                   <span className="text-muted-foreground text-xs">· Última atualização {ultimaAtualizacao}</span>
                 )}
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary/10 text-primary">
                   {qtdJaNaUnidade} já na sua unidade
                 </span>
                 {(licitacoes.length - qtdJaNaUnidade) > 0 && (
@@ -699,12 +699,12 @@ export default function BuscaAvancada() {
             onToggleSelecao={handleToggleSelecao}
             tagEstado={(lic) => {
               if (!lic.id) return null;
-              if (lic.favorito) return { label: "Minha", icone: "⭐", className: "bg-amber-500 text-white ring-amber-500/30" };
+              if (lic.favorito) return { label: "Minha", icone: "⭐", className: "bg-status-amber text-status-amber-foreground ring-status-amber/30" };
               if (lic.status_leitura === "vista" || lic.status_leitura === "lida" || lic.status === "em_analise") {
-                return { label: "Em Triagem", icone: "⏱️", className: "bg-blue-600 text-white ring-blue-600/30" };
+                return { label: "Em Triagem", icone: "⏱️", className: "bg-status-blue text-status-blue-foreground ring-status-blue/30" };
               }
               if (lic.status_leitura === "nova") {
-                return { label: "Nova", icone: "✨", className: "bg-emerald-600 text-white ring-emerald-600/30" };
+                return { label: "Nova", icone: "✨", className: "bg-primary text-primary-foreground ring-primary/30" };
               }
               return null;
             }}
@@ -722,7 +722,7 @@ export default function BuscaAvancada() {
 
         {!carregando && licitacoes.length === 0 && !erro && (
           <div className="text-center py-16 sm:py-24">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
               <Database className="w-8 h-8" />
             </div>
             <h3 className="font-heading text-lg font-semibold text-foreground mb-1">Pronto para buscar</h3>
@@ -764,13 +764,13 @@ function DropdownFilter({ label, badge, summary, children }) {
         onClick={() => setAberto(!aberto)}
         className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
           badge > 0
-            ? "border-emerald-600 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+            ? "border-primary text-primary bg-primary/5"
             : "border-border text-muted-foreground hover:bg-muted"
         }`}
       >
         <span className="truncate max-w-32">{badge > 0 ? summary : label}</span>
         {badge > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold">{badge}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">{badge}</span>
         )}
         <ChevronDown className={`w-3 h-3 transition-transform ${aberto ? "rotate-180" : ""}`} />
       </button>

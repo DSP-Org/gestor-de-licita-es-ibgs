@@ -275,7 +275,7 @@ export default function FavoritasTab() {
               onClick={() => setListaSelecionada("sem_lista")}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
                 listaSelecionada === "sem_lista"
-                  ? "bg-amber-500 text-white border-amber-500 shadow-xs"
+                  ? "bg-status-amber text-status-amber-foreground border-status-amber shadow-xs"
                   : "bg-muted/50 border-border hover:bg-muted text-foreground"
               }`}
             >
@@ -362,7 +362,7 @@ export default function FavoritasTab() {
                                 e.stopPropagation();
                                 handleDeletarLista(lista.id);
                               }}
-                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                              className="p-1 hover:bg-destructive/10 text-destructive rounded"
                               title="Deletar lista"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -386,7 +386,7 @@ export default function FavoritasTab() {
       )}
 
       <div className="bg-card border rounded-xl p-4 sm:p-5 shadow-sm flex items-center gap-4">
-        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
           <Wallet className="w-6 h-6" />
         </div>
         <div className="min-w-0">
@@ -398,9 +398,9 @@ export default function FavoritasTab() {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard icon={FileText} label="Total" value={stats.total} color="text-blue-600 bg-blue-50" />
+        <StatCard icon={FileText} label="Total" value={stats.total} color="text-status-blue bg-status-blue/10" />
         <StatCard icon={Clock} label="Acompanhando" value={stats.acompanhando} color="text-purple-600 bg-purple-50" />
-        <StatCard icon={CheckCircle2} label="Ganhas" value={stats.ganhas} color="text-green-600 bg-green-50" />
+        <StatCard icon={CheckCircle2} label="Ganhas" value={stats.ganhas} color="text-primary bg-primary/10" />
       </div>
 
       <div className="flex flex-col gap-2 bg-card border rounded-xl p-2.5 sm:p-2 shadow-sm">
@@ -492,15 +492,15 @@ export default function FavoritasTab() {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => setModalMoverPara(l)}
-                    className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700"
+                    className="inline-flex items-center gap-1.5 text-xs text-status-blue hover:text-status-blue/80"
                   >
                     <ChevronRight className="w-3.5 h-3.5" /> Mover para lista
                   </button>
                   <button
                     onClick={() => handleRemoverFavorito(l)}
-                    className="inline-flex items-center gap-1.5 text-xs text-amber-600 hover:text-muted-foreground"
+                    className="inline-flex items-center gap-1.5 text-xs text-status-amber hover:text-muted-foreground"
                   >
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> Remover dos favoritos
+                    <Star className="w-3.5 h-3.5 fill-status-amber text-status-amber" /> Remover dos favoritos
                   </button>
                 </div>
               }

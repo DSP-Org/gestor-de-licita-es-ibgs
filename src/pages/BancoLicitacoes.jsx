@@ -838,9 +838,9 @@ export default function BancoLicitacoes() {
             {aba === "novas" ? (
               <Sparkles className="w-5 h-5" />
             ) : aba === "triagem" ? (
-              <Clock className="w-5 h-5 text-blue-600" />
+              <Clock className="w-5 h-5 text-status-blue" />
             ) : aba === "descartadas" ? (
-              <Trash2 className="w-5 h-5 text-rose-500" />
+              <Trash2 className="w-5 h-5 text-destructive" />
             ) : (
               <Database className="w-5 h-5" />
             )}
@@ -877,14 +877,14 @@ export default function BancoLicitacoes() {
             onClick={() => setAba("triagem")}
             className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
               aba === "triagem"
-                ? "bg-blue-600 text-white shadow-xs"
+                ? "bg-status-blue text-status-blue-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
             }`}
           >
             <Clock className="w-4 h-4" /> Em Triagem / Analisar
             {triagemFiltradas.length > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                aba === "triagem" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                aba === "triagem" ? "bg-white/20 text-white" : "bg-status-blue/10 text-status-blue"
               }`}>
                 {triagemFiltradas.length}
               </span>
@@ -958,7 +958,7 @@ export default function BancoLicitacoes() {
             </div>
 
             {resultadoSync && (
-              <div className={`text-sm rounded-md p-3 ${resultadoSync.error ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+              <div className={`text-sm rounded-md p-3 ${resultadoSync.error ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
                 {resultadoSync.error ? (
                   <span className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Erro: {resultadoSync.error}</span>
                 ) : (
@@ -1093,7 +1093,7 @@ export default function BancoLicitacoes() {
             mensagemVazio={
               buscasFiltradas.length === 0 ? (
                 <div className="max-w-md mx-auto text-center space-y-3 p-6 bg-card border rounded-2xl shadow-xs">
-                  <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                  <div className="w-12 h-12 rounded-full bg-status-amber/10 text-status-amber flex items-center justify-center mx-auto">
                     <AlertCircle className="w-6 h-6" />
                   </div>
                   <h4 className="font-semibold text-foreground">Nenhuma busca ativa configurada</h4>
@@ -1113,9 +1113,9 @@ export default function BancoLicitacoes() {
       ) : aba === "triagem" ? (
         <>
           {/* Informações da Aba Triagem */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/50 border border-blue-200/60 rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-status-blue/5 border border-status-blue/20 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-status-blue text-status-blue-foreground flex items-center justify-center shrink-0">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
@@ -1183,7 +1183,7 @@ export default function BancoLicitacoes() {
             mensagemVazio={
               buscasFiltradas.length === 0 ? (
                 <div className="max-w-md mx-auto text-center space-y-3 p-6 bg-card border rounded-2xl shadow-xs">
-                  <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                  <div className="w-12 h-12 rounded-full bg-status-amber/10 text-status-amber flex items-center justify-center mx-auto">
                     <AlertCircle className="w-6 h-6" />
                   </div>
                   <h4 className="font-semibold text-foreground">Nenhuma busca ativa configurada</h4>
@@ -1203,9 +1203,9 @@ export default function BancoLicitacoes() {
       ) : aba === "descartadas" ? (
         <>
           {/* Informações da Aba Descartadas */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-rose-50/50 border border-rose-200/60 rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-destructive/5 border border-destructive/20 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-destructive text-destructive-foreground flex items-center justify-center shrink-0">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
@@ -1258,7 +1258,7 @@ export default function BancoLicitacoes() {
             mensagemVazio={
               buscasFiltradas.length === 0 ? (
                 <div className="max-w-md mx-auto text-center space-y-3 p-6 bg-card border rounded-2xl shadow-xs">
-                  <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+                  <div className="w-12 h-12 rounded-full bg-status-amber/10 text-status-amber flex items-center justify-center mx-auto">
                     <AlertCircle className="w-6 h-6" />
                   </div>
                   <h4 className="font-semibold text-foreground">Nenhuma busca ativa configurada</h4>
@@ -1352,21 +1352,21 @@ export default function BancoLicitacoes() {
                 return {
                   label: "Descartada",
                   icone: "🗑️",
-                  className: "bg-rose-600 text-white ring-rose-600/30",
+                  className: "bg-destructive text-destructive-foreground ring-destructive/30",
                 };
               }
               if (estado === "minhas") {
                 return {
                   label: "Minha",
                   icone: "⭐",
-                  className: "bg-amber-500 text-white ring-amber-500/30",
+                  className: "bg-status-amber text-status-amber-foreground ring-status-amber/30",
                 };
               }
               if (estado === "triagem") {
                 return {
                   label: "Em Triagem",
                   icone: "⏱️",
-                  className: "bg-blue-600 text-white ring-blue-600/30",
+                  className: "bg-status-blue text-status-blue-foreground ring-status-blue/30",
                 };
               }
               if (estado === "novas") {

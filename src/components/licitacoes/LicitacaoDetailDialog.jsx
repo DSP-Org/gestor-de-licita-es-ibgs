@@ -207,9 +207,9 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
             <h2 className="font-heading text-lg font-semibold leading-snug">{licitacao.titulo}</h2>
             <button
               onClick={() => setFavorito(!favorito)}
-              className={`p-2 rounded-md border ${favorito ? "bg-amber-50 border-amber-300" : "hover:bg-muted"}`}
+              className={`p-2 rounded-md border ${favorito ? "bg-status-amber/10 border-status-amber/30" : "hover:bg-muted"}`}
             >
-              <Star className={`w-4 h-4 ${favorito ? "fill-amber-400 text-amber-400" : ""}`} />
+              <Star className={`w-4 h-4 ${favorito ? "fill-status-amber text-status-amber" : ""}`} />
             </button>
           </div>
 

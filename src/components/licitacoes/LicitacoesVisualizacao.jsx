@@ -105,7 +105,7 @@ export default function LicitacoesVisualizacao({
                     {onDelete && (
                       <button
                         onClick={() => onDelete(l)}
-                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-600"
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Descartar
                       </button>

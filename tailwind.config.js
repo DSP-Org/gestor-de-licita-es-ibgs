@@ -40,6 +40,12 @@ module.exports = {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+  			status: {
+  				blue: 'hsl(var(--status-blue))',
+  				amber: 'hsl(var(--status-amber))',
+  				'blue-foreground': 'hsl(var(--status-blue-foreground))',
+  				'amber-foreground': 'hsl(var(--status-amber-foreground))'
+  			},
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',

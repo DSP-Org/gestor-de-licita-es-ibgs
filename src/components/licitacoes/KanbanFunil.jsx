@@ -85,7 +85,7 @@ export default function KanbanFunil({
                                     onRemoverFavorito(lic);
                                   }}
                                   title="Remover do painel"
-                                  className="text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
+                                  className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>

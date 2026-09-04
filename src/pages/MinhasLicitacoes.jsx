@@ -38,7 +38,7 @@ const ETAPAS_FUNIL = [
   { id: "interessado", label: "Interesse / Triagem", color: "border-blue-300 bg-blue-50/50 text-blue-700", badgeColor: "bg-blue-100 text-blue-800" },
   { id: "acompanhando", label: "Em Análise / Acompanhando", color: "border-amber-300 bg-amber-50/50 text-amber-700", badgeColor: "bg-amber-100 text-amber-800" },
   { id: "participando", label: "Participando / Disputa", color: "border-purple-300 bg-purple-50/50 text-purple-700", badgeColor: "bg-purple-100 text-purple-800" },
-  { id: "ganha", label: "Ganha 🎉", color: "border-emerald-300 bg-emerald-50/50 text-emerald-700", badgeColor: "bg-emerald-100 text-emerald-800" },
+  { id: "ganha", label: "Ganha 🎉", color: "border-primary/30 bg-primary/5 text-primary", badgeColor: "bg-primary/10 text-primary" },
   { id: "perdida", label: "Perdida", color: "border-red-300 bg-red-50/50 text-red-700", badgeColor: "bg-red-100 text-red-800" },
 ];
 
@@ -386,21 +386,21 @@ export default function MinhasLicitacoes() {
           label="Total em Gestão"
           value={stats.total}
           subtitle={`${stats.porStatus["interessado"]?.count || 0} em triagem`}
-          color="bg-blue-50 text-blue-600 dark:bg-blue-950/40"
+          color="bg-status-blue/10 text-status-blue"
         />
         <StatCard
           icon={TrendingUp}
           label="Pipeline em Disputa"
           value={formatarMoeda(stats.valorEmDisputa)}
           subtitle={`${(stats.porStatus["participando"]?.count || 0) + (stats.porStatus["acompanhando"]?.count || 0)} oportunidades ativas`}
-          color="bg-amber-50 text-amber-600 dark:bg-amber-950/40"
+          color="bg-status-amber/10 text-status-amber"
         />
         <StatCard
           icon={CheckCircle2}
           label="Total Ganho 🎉"
           value={formatarMoeda(stats.valorGanho)}
           subtitle={`${stats.porStatus["ganha"]?.count || 0} licitações conquistadas`}
-          color="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40"
+          color="bg-primary/10 text-primary"
         />
         <StatCard
           icon={Wallet}
@@ -453,7 +453,7 @@ export default function MinhasLicitacoes() {
                 : "border-muted hover:border-foreground bg-background text-foreground"
             }`}
           >
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <Star className="w-3.5 h-3.5 text-status-amber fill-status-amber" />
             Sem Pasta ({qtdSemLista})
           </button>
         </div>
@@ -522,7 +522,7 @@ export default function MinhasLicitacoes() {
                                 e.stopPropagation();
                                 handleDeletarLista(lista.id);
                               }}
-                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                              className="p-1 hover:bg-destructive/10 text-destructive rounded"
                               title="Deletar lista"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -691,7 +691,7 @@ export default function MinhasLicitacoes() {
 
               <button
                 onClick={handleBulkDesfavoritar}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border hover:bg-red-50 hover:text-red-600 text-muted-foreground"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border hover:bg-destructive/5 hover:text-destructive text-muted-foreground"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Desfavoritar selecionadas
               </button>
@@ -956,4 +956,3 @@ function formatarMoeda(valor) {
   }
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
-

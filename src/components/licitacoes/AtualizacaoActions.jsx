@@ -24,7 +24,7 @@ export default function AtualizacaoActions({
         <button
           onClick={onRestaurar}
           title="Restaurar para Novas"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-xs transition-colors"
         >
           <Undo2 className="h-3.5 w-3.5" /> <span>Restaurar</span>
         </button>
@@ -36,7 +36,7 @@ export default function AtualizacaoActions({
             <button
               onClick={onTriagem}
               title="Mover para Em Triagem / Análise"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-status-blue-foreground bg-status-blue hover:bg-status-blue/90 shadow-xs transition-colors"
             >
               <Clock className="h-3.5 w-3.5" /> <span>Em Triagem</span>
             </button>
@@ -46,7 +46,7 @@ export default function AtualizacaoActions({
             <button
               onClick={onSave}
               title="Aprovar e enviar para Minhas Licitações (Favoritas)"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-status-amber-foreground bg-status-amber hover:bg-status-amber/90 shadow-xs transition-colors"
             >
               <Star className="h-3.5 w-3.5 fill-white text-white" /> <span>Minhas Licitações</span>
             </button>
@@ -56,7 +56,7 @@ export default function AtualizacaoActions({
             <button
               onClick={onDelete}
               title="Descartar licitação"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Descartar</span>
             </button>

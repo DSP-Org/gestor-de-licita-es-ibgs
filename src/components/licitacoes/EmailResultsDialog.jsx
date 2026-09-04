@@ -47,14 +47,14 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
     }).join("");
     const botaoCompartilhar = linkCompartilhamento
       ? `<tr><td style="padding:8px 24px 20px;">
-          <a href="${esc(linkCompartilhamento)}" style="display:inline-block;padding:10px 20px;background:#111827;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Ver todas as licitações no painel →</a>
+          <a href="${esc(linkCompartilhamento)}" style="display:inline-block;padding:10px 20px;background:#00C853;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Ver todas as licitações no painel →</a>
         </td></tr>`
       : "";
     return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
-        <tr><td style="background:#111827;padding:24px;">
+        <tr><td style="background:#00C853;padding:24px;">
           <h1 style="margin:0;color:#ffffff;font-size:18px;">🔔 Resultados de licitações</h1>
           <p style="margin:4px 0 0;color:#9ca3af;font-size:13px;">Busca: ${esc(origem) || "—"}</p>
         </td></tr>
@@ -187,7 +187,7 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
 
           <div className="bg-muted/40 p-3 rounded-lg border flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-md bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-md bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
                 <FileText className="w-4 h-4" />
               </div>
               <div>
@@ -213,8 +213,8 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
             />
           </div>
 
-          {msg && <p className="text-sm text-green-600">{msg}</p>}
-          {erro && <p className="text-sm text-red-600">{erro}</p>}
+          {msg && <p className="text-sm text-primary">{msg}</p>}
+          {erro && <p className="text-sm text-destructive">{erro}</p>}
 
           <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2 border-t">
             <button onClick={onClose} className="px-4 py-2.5 text-sm border rounded-md hover:bg-muted order-2 sm:order-1">Fechar</button>
