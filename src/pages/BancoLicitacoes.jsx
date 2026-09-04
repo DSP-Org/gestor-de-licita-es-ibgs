@@ -14,7 +14,6 @@ import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizac
 import GestaoRapida from "@/components/licitacoes/GestaoRapida";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
-import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
 import FiltrosGeograficos from "@/components/licitacoes/FiltrosGeograficos";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
 import { toArray } from "@/lib/toArray";
@@ -336,23 +335,23 @@ export default function BancoLicitacoes() {
   // Opções de UF, município e modalidade derivadas de todas as licitações carregadas
   const ufsDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => { if (l.uf) set.add(l.uf); });
+    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => { if (l.uf) set.add(l.uf); });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas]);
+  }, [novas, triagem, descartadas, selecionadas, acervo]);
 
   const municipiosDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => {
+    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => {
       if (l.municipio && (!filtroUF || filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
     });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas, filtroUF]);
+  }, [novas, triagem, descartadas, selecionadas, acervo, filtroUF]);
 
   const modalidadesDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => { if (l.tipo) set.add(l.tipo); });
+    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => { if (l.tipo) set.add(l.tipo); });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas]);
+  }, [novas, triagem, descartadas, selecionadas, acervo]);
 
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
   // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
@@ -643,10 +642,8 @@ export default function BancoLicitacoes() {
   const [acervoLoading, setAcervoLoading] = useState(true);
   const [erro, setErro] = useState("");
   const [buscasSalvasAcervo, setBuscasSalvasAcervo] = useState([]);
-  const [filtroUrgenciaAcervo, setFiltroUrgenciaAcervo] = useState("todos");
   const [salvasIds, setSalvasIds] = useState(new Set());
   const [licitacoesBancoMap, setLicitacoesBancoMap] = useState(new Map());
-  const [filtroEstadoAcervo, setFiltroEstadoAcervo] = useState("todas");
   const [pagina, setPagina] = useState(1);
   const porPagina = 30;
   const [selecionadosAcervo, setSelecionadosAcervo] = useState(new Set());
@@ -754,54 +751,31 @@ export default function BancoLicitacoes() {
     [licitacoesBancoMap]
   );
 
-  // Itens base que passam pelos critérios de busca/filtros/urgência
+  // Itens base que passam pelos critérios de busca/filtros geográficos
   const acervoBase = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return acervo.filter((l) => {
       // Mostra só o que casa com pelo menos uma busca ativa da unidade. Sem
       // buscas ativas configuradas, nada é exibido (mesmo critério do funil).
       if (!filtrosDoUsuario.some((f) => combinaComFiltros(l, f))) return false;
-      if (filtroUrgenciaAcervo !== "todos") {
-        const urg = calcularUrgenciaAbertura(l.abertura_datetime, l.abertura);
-        if (filtroUrgenciaAcervo === "hoje" && urg.tipo !== "hoje") return false;
-        if (filtroUrgenciaAcervo === "urgente" && urg.tipo !== "hoje" && urg.tipo !== "urgente") return false;
-        if (filtroUrgenciaAcervo === "em_breve" && urg.tipo !== "hoje" && urg.tipo !== "urgente" && urg.tipo !== "em_breve") return false;
-      }
+      if (filtroUF !== "todos" && l.uf !== filtroUF) return false;
+      if (filtroMunicipio !== "todos" && l.municipio !== filtroMunicipio) return false;
+      if (filtroModalidade !== "todos" && l.tipo !== filtroModalidade) return false;
       if (!termo) return true;
       return [l.titulo, l.objeto, l.orgao, l.uf, l.municipio, l.tipo]
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termo));
     });
-  }, [acervo, busca, filtrosDoUsuario, filtroUrgenciaAcervo]);
+  }, [acervo, busca, filtrosDoUsuario, filtroUF, filtroMunicipio, filtroModalidade]);
 
-  // Contadores dinâmicos para as pílulas de estado no Acervo Geral.
-  // "todas" é a soma de novas + triagem + descartadas + minhas — itens
-  // "fora_do_funil" (apareceram na busca mas nunca entraram no banco) não
-  // contam, pra não contradizer a soma das pílulas individuais.
-  const contadoresEstadoAcervo = useMemo(() => {
-    const counts = { todas: 0, novas: 0, triagem: 0, descartadas: 0, minhas: 0 };
-    for (const l of acervoBase) {
-      const estado = obterEstadoAcervo(l);
-      if (counts[estado] !== undefined) {
-        counts[estado] += 1;
-        counts.todas += 1;
-      }
-    }
-    return counts;
-  }, [acervoBase, obterEstadoAcervo]);
-
-  // Aplica o filtro de estado selecionado nas pílulas (Todas, Novas, Em Triagem, Descartadas, Minhas)
-  const acervoFiltrado = useMemo(() => {
-    if (filtroEstadoAcervo === "todas") {
-      return acervoBase.filter((l) => obterEstadoAcervo(l) !== "fora_do_funil");
-    }
-    return acervoBase.filter((l) => obterEstadoAcervo(l) === filtroEstadoAcervo);
-  }, [acervoBase, filtroEstadoAcervo, obterEstadoAcervo]);
+  // Acervo Geral mostra todos os itens que casam com as buscas ativas —
+  // incluindo os que ainda não foram importados para o funil ("fora_do_funil").
+  const acervoFiltrado = useMemo(() => acervoBase, [acervoBase]);
 
   useEffect(() => {
     setPagina(1);
     setSelecionadosAcervo(new Set());
-  }, [busca, filtroUrgenciaAcervo, filtroEstadoAcervo]);
+  }, [busca, filtroUF, filtroMunicipio, filtroModalidade]);
 
   const totalPaginas = Math.max(1, Math.ceil(acervoFiltrado.length / porPagina));
   const paginadas = useMemo(
@@ -1312,56 +1286,55 @@ export default function BancoLicitacoes() {
         </>
       ) : (
         <>
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar por título, órgão, UF, município ou modalidade..."
-                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+            <FiltrosGeograficos
+              ufs={ufsDisponiveis}
+              municipios={municipiosDisponiveis}
+              modalidades={modalidadesDisponiveis}
+              filtroUF={filtroUF}
+              setFiltroUF={setFiltroUF}
+              filtroMunicipio={filtroMunicipio}
+              setFiltroMunicipio={setFiltroMunicipio}
+              filtroModalidade={filtroModalidade}
+              setFiltroModalidade={setFiltroModalidade}
+            />
+          </div>
 
-            <div className="flex flex-col lg:flex-row lg:items-start gap-3">
-              <div className="flex-1">
-                <AcervoFiltros
-                  filtroUrgencia={filtroUrgenciaAcervo}
-                  onChangeUrgencia={setFiltroUrgenciaAcervo}
-                  filtroEstado={filtroEstadoAcervo}
-                  onChangeEstado={setFiltroEstadoAcervo}
-                  contadoresEstado={contadoresEstadoAcervo}
-                />
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {selecionadosAcervo.size > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                    <span>{selecionadosAcervo.size} selecionada{selecionadosAcervo.size === 1 ? "" : "s"}</span>
-                    <button
-                      onClick={() => setEnviarEmail(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
-                    >
-                      <Mail className="w-4 h-4" /> <span className="hidden sm:inline">E-mail</span>
-                    </button>
-                  </div>
-                )}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {selecionadosAcervo.size > 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                <span>{selecionadosAcervo.size} selecionada{selecionadosAcervo.size === 1 ? "" : "s"}</span>
                 <button
-                  onClick={() => exportarLicitacoesPDF(acervoFiltrado, "Banco de Licitação")}
-                  disabled={acervoFiltrado.length === 0}
-                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+                  onClick={() => setEnviarEmail(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
                 >
-                  <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
-                </button>
-                <button
-                  onClick={() => exportarLicitacoesExcel(acervoFiltrado, "banco-licitacoes")}
-                  disabled={acervoFiltrado.length === 0}
-                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
-                >
-                  <Sheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
+                  <Mail className="w-4 h-4" /> <span className="hidden sm:inline">E-mail</span>
                 </button>
               </div>
-            </div>
+            )}
+            <button
+              onClick={() => exportarLicitacoesPDF(acervoFiltrado, "Banco de Licitação")}
+              disabled={acervoFiltrado.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+            >
+              <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              onClick={() => exportarLicitacoesExcel(acervoFiltrado, "banco-licitacoes")}
+              disabled={acervoFiltrado.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+            >
+              <Sheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
+            </button>
           </div>
 
           {erro && (
