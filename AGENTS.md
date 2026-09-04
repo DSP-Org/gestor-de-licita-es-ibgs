@@ -24,6 +24,32 @@ npx skills add base44/skills
 - `vite.config.js`: Vite config and Base44 Vite plugin setup.
 - `.env.local`: local-only environment values; never commit secrets.
 
+# AGENTS.md
+
+## Project Context
+
+This is a Base44 app repository. Treat it as user-owned application code, keep changes focused on the user's request, and preserve existing project conventions.
+
+Start with `README.md` for local setup, environment variables, and publish workflow.
+
+## Base44 References
+
+- CLI overview: https://docs.base44.com/developers/references/cli/get-started/overview.md
+- Agent skills: https://docs.base44.com/developers/backend/overview/skills.md
+
+If your agent supports Agent Skills, install or update Base44 skills before Base44-specific work:
+
+```bash
+npx skills add base44/skills
+```
+
+## Key Files
+
+- `src/`: frontend application source.
+- `src/api/base44Client.js`: frontend Base44 SDK client.
+- `vite.config.js`: Vite config and Base44 Vite plugin setup.
+- `.env.local`: local-only environment values; never commit secrets.
+
 ## Working Notes
 
 - Use `base44 dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
@@ -33,21 +59,23 @@ npx skills add base44/skills
 - Reuse the existing SDK client and Vite plugin patterns before adding new Base44 integration paths.
 - Run the relevant checks from `package.json` before finishing code changes.
 
+## Protocolo de Sincronização Obrigatória (Equipe Data5)
+Todos os agentes trabalhando neste repositório (Antigravity, Claude Code, AGY) devem:
+1. **Ler o arquivo `EQUIPE_DATA5.md`** no início de qualquer ciclo para verificar tarefas e decisões da equipe.
+2. Respeitar o direcionamento de arquitetura do Arquiteto Chefe (Antigravity) e as arbitragens do usuário (Sampaio).
+3. Registrar novas descobertas, status de entregas e dúvidas no fim de `EQUIPE_DATA5.md` (append-only).
+
+
 <!-- egc:start -->
 ## EGC Project Memory
 
-**Context:** Migração de escopo de dados: de usuário individual para unidade de negócio (business unit). Cada usuário passa a pertencer a 1 unidade; dados (Licitacao, BuscaSalva, FavoritaLista, Destinatario) são compartilhados entre todos os membros da mesma unidade. Acesso dentro da unidade é flat (sem hierarquia por enquanto).
+**Context:** Gestor de Licitacoes IBGS - Implementado Kanban com drag-and-drop, badges de urgencia de pregoes e filtro de passadas em MinhasLicitacoes.jsx
 
 **Active decisions:**
-- Nova entidade UnidadeNegocio (base44/entities/UnidadeNegocio.jsonc) + campo unidade_negocio_id em User e nas 4 entidades com dono.
-- RLS das 4 entidades reescrito usando {{user.data.unidade_negocio_id}} comparado a data.unidade_negocio_id do registro, com bypass para o master (nailton.alsampaio@gmail.com).
-- usuario_id/created_by_id mantidos nos schemas como legado/informativo (não removidos), mas não controlam mais RLS.
-- Seletor do master no Layout trocou de 'escolher usuário' para 'escolher unidade'.
-- Renomeado src/lib/escopoUsuario.js -> escopoUnidade.js e src/lib/UserFilterContext.jsx -> UnidadeFilterContext.jsx (hook useUnidadeFilter).
+- Implementação de KanbanFunil desacoplado com @hello-pangea/dnd
+- Criação do módulo prazosLicitacao e BadgeUrgencia com suporte ao timezone de SP
 
 **Next session:**
-- Rodar a função migrarUnidadesNegocio (botão em Usuarios.jsx) contra os dados reais - requer confirmação explícita do usuário antes, é escrita em massa em produção.
-- Aplicar/publicar as mudanças de schema (base44/entities/*.jsonc, novo UnidadeNegocio) no backend hospedado do base44 - código local não basta, precisa do fluxo de deploy do base44 CLI/plataforma.
-- Testar no navegador com o backend atualizado: seletor de unidade no Layout, criação de unidade/usuário em Usuarios.jsx, RLS efetivo (usuário de uma unidade não vê dados de outra).
-- typecheck/lint já passam (únicos erros de typecheck são pré-existentes em Login.jsx/OAuthConsent.jsx/Register.jsx/ResetPassword.jsx e base44.users.inviteUser, não relacionados a esta mudança).
+- Aguardar feedback de Claude Code e AGY no EQUIPE_DATA5.md sobre as entregas
+- Desenvolver Frente 4 de ações em lote ou refinamento de filtros se aprovado
 <!-- egc:end -->
