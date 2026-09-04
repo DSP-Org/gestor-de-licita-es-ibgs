@@ -104,11 +104,11 @@ export default function BancoLicitacoes() {
         base44.entities.Licitacao.filter(
           filtro,
           "-created_date",
-          1000
+          200
         ),
         // Banco global consolidado: de onde vêm as licitações que casam com as
         // buscas da unidade mas ainda não foram materializadas como Licitacao.
-        base44.entities.ConsultaCache.list("-updated_date", 500),
+        base44.entities.ConsultaCache.list("-updated_date", 100),
         // Buscas ativas da unidade: necessárias pra saber quais critérios usar
         // ao trazer licitações do cache que ainda não estão no banco.
         base44.entities.BuscaSalva.filter(
@@ -166,9 +166,6 @@ export default function BancoLicitacoes() {
     }
   };
 
-  const carregarNovas = carregarAtivas;
-  const carregarTriagem = carregarAtivas;
-
   const carregarDescartadas = async () => {
     setDescartadasLoading(true);
     try {
@@ -185,16 +182,14 @@ export default function BancoLicitacoes() {
   };
 
   const carregarTudo = () => {
-    carregarNovas();
-    carregarTriagem();
+    carregarAtivas();
     carregarDescartadas();
   };
 
   const marcarLeitura = async (licId, novoStatus) => {
     try {
       await base44.entities.Licitacao.update(licId, { status_leitura: novoStatus });
-      carregarNovas();
-      carregarTriagem();
+      carregarAtivas();
     } catch (e) {
       console.error("Erro ao marcar leitura:", e);
     }
@@ -202,8 +197,7 @@ export default function BancoLicitacoes() {
 
   useEffect(() => {
     if (!usuarioLogado) return;
-    carregarNovas();
-    carregarTriagem();
+    carregarAtivas();
     carregarDescartadas();
 
     const filtroBuscas = escopoUnidade(isAdmin, filtroUnidade);
@@ -335,7 +329,7 @@ export default function BancoLicitacoes() {
     try {
       const res = await base44.functions.invoke("sincronizarBuscas", { buscaIds: buscasSelecionadas });
       setResultadoSync(res.data || res);
-      carregarNovas();
+      carregarAtivas();
     } catch (e) {
       setResultadoSync({ error: e.message });
     } finally {
@@ -349,7 +343,7 @@ export default function BancoLicitacoes() {
       await base44.entities.Licitacao.update(selecionada.id, rest);
     }
     setSelecionada(null);
-    carregarNovas();
+    carregarAtivas();
   };
 
   // Favoritar abre o seletor de lista; a gravação acontece em confirmarFavoritar.
