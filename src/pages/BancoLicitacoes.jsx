@@ -704,13 +704,17 @@ export default function BancoLicitacoes() {
     });
   }, [acervo, busca, filtrosDoUsuario, filtroUrgenciaAcervo]);
 
-  // Contadores dinâmicos para as pílulas de estado no Acervo Geral
+  // Contadores dinâmicos para as pílulas de estado no Acervo Geral.
+  // "todas" é a soma de novas + triagem + descartadas + minhas — itens
+  // "fora_do_funil" (apareceram na busca mas nunca entraram no banco) não
+  // contam, pra não contradizer a soma das pílulas individuais.
   const contadoresEstadoAcervo = useMemo(() => {
-    const counts = { todas: acervoBase.length, novas: 0, triagem: 0, descartadas: 0, minhas: 0 };
+    const counts = { todas: 0, novas: 0, triagem: 0, descartadas: 0, minhas: 0 };
     for (const l of acervoBase) {
       const estado = obterEstadoAcervo(l);
       if (counts[estado] !== undefined) {
         counts[estado] += 1;
+        counts.todas += 1;
       }
     }
     return counts;
@@ -718,7 +722,9 @@ export default function BancoLicitacoes() {
 
   // Aplica o filtro de estado selecionado nas pílulas (Todas, Novas, Em Triagem, Descartadas, Minhas)
   const acervoFiltrado = useMemo(() => {
-    if (filtroEstadoAcervo === "todas") return acervoBase;
+    if (filtroEstadoAcervo === "todas") {
+      return acervoBase.filter((l) => obterEstadoAcervo(l) !== "fora_do_funil");
+    }
     return acervoBase.filter((l) => obterEstadoAcervo(l) === filtroEstadoAcervo);
   }, [acervoBase, filtroEstadoAcervo, obterEstadoAcervo]);
 
