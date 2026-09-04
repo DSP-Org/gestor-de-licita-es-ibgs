@@ -54,7 +54,7 @@ export default function MinhasLicitacoes() {
   const [dataAberturaIni, setDataAberturaIni] = useState("");
   const [dataAberturaFim, setDataAberturaFim] = useState("");
   const [selecionada, setSelecionada] = useState(null);
-  const [modo, setModo] = useState("kanban"); // "kanban" | "cards" | "tabela"
+  const [modo, setModo] = useState("cards"); // "kanban" | "cards" | "tabela"
   const [compartilhar, setCompartilhar] = useState(false);
   const [modalNovaLista, setModalNovaLista] = useState(false);
   const [modalMoverPara, setModalMoverPara] = useState(null);
@@ -574,16 +574,6 @@ export default function MinhasLicitacoes() {
             {/* Alternador de visualizações: Kanban, Cards e Tabela */}
             <div className="flex items-center gap-1 border rounded-lg p-1 bg-background shrink-0">
               <button
-                onClick={() => setModo("kanban")}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium transition-all ${
-                  modo === "kanban" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-                title="Funil / Kanban"
-              >
-                <Kanban className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Funil</span>
-              </button>
-              <button
                 onClick={() => setModo("cards")}
                 className={`p-1.5 rounded transition-all ${
                   modo === "cards" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
@@ -640,7 +630,7 @@ export default function MinhasLicitacoes() {
       </div>
 
       {/* Barra de Ações em Lote — só faz sentido em Cards/Tabela; o Kanban já resolve status via drag & drop */}
-      {modo !== "kanban" && !loading && filtradas.length > 0 && (
+      {!loading && filtradas.length > 0 && (
         <div className="bg-card border rounded-xl p-3 sm:p-4 shadow-sm flex flex-wrap items-center gap-3">
           <label className="inline-flex items-center gap-2 text-xs font-medium cursor-pointer select-none">
             <input
@@ -744,16 +734,6 @@ export default function MinhasLicitacoes() {
             )}
           </div>
         </div>
-      ) : modo === "kanban" ? (
-        /* VISUALIZAÇÃO EM FUNIL KANBAN COM DRAG & DROP REAL */
-        <KanbanFunil
-          licitacoes={filtradas}
-          etapas={ETAPAS_FUNIL}
-          onMudarStatus={handleMudarStatus}
-          onSelect={(lic) => setSelecionada(lic)}
-          onRemoverFavorito={handleRemoverFavorito}
-          formatarMoeda={formatarMoeda}
-        />
       ) : modo === "cards" ? (
         /* VISUALIZAÇÃO EM CARDS COM GESTÃO RÁPIDA EMBUTIDA */
         <div className="space-y-3">
