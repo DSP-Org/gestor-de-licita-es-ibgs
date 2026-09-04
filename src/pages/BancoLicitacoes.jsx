@@ -108,12 +108,53 @@ export default function BancoLicitacoes() {
         ? { unidade_negocio_id: null }
         : { oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
 
-      const lista = await base44.entities.Licitacao.filter(
-        filtro,
-        "-created_date",
-        modoSemUnidade ? 5000 : 1000
-      );
+      const [lista, cachesList, buscasList] = await Promise.all([
+        base44.entities.Licitacao.filter(
+          filtro,
+          "-created_date",
+          modoSemUnidade ? 5000 : 1000
+        ),
+        // Banco global consolidado: de onde vêm as licitações que casam com as
+        // buscas da unidade mas ainda não foram materializadas como Licitacao.
+        base44.entities.ConsultaCache.list("-updated_date", 500),
+        // Buscas ativas da unidade: necessárias pra saber quais critérios usar
+        // ao trazer licitações do cache que ainda não estão no banco.
+        base44.entities.BuscaSalva.filter(
+          escopoUnidade(isAdmin, filtroUnidade),
+          "nome",
+          100
+        ),
+      ]);
+
       const listaArray = toArray(lista);
+      const idsNoBanco = new Set(listaArray.map((l) => l.id_licitacao));
+
+      // Critérios das buscas ativas da unidade — uma licitação do cache entra
+      // no funil se casar com pelo menos uma delas e ainda estiver em aberto.
+      const buscasAtivas = toArray(buscasList).filter((b) => b.ativa !== false);
+      const filtrosAtivas = buscasAtivas.map(filtrosDaBusca);
+
+      const cacheNovas = [];
+      if (!modoSemUnidade && filtrosAtivas.length > 0) {
+        const cacheMap = new Map();
+        for (const cache of toArray(cachesList)) {
+          const lics = toArray(cache.resultado?.licitacoes);
+          for (const l of lics) {
+            if (l?.id_licitacao && !cacheMap.has(l.id_licitacao)) {
+              cacheMap.set(l.id_licitacao, l);
+            }
+          }
+        }
+        for (const l of cacheMap.values()) {
+          if (idsNoBanco.has(l.id_licitacao)) continue;
+          if (!filtrosAtivas.some((f) => combinaComFiltros(l, f))) continue;
+          // Só entra quem ainda está em aberto (abertura hoje ou no futuro).
+          const urg = calcularUrgenciaAbertura(l.abertura_datetime, l.abertura);
+          if (urg.tipo === "encerrada" || urg.tipo === "sem_data") continue;
+          cacheNovas.push(l);
+        }
+      }
+
       const arrNovas = [];
       const arrTriagem = [];
       for (const item of listaArray) {
@@ -123,6 +164,8 @@ export default function BancoLicitacoes() {
           arrTriagem.push(item);
         }
       }
+      arrNovas.push(...cacheNovas);
+
       setNovas(arrNovas);
       setTriagem(arrTriagem);
     } finally {
