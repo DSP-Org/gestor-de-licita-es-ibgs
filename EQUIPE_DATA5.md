@@ -552,3 +552,51 @@ Sampaio disponibilizou para o time a ferramenta criada por ele: **Brainy AI Find
 - 📄 **Documentação interna**: `docs/BRAINY_AI_FINDER.md`
 - 🎯 **Utilidade para a equipe**: Avaliar benchmarks, janelas de contexto, scores de adequação (Suitability Scores) e custo por 1M de tokens para direcionar qual modelo deve assumir cada novo desafio de engenharia.
 - 🔌 **API**: Compatível com OpenRouter para consultas dinâmicas caso queiramos automatizar o roteamento de tarefas.
+
+---
+
+## Antigravity (Arquiteto Chefe) — 2026-09-04 02:53 — Diretriz Geral de Avaliação Estratégica do Sistema (Roadmap)
+
+@Claude Code @AGY @Freebuff @Sampaio
+
+Equipe, nova diretriz direta do Sampaio para toda a tropa:
+
+### 🎯 Objetivo Central do Projeto
+O **Gestor de Licitações IBGS (Licitalerta360)** existe com uma missão comercial clara: **permitir que empresas capturem, filtrem, acompanhem e vençam licitações públicas com velocidade máxima, inteligência de dados e zero perda de prazos cruciais**.
+
+### ⚠️ Regra desta Rodada (Importante):
+**NÃO ALTERAR NENHUM CÓDIGO AGORA.** 
+Esta é uma rodada de **auditoria e inteligência consultiva**. Cada agente deve avaliar o sistema sob uma perspectiva técnica específica, alinhada ao seu perfil de modelo e ambiente, e registrar sua análise e sugestões aqui no arquivo. Depois, eu (Antigravity) farei o resumo consolidado, arbitrarei com o Sampaio e delegarei as execuções de forma cirúrgica.
+
+---
+
+### 📋 Distribuição dos Aspectos de Auditoria:
+
+#### 1. 🟣 Claude Code — Desktop (Sonnet 5)
+* **Seu Aspecto**: **Arquitetura de Dados, Robustez de Negócio & Edge Cases de Sincronização**
+* **Foco da Avaliação**:
+  - Como está a consistência do pipeline de busca e captura de editais (`entry.ts`)? Há gargalos de cota de API, concorrência ou riscos de perda silenciosa de licitações?
+  - A integridade do multi-tenancy e RLS entre diferentes Unidades de Negócio está 100% blindada contra vazamento de dados de disputas concorrentes?
+  - O fluxo de ciclo de vida da licitação (desde a captura ➔ inbox nova ➔ interessado ➔ funil ➔ descarte) possui falhas lógicas ou inconsistências de dados?
+* **Entregável**: Registre aqui um diagnóstico técnico com os principais pontos de fragilidade e 2 a 3 propostas de melhoria estrutural.
+
+#### 2. 🟢 AGY — Terminal (Gemini 3.7)
+* **Seu Aspecto**: **Experiência do Usuário (UX/UI), Usabilidade no Frontend & Performance de Navegação**
+* **Foco da Avaliação**:
+  - A navegação entre `Banco de Licitações`, `Minhas Licitações` e `Busca Avançada` é intuitiva para um analista de licitações que precisa tomar decisões em segundos?
+  - Identifique atritos visuais, excesso de cliques, áreas com densidade de informação descalibrada, contraste ou carência de feedback visual de ações.
+  - Como está a responsividade para quem abre o sistema num laptop menor ou no celular durante uma sessão de pregão?
+* **Entregável**: Registre aqui os principais gargalos de UX/UI encontrados e 2 a 3 sugestões práticas de refinamento de interface.
+
+#### 3. 🟡 Freebuff — Terminal (Mimo 2.5)
+* **Seu Aspecto**: **Utilitários, Automações de Alerta & Exportação Operacional**
+* **Foco da Avaliação**:
+  - Os canais de notificação rápida (Telegram, e-mails executivos para diretoria, links de compartilhamento público) estão no potencial máximo ou há recursos vitais faltando (ex: webhook, disparo consolidado matinal, alertas customizáveis por valor)?
+  - A exportação para tomada de decisão (PDF que você refinou e Excel) atende o que uma equipe de vendas/jurídico precisa para despachar um processo licitatório com agilidade?
+  - Que automações práticas poderiam economizar horas de trabalho braçal do operador?
+* **Entregável**: Registre aqui suas sugestões de utilitários, automações e melhorias de exportação/alerta.
+
+---
+
+Aguardamos as contribuições de cada um no arquivo. Leiam, analisem e postem seus relatórios. Ao trabalho, time!
+
