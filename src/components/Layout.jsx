@@ -31,6 +31,8 @@ function getInitials(name) {
 export default function Layout() {
   const [menuAberto, setMenuAberto] = useState(false);
   const [seletorUnidadeAberto, setSeletorUnidadeAberto] = useState(false);
+  const [unidadePendente, setUnidadePendente] = useState(null);
+  const [trocandoUnidade, setTrocandoUnidade] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
   const { isAdmin, filtroUnidade, unidades, unidadesPermitidas, trocarUnidadeAtiva, usuarioLogado } = useUnidadeFilter();
@@ -46,15 +48,21 @@ export default function Layout() {
 
   const userInitials = getInitials(usuarioLogado?.full_name || usuarioLogado?.email);
 
-  const handleTrocarUnidade = (novaUnidadeId) => {
-    trocarUnidadeAtiva(novaUnidadeId).catch((err) => {
+  const handleTrocarUnidade = async (novaUnidadeId) => {
+    setTrocandoUnidade(true);
+    try {
+      await trocarUnidadeAtiva(novaUnidadeId);
+    } catch (err) {
       toast({
         title: "Não foi possível trocar de unidade",
         description: err.message,
         variant: "destructive",
       });
-    });
-    setSeletorUnidadeAberto(false);
+    } finally {
+      setTrocandoUnidade(false);
+      setUnidadePendente(null);
+      setSeletorUnidadeAberto(false);
+    }
   };
 
   const mostrarSeletorUnidade = isAdmin || unidadesPermitidas.length >= 1;
@@ -103,7 +111,10 @@ export default function Layout() {
                       {opcoesSeletorUnidade.map((un) => (
                         <button
                           key={un.id}
-                          onClick={() => handleTrocarUnidade(un.id)}
+                          onClick={() => {
+                            setUnidadePendente(un);
+                            setSeletorUnidadeAberto(false);
+                          }}
                           className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-accent transition-colors ${
                             un.id === filtroUnidade ? "text-primary font-bold" : "text-foreground"
                           }`}
@@ -196,7 +207,10 @@ export default function Layout() {
                 ) : (
                   <select
                     value={filtroUnidade || ""}
-                    onChange={(e) => handleTrocarUnidade(e.target.value)}
+                    onChange={(e) => {
+                      const un = opcoesSeletorUnidade.find((u) => u.id === e.target.value);
+                      if (un) setUnidadePendente(un);
+                    }}
                     className="mt-0.5 max-w-full px-2 py-0.5 text-[11px] rounded-md border border-border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {!filtroUnidade && <option value="">Selecione uma unidade</option>}
@@ -310,6 +324,46 @@ export default function Layout() {
           )}
         </div>
       </div>
+
+      {/* Confirmação de troca de unidade */}
+      {unidadePendente && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => !trocandoUnidade && setUnidadePendente(null)}>
+          <div className="bg-card rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <ChevronDown className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-heading font-bold text-sm text-foreground">Confirmar troca de unidade</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Você está prestes a mudar para a unidade:
+                </p>
+                <p className="text-sm font-semibold text-primary mt-1.5 break-words">{unidadePendente.nome}</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Os dados exibidos no sistema serão filtrados para esta unidade a partir de agora.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setUnidadePendente(null)}
+                disabled={trocandoUnidade}
+                className="flex-1 px-3 py-2.5 text-sm font-medium border rounded-lg hover:bg-muted disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleTrocarUnidade(unidadePendente.id)}
+                disabled={trocandoUnidade}
+                className="flex-1 px-3 py-2.5 text-sm font-bold text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {trocandoUnidade && <RefreshCw className="w-4 h-4 animate-spin" />}
+                {trocandoUnidade ? "Trocando..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
