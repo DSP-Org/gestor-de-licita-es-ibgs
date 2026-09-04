@@ -61,7 +61,7 @@ export default function BancoLicitacoes() {
   const [aba, setAba] = useState("novas");
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState(null);
-  const { isAdmin, filtroUnidade, usuarioLogado, unidades } = useUnidadeFilter();
+  const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
   // ---------- Aba "Novas" (sincronização automática) ----------
   const [novas, setNovas] = useState([]);
@@ -85,11 +85,6 @@ export default function BancoLicitacoes() {
   const [compartilhar, setCompartilhar] = useState(null);
   const [selecionadasNovas, setSelecionadasNovas] = useState(new Set());
   const [filtroOrigem, setFiltroOrigem] = useState(null);
-  // Admin: mostra só registros sem unidade vinculada (legado da migração pra
-  // multi-tenant) pra poder selecionar e atribuir em massa a uma unidade real.
-  const [filtroSemUnidade, setFiltroSemUnidade] = useState(false);
-  const [unidadeParaAtribuir, setUnidadeParaAtribuir] = useState("");
-  const [atribuindoUnidade, setAtribuindoUnidade] = useState(false);
   // Carregadas uma vez e compartilhadas por todos os cards, para o seletor de
   // lista não disparar uma consulta por licitação.
   const [listasFavoritas, setListasFavoritas] = useState([]);
@@ -103,16 +98,13 @@ export default function BancoLicitacoes() {
     setNovasLoading(true);
     setTriagemLoading(true);
     try {
-      const modoSemUnidade = isAdmin && filtroSemUnidade;
-      const filtro = modoSemUnidade
-        ? { unidade_negocio_id: null }
-        : { oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
+      const filtro = { oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
 
       const [lista, cachesList, buscasList] = await Promise.all([
         base44.entities.Licitacao.filter(
           filtro,
           "-created_date",
-          modoSemUnidade ? 5000 : 1000
+          1000
         ),
         // Banco global consolidado: de onde vêm as licitações que casam com as
         // buscas da unidade mas ainda não foram materializadas como Licitacao.
@@ -135,7 +127,7 @@ export default function BancoLicitacoes() {
       const filtrosAtivas = buscasAtivas.map(filtrosDaBusca);
 
       const cacheNovas = [];
-      if (!modoSemUnidade && filtrosAtivas.length > 0) {
+      if (filtrosAtivas.length > 0) {
         const cacheMap = new Map();
         for (const cache of toArray(cachesList)) {
           const lics = toArray(cache.resultado?.licitacoes);
@@ -226,7 +218,7 @@ export default function BancoLicitacoes() {
       .filter(escopoUnidade(isAdmin, filtroUnidade), "ordem", 100)
       .then((res) => setListasFavoritas(toArray(res).sort((a, b) => (a.ordem || 0) - (b.ordem || 0))))
       .catch(() => setListasFavoritas([]));
-  }, [filtroUnidade, isAdmin, usuarioLogado, filtroSemUnidade]);
+  }, [filtroUnidade, isAdmin, usuarioLogado]);
 
   const buscasFiltradas = useMemo(
     () => buscasSalvas.filter((b) => pertenceAUnidade(b, filtroUnidade)),
@@ -552,32 +544,6 @@ export default function BancoLicitacoes() {
 
   const enviarSelecionadasNovas = () => setCompartilhar(itensSelecionadosNovas());
   const enviarSelecionadasTriagem = () => setCompartilhar(itensSelecionadosTriagem());
-
-  // Admin: vincula as licitações selecionadas (tipicamente sem unidade) à
-  // unidade escolhida. bulkUpdate aceita até 500 por chamada, daí o lote.
-  const atribuirUnidadeSelecionadas = async () => {
-    if (!unidadeParaAtribuir) return;
-    const itens = itensSelecionadosNovas();
-    setAtribuindoUnidade(true);
-    try {
-      for (let i = 0; i < itens.length; i += 500) {
-        const lote = itens.slice(i, i + 500);
-        await base44.entities.Licitacao.bulkUpdate(
-          lote.map((item) => ({ id: item.id, unidade_negocio_id: unidadeParaAtribuir }))
-        );
-      }
-      setNovas((prev) =>
-        filtroSemUnidade
-          ? prev.filter((item) => !selecionadasNovas.has(item.id_licitacao))
-          : prev.map((item) =>
-              selecionadasNovas.has(item.id_licitacao) ? { ...item, unidade_negocio_id: unidadeParaAtribuir } : item
-            )
-      );
-      setSelecionadasNovas(new Set());
-    } finally {
-      setAtribuindoUnidade(false);
-    }
-  };
 
   const renderActionsFunil = (licitacao, modoTab = "novas") => (
     <div className="flex flex-wrap items-center gap-3 w-full">
@@ -1025,17 +991,6 @@ export default function BancoLicitacoes() {
               <option value="perdida">Perdida</option>
               <option value="descartada">Descartada</option>
             </select>
-            {isAdmin && (
-              <label className="flex items-center gap-1.5 text-sm px-2 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={filtroSemUnidade}
-                  onChange={(e) => setFiltroSemUnidade(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                Sem unidade
-              </label>
-            )}
           </div>
 
           {/* Barra de Seleção e Ações em Massa (Novas) */}
@@ -1051,28 +1006,6 @@ export default function BancoLicitacoes() {
               </label>
               {selecionadasNovas.size > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
-                  {isAdmin && (
-                    <div className="flex items-center gap-1.5">
-                      <select
-                        value={unidadeParaAtribuir}
-                        onChange={(e) => setUnidadeParaAtribuir(e.target.value)}
-                        className="px-2 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Atribuir à unidade...</option>
-                        {unidades.map((un) => (
-                          <option key={un.id} value={un.id}>{un.nome}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={atribuirUnidadeSelecionadas}
-                        disabled={!unidadeParaAtribuir || atribuindoUnidade}
-                        className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 sm:px-3 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-                      >
-                        {atribuindoUnidade ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        Atribuir ({selecionadasNovas.size})
-                      </button>
-                    </div>
-                  )}
                   <AtualizacaoBulkActions
                     quantidade={selecionadasNovas.size}
                     modo="novas"
