@@ -1,8 +1,10 @@
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import BadgeUrgencia from "@/components/licitacoes/BadgeUrgencia";
 import ObjetoExpandivel from "@/components/licitacoes/ObjetoExpandivel";
-import { ExternalLink, MapPin, Calendar, DollarSign, FileText, Globe } from "lucide-react";
+import { ExternalLink, MapPin, Calendar, DollarSign, FileText, Globe, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { resolverEstadoLicitacao } from "@/lib/licitacaoCicloVida";
+import ResumoLicitacaoDialog from "@/components/licitacoes/ResumoLicitacaoDialog";
 
 export function StatusBadge({ status }) {
   const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
@@ -77,6 +79,7 @@ export default function LicitacaoCard({
 
   const isNova = tagResolvida?.label === "Nova" || licitacao.status_leitura === "nova";
   const linkEdital = licitacao.link_externo || licitacao.link;
+  const [mostrarResumo, setMostrarResumo] = useState(false);
 
   // Extrai nome do portal oficial de disputa (BLL, Comprasnet, Licitações-e, etc.)
   const linkLower = (linkEdital || "").toLowerCase();
@@ -225,18 +228,14 @@ export default function LicitacaoCard({
                 <ExternalLink className="w-3 h-3 opacity-80" />
               </a>
             )}
-            {licitacao.link && licitacao.link !== linkEdital && (
-              <a
-                href={licitacao.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Ver no Alerta Licitação"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Alerta</span>
-              </a>
-            )}
+            <button
+              onClick={() => setMostrarResumo(true)}
+              title="Gerar relatório executivo com IA"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Resumo</span>
+            </button>
           </div>
 
           {/* Botões do fluxo (Em Triagem, Minhas Licitações / Favoritas, Descartar) */}
@@ -247,6 +246,10 @@ export default function LicitacaoCard({
           )}
         </div>
       </div>
+
+      {mostrarResumo && (
+        <ResumoLicitacaoDialog licitacao={licitacao} onClose={() => setMostrarResumo(false)} />
+      )}
     </div>
   );
 }
