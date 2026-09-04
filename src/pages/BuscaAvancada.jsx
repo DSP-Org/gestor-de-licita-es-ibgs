@@ -44,8 +44,6 @@ export default function BuscaAvancada() {
     palavrasChave: [],
     dataAberturaInicio: "",
     dataAberturaFim: "",
-    valorMinimo: "",
-    valorMaximo: "",
   });
   const [inputPalavraChave, setInputPalavraChave] = useState("");
   const [buscarAPI, setBuscarAPI] = useState(false);
@@ -69,10 +67,9 @@ export default function BuscaAvancada() {
   const filtrosAvancadosAtivos = useMemo(() => {
     let count = 0;
     if (filtros.dataAberturaInicio || filtros.dataAberturaFim) count++;
-    if (filtros.valorMinimo || filtros.valorMaximo) count++;
     if (buscarAPI || buscarPNCP) count++;
     return count;
-  }, [filtros.dataAberturaInicio, filtros.dataAberturaFim, filtros.valorMinimo, filtros.valorMaximo, buscarAPI, buscarPNCP]);
+  }, [filtros.dataAberturaInicio, filtros.dataAberturaFim, buscarAPI, buscarPNCP]);
 
   useEffect(() => {
     if (!usuarioLogado) return;
@@ -177,15 +174,6 @@ export default function BuscaAvancada() {
           return dataAbertura && dataAbertura <= dataFim;
         });
       }
-      if (filtros.valorMinimo) {
-        const min = parseFloat(filtros.valorMinimo);
-        resultado = resultado.filter(l => (parseFloat(l.valor) || 0) >= min);
-      }
-      if (filtros.valorMaximo) {
-        const max = parseFloat(filtros.valorMaximo);
-        resultado = resultado.filter(l => (parseFloat(l.valor) || 0) <= max);
-      }
-
       if (buscarAPI) {
         try {
           const ufsParaBuscar = filtros.ufs.length > 0 ? filtros.ufs : [undefined];
@@ -271,8 +259,6 @@ export default function BuscaAvancada() {
       palavrasChave: [],
       dataAberturaInicio: "",
       dataAberturaFim: "",
-      valorMinimo: "",
-      valorMaximo: "",
     });
     setInputPalavraChave("");
     setBuscarAPI(false);
@@ -432,7 +418,7 @@ export default function BuscaAvancada() {
   const totalFiltrosAtivos =
     filtros.ufs.length + filtros.modalidades.length + filtros.palavrasChave.length +
     (filtros.dataAberturaInicio ? 1 : 0) + (filtros.dataAberturaFim ? 1 : 0) +
-    (filtros.valorMinimo ? 1 : 0) + (filtros.valorMaximo ? 1 : 0) + (buscarAPI ? 1 : 0) + (buscarPNCP ? 1 : 0);
+    (buscarAPI ? 1 : 0) + (buscarPNCP ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-[#F9F7F3] dark:bg-background">
@@ -616,8 +602,8 @@ export default function BuscaAvancada() {
                 )}
               </div>
 
-              {/* Datas e valores */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Datas de abertura */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Início</label>
                   <input type="date" value={filtros.dataAberturaInicio} onChange={(e) => handleMudarFiltro("dataAberturaInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
@@ -625,14 +611,6 @@ export default function BuscaAvancada() {
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Fim</label>
                   <input type="date" value={filtros.dataAberturaFim} onChange={(e) => handleMudarFiltro("dataAberturaFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Valor Mínimo</label>
-                  <input type="number" placeholder="R$ 0,00" value={filtros.valorMinimo} onChange={(e) => handleMudarFiltro("valorMinimo", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Valor Máximo</label>
-                  <input type="number" placeholder="R$ 999.999,99" value={filtros.valorMaximo} onChange={(e) => handleMudarFiltro("valorMaximo", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
                 </div>
               </div>
 
