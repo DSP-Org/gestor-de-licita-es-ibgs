@@ -214,6 +214,7 @@ export default function BuscaAvancada() {
           const respostas = await Promise.all(chamadasApi);
           const apiLicitacoes = [];
           for (const res of respostas) {
+            if (res?.error) throw new Error(res.error);
             if (res?.licitacoes) apiLicitacoes.push(...toArray(res.licitacoes));
           }
           if (apiLicitacoes.length > 0) {
@@ -233,6 +234,11 @@ export default function BuscaAvancada() {
           const modalidadesCodigos = filtros.modalidades
             .map(modNome => MODALIDADES_API.find(m => m.nome.toLowerCase() === modNome.toLowerCase())?.id)
             .filter(Boolean);
+
+          if (modalidadesCodigos.length === 0) {
+            throw new Error("O PNCP exige ao menos uma modalidade selecionada (Pregão, Concorrência, Leilão, Dispensas ou Chamamento público). Convite e Tomada de Preços não são suportados pelo PNCP.");
+          }
+
           const chamadasPncp = ufsParaBuscar.map(uf =>
             buscarLicitacoes({
               fonte: "pncp",
@@ -246,6 +252,7 @@ export default function BuscaAvancada() {
           const respostasPncp = await Promise.all(chamadasPncp);
           const pncpLicitacoes = [];
           for (const res of respostasPncp) {
+            if (res?.error) throw new Error(res.error);
             if (res?.licitacoes) pncpLicitacoes.push(...toArray(res.licitacoes));
           }
           if (pncpLicitacoes.length > 0) {

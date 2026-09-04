@@ -96,6 +96,9 @@ export default async function(req) {
   } catch (error) {
     const erroMsg = error instanceof Error ? error.message : String(error);
     console.error("[BuscarLicitacoesApi] Erro:", erroMsg);
-    return Response.json({ error: erroMsg }, { status: 400 });
+    // Retorna 200 com o erro no corpo — se retornar 400, o SDK do frontend
+    // só enxerga "Request failed with status code 400" e a mensagem real
+    // (ex: "PNCP exige ao menos uma modalidade") se perde.
+    return Response.json({ licitacoes: [], error: erroMsg });
   }
 }
