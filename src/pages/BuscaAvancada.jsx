@@ -11,9 +11,33 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Search, SlidersHorizontal, Trash2, X, ChevronDown, Bell, Sparkles, Loader2, Database } from "lucide-react";
 
 const ESTADOS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+  { uf: "AC", nome: "Acre" },
+  { uf: "AL", nome: "Alagoas" },
+  { uf: "AP", nome: "Amapá" },
+  { uf: "AM", nome: "Amazonas" },
+  { uf: "BA", nome: "Bahia" },
+  { uf: "CE", nome: "Ceará" },
+  { uf: "DF", nome: "Distrito Federal" },
+  { uf: "ES", nome: "Espírito Santo" },
+  { uf: "GO", nome: "Goiás" },
+  { uf: "MA", nome: "Maranhão" },
+  { uf: "MT", nome: "Mato Grosso" },
+  { uf: "MS", nome: "Mato Grosso do Sul" },
+  { uf: "MG", nome: "Minas Gerais" },
+  { uf: "PA", nome: "Pará" },
+  { uf: "PB", nome: "Paraíba" },
+  { uf: "PR", nome: "Paraná" },
+  { uf: "PE", nome: "Pernambuco" },
+  { uf: "PI", nome: "Piauí" },
+  { uf: "RJ", nome: "Rio de Janeiro" },
+  { uf: "RN", nome: "Rio Grande do Norte" },
+  { uf: "RS", nome: "Rio Grande do Sul" },
+  { uf: "RO", nome: "Rondônia" },
+  { uf: "RR", nome: "Roraima" },
+  { uf: "SC", nome: "Santa Catarina" },
+  { uf: "SP", nome: "São Paulo" },
+  { uf: "SE", nome: "Sergipe" },
+  { uf: "TO", nome: "Tocantins" },
 ];
 
 const MODALIDADES = [
@@ -507,15 +531,51 @@ export default function BuscaAvancada() {
             <DropdownFilter
               label="Estados"
               badge={filtros.ufs.length}
-              summary={filtros.ufs.length === 0 ? "Todos os estados" : filtros.ufs.join(", ")}
+              summary={filtros.ufs.length === 0 ? "Todos os estados" : `${filtros.ufs.length} selecionado(s)`}
             >
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-56 overflow-y-auto p-1">
-                {ESTADOS.map(uf => (
-                  <label key={uf} className="flex items-center gap-1.5 cursor-pointer rounded px-1.5 py-1 hover:bg-muted text-xs">
-                    <input type="checkbox" checked={filtros.ufs.includes(uf)} onChange={() => toggleUF(uf)} className="w-3.5 h-3.5 rounded" />
-                    <span>{uf}</span>
-                  </label>
-                ))}
+              <div className="min-w-72">
+                <div className="flex items-center justify-between gap-2 px-1 pb-2 border-b border-border/60 mb-1">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                    {filtros.ufs.length} de {ESTADOS.length} selecionados
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFiltros(prev => ({ ...prev, ufs: ESTADOS.map(e => e.uf), municipios: [] }))}
+                      className="text-[11px] font-medium text-primary hover:underline"
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFiltros(prev => ({ ...prev, ufs: [], municipios: [] }))}
+                      className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0.5 max-h-64 overflow-y-auto p-0.5">
+                  {ESTADOS.map(({ uf, nome }) => {
+                    const ativo = filtros.ufs.includes(uf);
+                    return (
+                      <button
+                        key={uf}
+                        type="button"
+                        onClick={() => toggleUF(uf)}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-left transition-colors ${
+                          ativo ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        <span className={`flex items-center justify-center w-4 h-4 rounded border shrink-0 ${ativo ? "bg-primary border-primary" : "border-border"}`}>
+                          {ativo && <span className="w-2 h-2 rounded-[1px] bg-primary-foreground" />}
+                        </span>
+                        <span className="font-mono font-bold text-[11px] w-6">{uf}</span>
+                        <span className="truncate">{nome}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </DropdownFilter>
 
