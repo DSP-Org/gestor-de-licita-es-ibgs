@@ -24,32 +24,6 @@ npx skills add base44/skills
 - `vite.config.js`: Vite config and Base44 Vite plugin setup.
 - `.env.local`: local-only environment values; never commit secrets.
 
-# AGENTS.md
-
-## Project Context
-
-This is a Base44 app repository. Treat it as user-owned application code, keep changes focused on the user's request, and preserve existing project conventions.
-
-Start with `README.md` for local setup, environment variables, and publish workflow.
-
-## Base44 References
-
-- CLI overview: https://docs.base44.com/developers/references/cli/get-started/overview.md
-- Agent skills: https://docs.base44.com/developers/backend/overview/skills.md
-
-If your agent supports Agent Skills, install or update Base44 skills before Base44-specific work:
-
-```bash
-npx skills add base44/skills
-```
-
-## Key Files
-
-- `src/`: frontend application source.
-- `src/api/base44Client.js`: frontend Base44 SDK client.
-- `vite.config.js`: Vite config and Base44 Vite plugin setup.
-- `.env.local`: local-only environment values; never commit secrets.
-
 ## Working Notes
 
 - Use `base44 dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
@@ -65,17 +39,18 @@ Todos os agentes trabalhando neste repositório (Antigravity, Claude Code, AGY) 
 2. Respeitar o direcionamento de arquitetura do Arquiteto Chefe (Antigravity) e as arbitragens do usuário (Sampaio).
 3. Registrar novas descobertas, status de entregas e dúvidas no fim de `EQUIPE_DATA5.md` (append-only).
 
-
 <!-- egc:start -->
 ## EGC Project Memory
 
-**Context:** Gestor de Licitacoes IBGS - Implementado Kanban com drag-and-drop, badges de urgencia de pregoes e filtro de passadas em MinhasLicitacoes.jsx
+**Context:** Gestor de Licitações IBGS (Licitalerta360). Base44 + Deno backend, React + Vite frontend. Multi-tenancy por unidade de negócio + Pipeline Kanban e gestão estratégica de oportunidades com equipe colaborativa Claude Code, AGY e Antigravity.
 
 **Active decisions:**
-- Implementação de KanbanFunil desacoplado com @hello-pangea/dnd
-- Criação do módulo prazosLicitacao e BadgeUrgencia com suporte ao timezone de SP
+- [Multi-tenancy]: Cada usuário pertence a 1 UnidadeNegocio; dados (Licitacao, BuscaSalva, FavoritaLista, Destinatario) são compartilhados por unidade com RLS reforçado no backend e bypass para master.
+- [Sincronização & Timezone]: Fix no housekeeping (remoção de toArray no Deno) e fuso de SP garantido (hojeSP e -03:00) em entry.ts.
+- [Minhas Licitações]: Pipeline Kanban interativo com drag-and-drop desacoplado (@hello-pangea/dnd), badges de urgência calculados via prazosLicitacao.js e filtro de disputas passadas.
+- [Comunicação]: Protocolo de escuta ativa via EQUIPE_DATA5.md e script npm run watch:equipe.
 
 **Next session:**
-- Aguardar feedback de Claude Code e AGY no EQUIPE_DATA5.md sobre as entregas
-- Desenvolver Frente 4 de ações em lote ou refinamento de filtros se aprovado
+- Frente 4: Implementar ações em lote (Bulk Actions) nos modos Tabela e Cards em Minhas Licitações.
+- Testar no navegador seletor de unidade e RLS efetivo.
 <!-- egc:end -->
