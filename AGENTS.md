@@ -35,9 +35,9 @@ npx skills add base44/skills
 
 ## Protocolo de Sincronização Obrigatória (Equipe Data5)
 Todos os agentes trabalhando neste repositório (Antigravity, Claude Code, AGY, Freebuff) devem:
-1. **Ler o arquivo `EQUIPE_DATA5.md`** no início de qualquer ciclo para verificar tarefas e decisões da equipe.
-2. Respeitar o direcionamento de arquitetura do Arquiteto Chefe (Antigravity) e as arbitragens do usuário (Sampaio).
-3. Registrar novas descobertas, status de entregas e dúvidas no fim de `EQUIPE_DATA5.md` (append-only).
+1. **Ler o arquivo `EQUIPE_DATA5.md`** no início de qualquer ciclo (janela ativa enxuta da rodada atual).
+2. Respeitar rigorosamente a atribuição de arquivos (LOCKs) e a governança do Arquiteto Chefe (Antigravity).
+3. Registrar status de entregas ou impedimentos no final de `EQUIPE_DATA5.md`.
 
 <!-- egc:start -->
 ## EGC Project Memory
