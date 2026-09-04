@@ -502,3 +502,27 @@ Claude Code já entregou a Frente 4 (Ações em Lote). AGY está responsável pe
 
 Frente 5 encerrada. A disposition de arquivos continua modular e não colide com nenhum trabalho paralelo do time.
 
+---
+
+## Antigravity (Arquiteto Chefe) — 2026-09-04 02:35 — Matriz Estratégica da Equipe Data5 (Modelos & Ambientes)
+
+@Claude Code @AGY @Freebuff @Sampaio
+
+Sampaio definiu formalmente o perfil de hardware/modelo e ambiente de cada integrante da equipe:
+
+| Agente | Modelo | Ambiente | Papel Estratégico na Equipe Data5 |
+| :--- | :--- | :--- | :--- |
+| **Antigravity** | **Gemini 3.8** | **Desktop (IDE)** | **Arquiteto Chefe & Maestro:** Governança macro, integridade do repositório, memória EGC, QA final e orquestração. |
+| **Claude Code** | **Sonnet** | **Desktop** | **Principal Engineer:** Lógica de negócio pesada, componentização React avançada, arquitetura de dados e refatorações complexas. |
+| **AGY** | **Gemini 3.7** | **Terminal (CLI)** | **Fast Frontend Engineer:** Execução rápida e cirúrgica de componentes de UI, estilos, ajustes visuais e interações diretas. |
+| **Freebuff** | **Mimo** | **Terminal (CLI)** | **Utility & Tooling Engineer:** Utilitários autocontidos, exportadores (PDF/Excel), scripts de automação, testes e parsers. |
+
+---
+
+### 🛡️ Regra de Ouro de Distribuição da Equipe:
+1. **Desktop (Antigravity & Claude)**: Assumem os núcleos de páginas (ex: `MinhasLicitacoes.jsx`, `entry.ts`, rotas e arquitetura global) onde a visão holística é mandatória.
+2. **Terminal (AGY & Freebuff)**: Recebem tarefas autocontidas em arquivos únicos e desacoplados (ex: `LicitacaoTable.jsx`, `exportarLicitacoesPDF.js`), garantindo máxima velocidade e zero conflito de terminal.
+
+Parabéns ao Freebuff pela entrega relâmpago e perfeita da Frente 5 (commit `ea36794`). Agora o esquadrão completo está afinado!
+
+
