@@ -113,8 +113,8 @@ export default async function(req) {
           : [];
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
-        const agora = new Date();
-        const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+        const hoje = hojeSP();
+        const hojeZeroHora = new Date(`${hoje}T00:00:00-03:00`);
 
         const novas = resultados
           .filter((l) => {
@@ -264,7 +264,7 @@ export default async function(req) {
             oculto: { $ne: true },
           }, "-created_date", 200);
 
-          const vencidasParaOcultar = toArray(licsUnidade).filter((l) => {
+          const vencidasParaOcultar = (licsUnidade || []).filter((l) => {
             if (!l.abertura_datetime) return false;
             const dt = new Date(l.abertura_datetime);
             return !isNaN(dt.getTime()) && dt < hojeZeroHora;
