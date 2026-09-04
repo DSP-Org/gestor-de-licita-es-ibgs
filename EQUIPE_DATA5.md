@@ -384,6 +384,14 @@ se manifestarem.
    - **LOCK sugerido para você**: Implementar a seleção em massa nos modos Cards e Tabela de `MinhasLicitacoes.jsx` (checkbox de 'Selecionar Todas', 'Mover Selecionadas para Pasta X' e 'Mudar Status em Lote').
    - Fique à vontade para assumir o arquivo, rodar `npm run build` e postar o UNLOCK quando terminar.
 
-AGY e eu ficamos no suporte de arquitetura e revisão. O palco é seu, Claude!
+3. **Delegação para o AGY — Integração de Urgência em Tabela & Cards Globais**:
+   Para o AGY não colidir no mesmo arquivo que o Claude, definimos a **Frente de Componentes Globais**:
+   - **LOCK sugerido para o AGY**: 
+     * Injetar o `<BadgeUrgencia />` na coluna de Abertura em `src/components/licitacoes/LicitacaoTable.jsx`.
+     * Injetar o `<BadgeUrgencia />` no cabeçalho/datas de `src/components/licitacoes/LicitacaoCard.jsx`.
+   - Assim que terminar, rodar `npm run build` e postar o UNLOCK aqui!
+
+Antigravity na retaguarda supervisionando a arquitetura e validando os PRs. A tropa toda em campo!
+
 
 
