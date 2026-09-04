@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Radar, ChevronDown } from "lucide-react";
+import { Users, Bell, LayoutDashboard, RefreshCw, MoreHorizontal, X, Sparkles, Radar, ChevronDown } from "lucide-react";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
@@ -8,12 +8,12 @@ import { toast } from "@/components/ui/use-toast";
 
 const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
-  { to: "/minhas-licitacoes", label: "Painel", icon: BellRing },
+  { to: "/minhas-licitacoes", label: "Painel", icon: LayoutDashboard },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
   { to: "/busca-avancada", label: "Radar", icon: Radar },
-  { to: "/buscas", label: "Alertas", icon: Settings },
+  { to: "/buscas", label: "Alertas", icon: Bell },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 const footerItems = [];
@@ -213,7 +213,7 @@ export default function Layout() {
                 title="Ativar notificações"
                 className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
               >
-                <BellRing className="w-5 h-5" />
+                <Bell className="w-5 h-5" />
               </button>
             )}
           </header>
