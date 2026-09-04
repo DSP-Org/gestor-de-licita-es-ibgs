@@ -912,81 +912,26 @@ export default function BancoLicitacoes() {
 
       {aba === "novas" ? (
         <>
-          {/* Painel de sincronização */}
-          <div className="bg-card border rounded-xl p-3 sm:p-5 shadow-sm space-y-2.5 sm:space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary flex items-center justify-center shrink-0">
-                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-heading font-semibold text-sm sm:text-base">Sincronização automática</h2>
-                {/* novasFiltradas, não novas: o número precisa acompanhar o
-                    usuário selecionado, o status, a origem e o termo de busca —
-                    a mesma origem da lista logo abaixo. */}
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0">
-                  {novasFiltradas.length} licitação(ões) encontradas.
-                </p>
-              </div>
+          {Object.keys(porBuscaOrigem).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(porBuscaOrigem).map(([origem, count]) => (
+                <button
+                  key={origem}
+                  onClick={() => setFiltroOrigem((prev) => (prev === origem ? null : origem))}
+                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
+                    filtroOrigem === origem ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
+                  }`}
+                >
+                  {origem}: <b>{count}</b>
+                </button>
+              ))}
+              {filtroOrigem && (
+                <button onClick={() => setFiltroOrigem(null)} className="text-xs text-muted-foreground underline px-1">
+                  Limpar filtro
+                </button>
+              )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <BuscaMultiSelect
-                options={buscasFiltradas}
-                value={buscasSelecionadas}
-                onChange={setBuscasSelecionadas}
-                disabled={sincronizando || buscasFiltradas.length === 0}
-              />
-              <button
-                onClick={sincronizarAgora}
-                disabled={sincronizando || buscasSelecionadas.length === 0}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 sm:shrink-0"
-              >
-                {sincronizando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                {sincronizando ? "Sincronizando..." : "Sincronizar agora"}
-              </button>
-            </div>
-
-            {resultadoSync && (
-              <div className={`text-sm rounded-md p-3 ${resultadoSync.error ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
-                {resultadoSync.error ? (
-                  <span className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Erro: {resultadoSync.error}</span>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="font-medium flex items-center gap-1.5"><Check className="w-4 h-4" /> {resultadoSync.buscasProcessadas} busca(s) processada(s), {resultadoSync.totalNovas} nova(s) licitação(ões).</p>
-                    {resultadoSync.resumo?.length > 0 && (
-                      <ul className="text-xs space-y-0.5 mt-2">
-                        {resultadoSync.resumo.map((r, i) => (
-                          <li key={i}>
-                            <b>{r.busca}</b>: {r.erro ? `❌ ${r.erro}` : `${r.novas} novas de ${r.total}`}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {Object.keys(porBuscaOrigem).length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2 border-t">
-                {Object.entries(porBuscaOrigem).map(([origem, count]) => (
-                  <button
-                    key={origem}
-                    onClick={() => setFiltroOrigem((prev) => (prev === origem ? null : origem))}
-                    className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
-                      filtroOrigem === origem ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
-                    }`}
-                  >
-                    {origem}: <b>{count}</b>
-                  </button>
-                ))}
-                {filtroOrigem && (
-                  <button onClick={() => setFiltroOrigem(null)} className="text-xs text-muted-foreground underline px-1">
-                    Limpar filtro
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Filtros */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
