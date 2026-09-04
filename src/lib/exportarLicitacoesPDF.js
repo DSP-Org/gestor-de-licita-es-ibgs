@@ -5,10 +5,9 @@ import { STATUS_OPTIONS } from "@/shared/alertaApi";
 
 const STATUS_LABELS = Object.fromEntries(STATUS_OPTIONS.map((s) => [s.value, s.label]));
 
-export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
+export function gerarDocLicitacoesPDF(licitacoes, titulo = "Licitações") {
   if (!licitacoes || licitacoes.length === 0) {
-    alert("Nenhuma licitação para exportar");
-    return;
+    return null;
   }
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm" });
@@ -225,5 +224,14 @@ export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
   doc.setTextColor(150, 150, 150);
   doc.text("Licitalerta360 · Gestão de Licitações", margin, pageH - 6);
 
+  return doc;
+}
+
+export function exportarLicitacoesPDF(licitacoes, titulo = "Licitações") {
+  const doc = gerarDocLicitacoesPDF(licitacoes, titulo);
+  if (!doc) {
+    alert("Nenhuma licitação para exportar");
+    return;
+  }
   doc.save(`licitacoes-${Date.now()}.pdf`);
 }

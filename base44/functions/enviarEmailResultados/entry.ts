@@ -7,7 +7,7 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { emails, subject, html } = await req.json().catch(() => ({}));
+    const { emails, subject, html, attachments } = await req.json().catch(() => ({}));
     const destinatarios = (Array.isArray(emails) ? emails : []).filter(Boolean);
     if (destinatarios.length === 0) {
       return Response.json({ error: 'Nenhum destinatário informado.' }, { status: 400 });
@@ -16,7 +16,7 @@ export default async function(req) {
       return Response.json({ error: 'Assunto e conteúdo são obrigatórios.' }, { status: 400 });
     }
 
-    await enviarEmailExterno(destinatarios, subject, html);
+    await enviarEmailExterno(destinatarios, subject, html, attachments);
     return Response.json({ ok: true, enviados: destinatarios.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

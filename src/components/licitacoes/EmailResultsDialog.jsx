@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { X, Mail, Loader2, Send } from "lucide-react";
+import { X, Mail, Loader2, Send, FileText } from "lucide-react";
 import { formatValor } from "./LicitacaoCard";
 import { toArray } from "@/lib/toArray";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade } from "@/lib/escopoUnidade";
+import { gerarDocLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 
 export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
   const { isAdmin, filtroUnidade } = useUnidadeFilter();
   const [contatos, setContatos] = useState([]);
   const [selecionados, setSelecionados] = useState([]);
   const [assunto, setAssunto] = useState(`Resultados de licitações — ${origem || "busca"}`);
+  const [anexarPdf, setAnexarPdf] = useState(true);
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -98,13 +100,32 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
         })),
       });
 
+      let attachments = [];
+      if (anexarPdf && licitacoes.length > 0) {
+        try {
+          const doc = gerarDocLicitacoesPDF(licitacoes, origem || "Licitações");
+          if (doc) {
+            const dataUri = doc.output("datauristring");
+            const base64Content = dataUri.split(",")[1];
+            attachments.push({
+              filename: `relatorio-${(origem || "licitacoes").toLowerCase().replace(/[^a-z0-9]/g, "-")}.pdf`,
+              content: base64Content,
+              contentType: "application/pdf",
+            });
+          }
+        } catch (pdfErr) {
+          console.warn("[EmailResultsDialog] Erro ao gerar anexo PDF:", pdfErr);
+        }
+      }
+
       const res = await base44.functions.invoke("enviarEmailResultados", {
         emails: selecionados,
         subject: assunto,
         html: montarCorpo(linkCompartilhamento),
+        attachments,
       });
       if (res.data?.error) throw new Error(res.data.error);
-      setMsg(`E-mail enviado para ${selecionados.length} destinatário(s).`);
+      setMsg(`E-mail enviado para ${selecionados.length} destinatário(s)${attachments.length > 0 ? " com relatório PDF anexo" : ""}.`);
     } catch (e) {
       setErro(e.message || "Erro ao enviar e-mail.");
     } finally {
@@ -162,6 +183,26 @@ export default function EmailResultsDialog({ licitacoes, origem, onClose }) {
               onChange={(e) => setAssunto(e.target.value)}
               className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
+          </div>
+
+          <div className="bg-muted/40 p-3 rounded-lg border flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-md bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Anexo Executivo (PDF)</p>
+                <p className="text-[11px] text-muted-foreground">Gera relatório tabulado com resumo financeiro e prazos</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={anexarPdf}
+                onChange={(e) => setAnexarPdf(e.target.checked)}
+                className="w-4 h-4 rounded cursor-pointer"
+              />
+            </label>
           </div>
 
           <div>
