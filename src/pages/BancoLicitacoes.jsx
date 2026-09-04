@@ -15,6 +15,7 @@ import GestaoRapida from "@/components/licitacoes/GestaoRapida";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import AcervoFiltros from "@/components/licitacoes/AcervoFiltros";
+import FiltrosGeograficos from "@/components/licitacoes/FiltrosGeograficos";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
@@ -85,6 +86,9 @@ export default function BancoLicitacoes() {
   const [compartilhar, setCompartilhar] = useState(null);
   const [selecionadasNovas, setSelecionadasNovas] = useState(new Set());
   const [filtroOrigem, setFiltroOrigem] = useState(null);
+  const [filtroUF, setFiltroUF] = useState("todos");
+  const [filtroMunicipio, setFiltroMunicipio] = useState("todos");
+  const [filtroModalidade, setFiltroModalidade] = useState("todos");
   // Carregadas uma vez e compartilhadas por todos os cards, para o seletor de
   // lista não disparar uma consulta por licitação.
   const [listasFavoritas, setListasFavoritas] = useState([]);
@@ -256,6 +260,9 @@ export default function BancoLicitacoes() {
       // filtro de unidade porque não pertencem a uma unidade específica.
       if (l.unidade_negocio_id && !pertenceAUnidade(l, filtroUnidade)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+      if (filtroUF !== "todos" && l.uf !== filtroUF) return false;
+      if (filtroMunicipio !== "todos" && l.municipio !== filtroMunicipio) return false;
+      if (filtroModalidade !== "todos" && l.tipo !== filtroModalidade) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
 
       // Se uma busca específica estiver marcada no seletor, a licitação só aparece se atender a ela
@@ -281,16 +288,37 @@ export default function BancoLicitacoes() {
 
   const novasFiltradas = useMemo(
     () => filtrarLista(novas),
-    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]
+    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas, filtroUF, filtroMunicipio, filtroModalidade]
   );
   const triagemFiltradas = useMemo(
     () => filtrarLista(triagem),
-    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]
+    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas, filtroUF, filtroMunicipio, filtroModalidade]
   );
   const descartadasFiltradas = useMemo(
     () => filtrarLista(descartadas),
-    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]
+    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas, filtroUF, filtroMunicipio, filtroModalidade]
   );
+
+  // Opções de UF, município e modalidade derivadas de todas as licitações carregadas
+  const ufsDisponiveis = useMemo(() => {
+    const set = new Set();
+    [...novas, ...triagem, ...descartadas].forEach((l) => { if (l.uf) set.add(l.uf); });
+    return Array.from(set).sort();
+  }, [novas, triagem, descartadas]);
+
+  const municipiosDisponiveis = useMemo(() => {
+    const set = new Set();
+    [...novas, ...triagem, ...descartadas].forEach((l) => {
+      if (l.municipio && (!filtroUF || filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
+    });
+    return Array.from(set).sort();
+  }, [novas, triagem, descartadas, filtroUF]);
+
+  const modalidadesDisponiveis = useMemo(() => {
+    const set = new Set();
+    [...novas, ...triagem, ...descartadas].forEach((l) => { if (l.tipo) set.add(l.tipo); });
+    return Array.from(set).sort();
+  }, [novas, triagem, descartadas]);
 
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
   // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
@@ -985,6 +1013,17 @@ export default function BancoLicitacoes() {
               <option value="perdida">Perdida</option>
               <option value="descartada">Descartada</option>
             </select>
+            <FiltrosGeograficos
+              ufs={ufsDisponiveis}
+              municipios={municipiosDisponiveis}
+              modalidades={modalidadesDisponiveis}
+              filtroUF={filtroUF}
+              setFiltroUF={setFiltroUF}
+              filtroMunicipio={filtroMunicipio}
+              setFiltroMunicipio={setFiltroMunicipio}
+              filtroModalidade={filtroModalidade}
+              setFiltroModalidade={setFiltroModalidade}
+            />
           </div>
 
           {/* Barra de Seleção e Ações em Massa (Novas) */}
@@ -1078,6 +1117,17 @@ export default function BancoLicitacoes() {
               <option value="ganha">Ganha</option>
               <option value="perdida">Perdida</option>
             </select>
+            <FiltrosGeograficos
+              ufs={ufsDisponiveis}
+              municipios={municipiosDisponiveis}
+              modalidades={modalidadesDisponiveis}
+              filtroUF={filtroUF}
+              setFiltroUF={setFiltroUF}
+              filtroMunicipio={filtroMunicipio}
+              setFiltroMunicipio={setFiltroMunicipio}
+              filtroModalidade={filtroModalidade}
+              setFiltroModalidade={setFiltroModalidade}
+            />
           </div>
 
           {/* Ações em Massa (Triagem) */}
@@ -1155,6 +1205,17 @@ export default function BancoLicitacoes() {
                 className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+            <FiltrosGeograficos
+              ufs={ufsDisponiveis}
+              municipios={municipiosDisponiveis}
+              modalidades={modalidadesDisponiveis}
+              filtroUF={filtroUF}
+              setFiltroUF={setFiltroUF}
+              filtroMunicipio={filtroMunicipio}
+              setFiltroMunicipio={setFiltroMunicipio}
+              filtroModalidade={filtroModalidade}
+              setFiltroModalidade={setFiltroModalidade}
+            />
           </div>
 
           {/* Ações em Massa (Descartadas) */}
