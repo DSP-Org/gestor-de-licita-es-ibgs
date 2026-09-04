@@ -335,23 +335,23 @@ export default function BancoLicitacoes() {
   // Opções de UF, município e modalidade derivadas de todas as licitações carregadas
   const ufsDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => { if (l.uf) set.add(l.uf); });
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => { if (l.uf) set.add(l.uf); });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas, acervo]);
+  }, [novas, triagem, descartadas, selecionadas]);
 
   const municipiosDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => {
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => {
       if (l.municipio && (!filtroUF || filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
     });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas, acervo, filtroUF]);
+  }, [novas, triagem, descartadas, selecionadas, filtroUF]);
 
   const modalidadesDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => { if (l.tipo) set.add(l.tipo); });
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => { if (l.tipo) set.add(l.tipo); });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas, acervo]);
+  }, [novas, triagem, descartadas, selecionadas]);
 
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
   // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
