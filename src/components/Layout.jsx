@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Sliders, Bookmark } from "lucide-react";
+import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Radar, Bookmark } from "lucide-react";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
@@ -12,7 +12,7 @@ const mainItems = [
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
-  { to: "/busca-avancada", label: "Radar", icon: Sliders },
+  { to: "/busca-avancada", label: "Radar", icon: Radar },
   { to: "/buscas", label: "Configuração", icon: Settings },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
