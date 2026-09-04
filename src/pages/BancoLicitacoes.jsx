@@ -203,6 +203,8 @@ export default function BancoLicitacoes() {
     [buscasFiltradas]
   );
 
+  const todasBuscasSelecionadas = buscasFiltradas.length > 0 && buscasSelecionadas.length === buscasFiltradas.length;
+
   const filtrarLista = (lista) => {
     // Se não há buscas ativas configuradas para esta unidade, as abas de funil ficam vazias
     // para indicar a necessidade de configurar as buscas.
@@ -211,18 +213,29 @@ export default function BancoLicitacoes() {
     const agora = new Date();
     const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
 
+    // Se o usuário selecionou uma busca específica no seletor, filtra exatamente por ela
+    const buscaAtivaSelecionada = !todasBuscasSelecionadas && buscasSelecionadas.length === 1
+      ? buscasFiltradas.find((b) => b.id === buscasSelecionadas[0])
+      : null;
+    const filtroBuscaEspecifica = buscaAtivaSelecionada ? filtrosDaBusca(buscaAtivaSelecionada) : null;
+    const nomeBuscaEspecifica = buscaAtivaSelecionada?.nome?.trim().toLowerCase() || null;
+
     return lista.filter((l) => {
       if (!pertenceAUnidade(l, filtroUnidade)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
 
-      // REGRA DO USUÁRIO: precisa atender às buscas ativas.
-      // Atende se:
-      // 1) A origem gravada na licitação (busca_origem) corresponde a uma busca ativa atual; OU
-      // 2) Os critérios da licitação casam com os filtros de alguma busca ativa configurada.
-      const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
-      const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
-      if (!origemBate && !criterioBate) return false;
+      // Se uma busca específica estiver marcada no seletor, a licitação só aparece se atender a ela
+      if (buscaAtivaSelecionada) {
+        const bateNome = l.busca_origem && l.busca_origem.trim().toLowerCase() === nomeBuscaEspecifica;
+        const bateCriterio = combinaComFiltros(l, filtroBuscaEspecifica);
+        if (!bateNome && !bateCriterio) return false;
+      } else {
+        // Se "Todas as buscas ativas" estiver selecionado:
+        const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
+        const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
+        if (!origemBate && !criterioBate) return false;
+      }
 
       // Se não for favorita e a data de abertura já passou, não exibe em Novas
       if (!l.favorito && l.abertura_datetime && aba === "novas") {
@@ -240,15 +253,15 @@ export default function BancoLicitacoes() {
 
   const novasFiltradas = useMemo(
     () => filtrarLista(novas),
-    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]
+    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]
   );
   const triagemFiltradas = useMemo(
     () => filtrarLista(triagem),
-    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]
+    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]
   );
   const descartadasFiltradas = useMemo(
     () => filtrarLista(descartadas),
-    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]
+    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]
   );
 
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,

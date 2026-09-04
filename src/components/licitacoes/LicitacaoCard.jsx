@@ -39,14 +39,17 @@ export default function LicitacaoCard({
   const isNova = licitacao.status_leitura === "nova";
   const linkEdital = licitacao.link_externo || licitacao.link;
 
-  // Extrai nome do portal ou modalidade resumida
-  const portalOrigem = licitacao.link_externo?.includes("bll") 
+  // Extrai nome do portal oficial de disputa (BLL, Comprasnet, Licitações-e, etc.)
+  const linkLower = (linkEdital || "").toLowerCase();
+  const portalOrigem = linkLower.includes("bll") 
     ? "BLL COMPRAS"
-    : licitacao.link_externo?.includes("comprasnet") || licitacao.link?.includes("comprasnet")
+    : linkLower.includes("comprasnet") || linkLower.includes("gov.br/compras")
     ? "COMPRASNET"
-    : licitacao.link_externo?.includes("licitacoes-e")
+    : linkLower.includes("licitacoes-e") || linkLower.includes("bb.com.br")
     ? "LICITAÇÕES-E"
-    : licitacao.busca_origem || null;
+    : linkLower.includes("bec.sp")
+    ? "BEC-SP"
+    : null;
 
   return (
     <div className="relative group">
