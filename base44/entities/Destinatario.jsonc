@@ -34,7 +34,7 @@
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]
@@ -46,7 +46,7 @@
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]
@@ -58,7 +58,7 @@
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]
@@ -70,7 +70,7 @@
         },
         {
           "user_condition": {
-            "role": "admin"
+            "email": "nailton.alsampaio@gmail.com"
           }
         }
       ]

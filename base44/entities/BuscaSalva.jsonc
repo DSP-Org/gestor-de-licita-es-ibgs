@@ -88,7 +88,20 @@
     },
     "unidade_negocio_id": {
       "type": "string",
-      "description": "ID da unidade de neg\u00f3cio dona deste registro. Controla o acesso: qualquer usu\u00e1rio da unidade enxerga o registro."
+      "description": "ID da unidade de negócio dona deste registro. Controla o acesso: qualquer usuário da unidade enxerga o registro."
+    },
+    "ultima_execucao_status": {
+      "type": "string",
+      "enum": [
+        "sucesso",
+        "erro",
+        "em_andamento"
+      ],
+      "description": "Status da última execução da sincronização (sucesso, erro, em_andamento)"
+    },
+    "ultimo_erro": {
+      "type": "string",
+      "description": "Mensagem detalhada do último erro ocorrido durante a sincronização desta busca"
     }
   },
   "required": [

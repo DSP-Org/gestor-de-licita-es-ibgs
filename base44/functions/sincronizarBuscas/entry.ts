@@ -282,12 +282,23 @@ export default async function(req) {
         await base44.asServiceRole.entities.BuscaSalva.update(busca.id, {
           ultima_sincronizacao: new Date().toISOString(),
           total_encontrado: resultados.length,
+          ultima_execucao_status: "sucesso",
+          ultimo_erro: null,
         });
         buscasProcessadas++;
         resumo.push({ busca: busca.nome, novas: novas.length, total: resultados.length });
       } catch (e) {
         const erroMsg = e instanceof Error ? e.message : String(e);
         console.error(`[Sincronizacao] Erro na busca ${busca.nome}:`, erroMsg);
+        try {
+          await base44.asServiceRole.entities.BuscaSalva.update(busca.id, {
+            ultima_sincronizacao: new Date().toISOString(),
+            ultima_execucao_status: "erro",
+            ultimo_erro: erroMsg,
+          });
+        } catch (updateErr) {
+          console.error(`[Sincronizacao] Falha ao persistir status de erro na busca ${busca.nome}:`, updateErr);
+        }
         resumo.push({ busca: busca.nome, erro: erroMsg });
       }
     }
