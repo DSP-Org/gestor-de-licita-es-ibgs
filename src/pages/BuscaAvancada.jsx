@@ -173,15 +173,33 @@ export default function BuscaAvancada() {
         });
       }
 
-      setLicitacoes(resultado);
-
       // TODO: Adicionar busca na API quando buscarAPI estiver ativado
       if (buscarAPI) {
-        console.log("Busca na API ativada");
-        console.log("Data publicação início:", dataPublicacaoAPIInicio);
-        console.log("Data publicação fim:", dataPublicacaoAPIFim);
-        // Aqui será adicionada a lógica de chamada à API de alertalicitacao.com.br
+        try {
+          const resApi = await base44.functions.buscarLicitacoesApi({
+            data_inicio: dataPublicacaoAPIInicio,
+            data_fim: dataPublicacaoAPIFim,
+            ufs: filtros.ufs,
+            modalidades: filtros.modalidades,
+            termos: filtros.palavrasChave
+          });
+
+          if (resApi?.licitacoes) {
+            const apiLicitacoes = toArray(resApi.licitacoes);
+            
+            // Mesclar e remover duplicatas pelo id_licitacao
+            const idsLocais = new Set(resultado.map(l => l.id_licitacao));
+            const novasDaApi = apiLicitacoes.filter(l => !idsLocais.has(l.id_licitacao));
+            
+            resultado = [...resultado, ...novasDaApi];
+          }
+        } catch (apiErr) {
+          console.error("Erro na busca da API:", apiErr);
+          setErro("Aviso: Falha ao buscar na API, mostrando apenas resultados locais. " + apiErr.message);
+        }
       }
+
+      setLicitacoes(resultado);
     } catch (err) {
       setErro("Erro ao executar busca: " + err.message);
     } finally {
