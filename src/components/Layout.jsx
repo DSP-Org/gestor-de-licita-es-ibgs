@@ -8,12 +8,12 @@ import { toast } from "@/components/ui/use-toast";
 
 const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
-  { to: "/minhas-licitacoes", label: "Alertas", icon: BellRing },
+  { to: "/minhas-licitacoes", label: "Painel", icon: BellRing },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
   { to: "/busca-avancada", label: "Radar", icon: Radar },
-  { to: "/buscas", label: "Configuração", icon: Settings },
+  { to: "/buscas", label: "Alertas", icon: Settings },
 ];
 const adminItems = [{ to: "/admin", label: "Administrador", icon: Users }];
 const footerItems = [];

@@ -1,20 +1,16 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { buscarLicitacoes } from "@/shared/alertaApi";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
-import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Bell, Users, Mail } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
-import BuscaToggles from "@/components/buscas/BuscaToggles";
 import SeletorDestinatarios from "@/components/buscas/SeletorDestinatarios";
 import DestinatarioForm from "@/components/destinatarios/DestinatarioForm";
 import EmailResultsDialog from "@/components/licitacoes/EmailResultsDialog";
+import AlertCard from "@/components/buscas/AlertCard";
 import { toArray } from "@/lib/toArray";
 
 export default function Configuracao() {
-  const [aba, setAba] = useState("filtro"); // "filtro" | "alerta" | "sincronizacao" | "destinatarios"
-
-  // Estado de Buscas
   const [buscas, setBuscas] = useState([]);
   const [loadingBuscas, setLoadingBuscas] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -23,16 +19,14 @@ export default function Configuracao() {
   const [resultadoSync, setResultadoSync] = useState({});
   const [emailBusca, setEmailBusca] = useState(null);
   const [emailLics, setEmailLics] = useState([]);
-  const [carregandoEmail, setCarregandoEmail] = useState(null);
 
-  // Estado de Destinatários
   const [destinatarios, setDestinatarios] = useState([]);
   const [loadingDestinatarios, setLoadingDestinatarios] = useState(true);
-
+  const [abaDestinatarios, setAbaDestinatarios] = useState(false);
+  const [buscaDestinatarios, setBuscaDestinatarios] = useState(null);
 
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
-  // Carregar Buscas
   const carregarBuscas = async () => {
     setLoadingBuscas(true);
     try {
@@ -47,7 +41,6 @@ export default function Configuracao() {
     }
   };
 
-  // Carregar Destinatários
   const carregarDestinatarios = async () => {
     setLoadingDestinatarios(true);
     try {
@@ -69,20 +62,12 @@ export default function Configuracao() {
     }
   }, [filtroUnidade, isAdmin, usuarioLogado]);
 
-  // carregarBuscas já traz só a unidade ativa (escopoUnidade), então a lista
-  // buscada é sempre a exibida — sem recorte adicional de "todas as unidades".
-  const buscasExibidas = buscas;
-
-  // Funções de Busca
   const salvarBusca = async (form) => {
     const unidadeId = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
     if (!unidadeId) {
       throw new Error("Selecione uma unidade de negócio ativa no cabeçalho antes de salvar a busca.");
     }
-    const dados = {
-      ...form,
-      unidade_negocio_id: unidadeId,
-    };
+    const dados = { ...form, unidade_negocio_id: unidadeId };
     if (editando?.id) {
       await base44.entities.BuscaSalva.update(editando.id, dados);
     } else {
@@ -93,36 +78,22 @@ export default function Configuracao() {
     await carregarBuscas();
   };
 
-  const enviarEmail = async (busca) => {
-    setCarregandoEmail(busca.id);
-    try {
-      const data = await buscarLicitacoes({
-        uf: busca.uf,
-        palavra_chave: busca.palavra_chave,
-        modalidade: busca.modalidade,
-        municipio_ibge: busca.municipio_ibge,
-        pagina: 1,
-        licitacoesPorPagina: busca.licitacoes_por_pagina || 50,
-      });
-      setEmailLics(toArray(data.licitacoes));
-      setEmailBusca(busca);
-    } catch (e) {
-      setResultadoSync((r) => ({ ...r, [busca.id]: { erro: e.message } }));
-    } finally {
-      setCarregandoEmail(null);
-    }
-  };
-
   const removerBusca = async (busca) => {
-    if (!confirm(`Excluir a busca "${busca.nome}"?`)) return;
+    if (!confirm(`Excluir o alerta "${busca.nome}"?`)) return;
     await base44.entities.BuscaSalva.delete(busca.id);
     carregarBuscas();
   };
 
-  // Delega para a mesma função que o workflow agendado usa. Antes esta tela
-  // reimplementava a sincronização no cliente, o que deixava de gravar
-  // data_sincronizacao e data_publicacao e deduplicava contra apenas as 500
-  // licitações mais recentes — recriando duplicatas de tudo fora dessa janela.
+  const toggleAtiva = async (busca) => {
+    const novoValor = !busca.ativa;
+    setBuscas((lista) => lista.map((x) => (x.id === busca.id ? { ...x, ativa: novoValor } : x)));
+    try {
+      await base44.entities.BuscaSalva.update(busca.id, { ativa: novoValor });
+    } catch {
+      setBuscas((lista) => lista.map((x) => (x.id === busca.id ? { ...x, ativa: !novoValor } : x)));
+    }
+  };
+
   const sincronizar = async (busca) => {
     setSincronizando(busca.id);
     setResultadoSync((r) => ({ ...r, [busca.id]: null }));
@@ -132,8 +103,6 @@ export default function Configuracao() {
         force: true,
       });
       if (res.data?.error) throw new Error(res.data.error);
-
-      // Pedimos uma única busca, então o resumo traz no máximo um item.
       const item = toArray(res.data?.resumo)[0];
       if (item?.erro) {
         setResultadoSync((r) => ({ ...r, [busca.id]: { erro: item.erro } }));
@@ -151,9 +120,7 @@ export default function Configuracao() {
     }
   };
 
-  // Funções de Destinatário
   const salvarDestinatario = async (dados) => {
-    // unidade_negocio_id: com uma unidade escolhida no seletor, o contato nasce dela.
     await base44.entities.Destinatario.create({
       ...dados,
       unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
@@ -167,313 +134,207 @@ export default function Configuracao() {
     setDestinatarios((prev) => prev.filter((d) => d.id !== item.id));
   };
 
-  const abas = [
-    { id: "filtro", label: "Filtro / Busca" },
-    { id: "alerta", label: "Alerta" },
-    { id: "sincronizacao", label: "Sincronização" },
-    { id: "destinatarios", label: "Destinatários" },
-  ];
+  const sincronizarTodas = async () => {
+    const ativas = buscas.filter((b) => b.ativa);
+    if (ativas.length === 0) return;
+    setSincronizando("todas");
+    try {
+      const res = await base44.functions.invoke("sincronizarBuscas", {
+        buscaIds: ativas.map((b) => b.id),
+        force: true,
+      });
+      for (const item of toArray(res.data?.resumo)) {
+        if (item?.erro) {
+          setResultadoSync((r) => ({ ...r, [item.busca_id]: { erro: item.erro } }));
+        } else {
+          setResultadoSync((r) => ({
+            ...r,
+            [item.busca_id]: { novas: item?.novas ?? 0, total: item?.total ?? 0 },
+          }));
+        }
+      }
+      carregarBuscas();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSincronizando(null);
+    }
+  };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight">Configuração</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gerencie suas buscas, destinatários e sincronizações.</p>
-      </div>
+    <div className="min-h-screen bg-[#F7F5F0]">
+      <div className="container max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-      {/* Abas */}
-      <div className="flex gap-2 border-b">
-        {abas.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setAba(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              aba === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* ===== HERO ===== */}
+        <div className="mb-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-700 mb-2">
+            Prospecção no piloto automático
+          </p>
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-slate-800 leading-tight mb-2">
+            Seus alertas.
+          </h1>
+          <p className="text-sm text-slate-500 max-w-2xl">
+            Defina o que importa para o seu time e deixe o radar avisar quando houver movimento.
+          </p>
+        </div>
 
-      {/* Conteúdo das Abas */}
-      {aba === "filtro" && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Buscas Salvas</h2>
+        {/* ===== AÇÕES ===== */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => { setEditando(null); setMostrarForm(true); }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 shadow-sm shadow-primary/20 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-700 rounded-xl hover:bg-emerald-800 transition-colors shadow-sm"
             >
-              <Plus className="w-4 h-4" /> Nova busca
+              <Plus className="w-4 h-4" /> Novo alerta
+            </button>
+            <button
+              onClick={sincronizarTodas}
+              disabled={sincronizando === "todas" || buscas.filter((b) => b.ativa).length === 0}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            >
+              {sincronizando === "todas" ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Sincronizando...</>
+              ) : (
+                <><RefreshCw className="w-4 h-4" /> Sincronizar todas</>
+              )}
             </button>
           </div>
 
-          {mostrarForm && (
-            <BuscaForm
-              initial={editando}
-              onSave={salvarBusca}
-              onCancel={() => { setMostrarForm(false); setEditando(null); }}
-            />
-          )}
-
-          {loadingBuscas ? (
-            <div className="text-center py-20 text-muted-foreground">Carregando buscas...</div>
-          ) : buscasExibidas.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">
-              Nenhuma busca salva. Crie uma para automatizar a captação de licitações.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {buscasExibidas.map((b) => {
-                const res = resultadoSync[b.id];
-                return (
-                  <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                    {/* Título + badge + ações */}
-                    <div className="flex items-start justify-between gap-2 sm:gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-heading font-semibold text-base sm:text-lg leading-tight truncate">{b.nome}</h3>
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${b.ativa ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                            {b.ativa ? "Ativa" : "Inativa"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => { setEditando(b); setMostrarForm(true); }}
-                          title="Editar"
-                          className="p-2 rounded-lg border border-border/70 hover:bg-muted transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => removerBusca(b)}
-                          title="Excluir"
-                          className="p-2 rounded-lg border border-border/70 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Metadados */}
-                    <div className="mt-2.5 sm:mt-3 space-y-2">
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                        {b.uf && (
-                          <span className="inline-flex items-center gap-1 text-xs bg-muted/60 px-2 py-1 rounded-md">
-                            <MapPin className="w-3 h-3 text-muted-foreground" /> <b className="text-foreground">{b.uf}</b>
-                          </span>
-                        )}
-                        {b.municipio_nome && (
-                          <span className="inline-flex items-center gap-1 text-xs bg-muted/60 px-2 py-1 rounded-md">
-                            <MapPin className="w-3 h-3 text-muted-foreground" /> {b.municipio_nome}
-                          </span>
-                        )}
-                        {b.palavra_chave && (
-                          <span className="inline-flex items-center gap-1 text-xs bg-muted/60 px-2 py-1 rounded-md">
-                            <Tag className="w-3 h-3 text-muted-foreground" /> {b.palavra_chave}
-                          </span>
-                        )}
-                        {b.modalidade && (
-                          <span className="inline-flex items-center gap-1 text-xs bg-muted/60 px-2 py-1 rounded-md">
-                            <Tag className="w-3 h-3 text-muted-foreground" /> Modal: {b.modalidade}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {b.ultima_sincronizacao
-                            ? new Date(b.ultima_sincronizacao).toLocaleString("pt-BR")
-                            : "Nunca sincronizada"}
-                        </span>
-                        {b.total_encontrado ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Search className="w-3 h-3" /> {b.total_encontrado} encontradas
-                          </span>
-                        ) : null}
-                        {b.ultima_execucao_status === "sucesso" && (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
-                            <CheckCircle2 className="w-3 h-3" /> Sync OK
-                          </span>
-                        )}
-                        {b.ultima_execucao_status === "erro" && (
-                          <span className="inline-flex items-center gap-1 text-destructive bg-destructive/10 px-2 py-0.5 rounded-full font-medium" title={b.ultimo_erro}>
-                            <AlertCircle className="w-3 h-3" /> Falha no Sync
-                          </span>
-                        )}
-                      </div>
-                      {b.ultima_execucao_status === "erro" && b.ultimo_erro && (
-                        <div className="text-xs text-destructive bg-destructive/5 p-2 rounded-lg border border-destructive/20 flex items-start gap-1.5 mt-2">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          <span className="truncate">{b.ultimo_erro}</span>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <button
+            onClick={() => setAbaDestinatarios(!abaDestinatarios)}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors ${
+              abaDestinatarios
+                ? "text-emerald-700 border-emerald-200 bg-emerald-50"
+                : "text-slate-600 border-slate-200 bg-white hover:bg-slate-50"
+            }`}
+          >
+            <Users className="w-4 h-4" /> Destinatários
+            {destinatarios.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-600 font-bold">
+                {destinatarios.length}
+              </span>
+            )}
+          </button>
         </div>
-      )}
 
-      {aba === "alerta" && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Alertas</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Configure notificações por e-mail para suas buscas salvas.
+        {/* ===== FORM NOVO ALERTA ===== */}
+        {mostrarForm && (
+          <BuscaForm
+            initial={editando}
+            onSave={salvarBusca}
+            onCancel={() => { setMostrarForm(false); setEditando(null); }}
+          />
+        )}
+
+        {/* ===== ABA DESTINATÁRIOS ===== */}
+        {abaDestinatarios && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">Destinatários</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Lista de e-mails usada nas notificações de alertas.</p>
+              </div>
+            </div>
+            <DestinatarioForm onSave={salvarDestinatario} />
+            {loadingDestinatarios ? (
+              <p className="text-center py-8 text-slate-400 text-sm">Carregando...</p>
+            ) : destinatarios.length === 0 ? (
+              <p className="text-center py-8 text-slate-400 text-sm">Nenhum destinatário cadastrado.</p>
+            ) : (
+              <div className="space-y-2">
+                {destinatarios.map((d) => (
+                  <div key={d.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-slate-100 bg-slate-50">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {d.nome && <p className="text-sm font-medium text-slate-700 truncate">{d.nome}</p>}
+                      <p className="text-xs text-slate-400 truncate">{d.email}</p>
+                    </div>
+                    <button
+                      onClick={() => removerDestinatario(d)}
+                      className="text-xs text-slate-400 hover:text-red-500 transition-colors px-2 py-1"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== GRID DE ALERTAS ===== */}
+        {loadingBuscas ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+            <p className="text-sm">Carregando alertas...</p>
+          </div>
+        ) : buscas.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-8 h-8" />
+            </div>
+            <h3 className="font-heading text-lg font-semibold text-slate-800 mb-1">Nenhum alerta configurado</h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              Crie seu primeiro alerta para ser avisado automaticamente quando novas licitações aparecerem.
             </p>
           </div>
-
-          {loadingBuscas ? (
-            <div className="text-center py-20 text-muted-foreground">Carregando buscas...</div>
-          ) : buscasExibidas.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Nenhuma busca salva para configurar alertas.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {buscasExibidas.map((b) => (
-                <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5 space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-4">{b.nome}</h3>
-                    <BuscaToggles
-                      busca={b}
-                      modo="alerta"
-                      onUpdated={(id, campo, valor) =>
-                        setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                      }
-                    />
-                  </div>
-                  {b.notificar_email !== false && (
-                    <div className="border-t pt-4">
-                      <SeletorDestinatarios
-                        busca={b}
-                        contatos={destinatarios}
-                        carregando={loadingDestinatarios}
-                        onUpdated={(id, campo, valor) =>
-                          setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {aba === "destinatarios" && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Destinatários</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Lista de e-mails usada em todo o sistema para enviar licitações.
-            </p>
-          </div>
-
-          <DestinatarioForm onSave={salvarDestinatario} />
-
-          {loadingDestinatarios ? (
-            <div className="text-center py-12 text-muted-foreground">Carregando destinatários...</div>
-          ) : destinatarios.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Nenhum destinatário cadastrado ainda.</div>
-          ) : (
-            <div className="space-y-2">
-              {destinatarios.map((d) => (
-                <div key={d.id} className="bg-card border rounded-xl px-4 py-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-accent text-primary flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    {d.nome && <p className="text-sm font-medium truncate">{d.nome}</p>}
-                    <p className="text-xs text-muted-foreground truncate">{d.email}</p>
-                  </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {buscas.map((b) => (
+              <div key={b.id} className="flex flex-col gap-3">
+                <AlertCard
+                  busca={b}
+                  onEdit={(busca) => { setEditando(busca); setMostrarForm(true); }}
+                  onDelete={removerBusca}
+                  onToggleAtiva={toggleAtiva}
+                  sincronizando={sincronizando === b.id}
+                  resultadoSync={resultadoSync}
+                />
+                {/* Ações rápidas: sincronizar e destinatários */}
+                <div className="flex items-center gap-2 px-1">
                   <button
-                    onClick={() => removerDestinatario(d)}
-                    title="Excluir"
-                    className="p-2 rounded-lg border hover:bg-red-50 hover:text-red-600 hover:border-red-200 shrink-0"
+                    onClick={() => sincronizar(b)}
+                    disabled={sincronizando === b.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-emerald-700 transition-colors disabled:opacity-50"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    {sincronizando === b.id ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sincronizando...</>
+                    ) : (
+                      <><RefreshCw className="w-3.5 h-3.5" /> Sincronizar agora</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setBuscaDestinatarios(b)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-emerald-700 transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Notificar
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {aba === "sincronizacao" && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Sincronização</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Gerencie a sincronização automática de suas buscas salvas.
-            </p>
+              </div>
+            ))}
           </div>
+        )}
+      </div>
 
-          {loadingBuscas ? (
-            <div className="text-center py-20 text-muted-foreground">Carregando dados...</div>
-          ) : buscasExibidas.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Nenhuma busca salva para sincronizar.
+      {/* Dialog de destinatários da busca */}
+      {buscaDestinatarios && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={() => setBuscaDestinatarios(null)}>
+          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[80vh] overflow-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-800">Notificações — {buscaDestinatarios.nome}</h3>
+              <button onClick={() => setBuscaDestinatarios(null)} className="text-slate-400 hover:text-slate-700 text-lg">✕</button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {buscasExibidas.map((b) => {
-                const res = resultadoSync[b.id];
-                return (
-                  <div key={b.id} className="bg-card border border-border/70 rounded-xl p-4 sm:rounded-2xl sm:p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold">{b.nome}</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Última sincronização: {b.ultima_sincronizacao ? new Date(b.ultima_sincronizacao).toLocaleString("pt-BR") : "Nunca"}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => sincronizar(b)}
-                        disabled={sincronizando === b.id}
-                        className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                      >
-                        {sincronizando === b.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" /> Sincronizando...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="w-4 h-4" /> Sincronizar Agora
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {res && (
-                      <div className={`text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg mb-4 ${res.erro ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
-                        {res.erro ? `Erro: ${res.erro}` : <><Check className="w-3.5 h-3.5" /> {res.novas} novas importadas de {res.total} encontradas</>}
-                      </div>
-                    )}
-
-                    <BuscaToggles
-                      busca={b}
-                      modo="sincronizacao"
-                      onUpdated={(id, campo, valor) =>
-                        setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
-                      }
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            <SeletorDestinatarios
+              busca={buscaDestinatarios}
+              contatos={destinatarios}
+              carregando={loadingDestinatarios}
+              onUpdated={(id, campo, valor) =>
+                setBuscas((lista) => lista.map((x) => (x.id === id ? { ...x, [campo]: valor } : x)))
+              }
+            />
+          </div>
         </div>
       )}
 
