@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { MODALIDADES as MODALIDADES_API, buscarLicitacoes } from "@/shared/alertaApi";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
@@ -8,7 +8,7 @@ import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import { toArray } from "@/lib/toArray";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Search, Filter, Trash2, X } from "lucide-react";
+import { Search, SlidersHorizontal, Trash2, X, ChevronDown, Bell, Sparkles, Loader2, Database } from "lucide-react";
 
 const ESTADOS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
@@ -26,6 +26,15 @@ const MODALIDADES = [
   "Dispensa de Licitação",
   "Contratação Direta"
 ];
+
+const hojeBR = () =>
+  new Date().toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  });
 
 export default function BuscaAvancada() {
   const [filtros, setFiltros] = useState({
@@ -49,13 +58,21 @@ export default function BuscaAvancada() {
   const [erro, setErro] = useState("");
   const [selecionados, setSelecionados] = useState(new Set());
   const [listasFavoritas, setListasFavoritas] = useState([]);
-  // Licitações aguardando a escolha da lista no seletor.
   const [favoritando, setFavoritando] = useState(null);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
+  const [mostrarAvancados, setMostrarAvancados] = useState(false);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
 
-  // Quantos resultados já são registro da unidade ativa (têm `.id`) vs vieram
-  // só do banco do sistema/API e ainda não foram materializados.
   const qtdJaNaUnidade = useMemo(() => licitacoes.filter((l) => l.id).length, [licitacoes]);
+
+  // Conta quantos filtros avançados estão ativos pra mostrar no badge do botão.
+  const filtrosAvancadosAtivos = useMemo(() => {
+    let count = 0;
+    if (filtros.dataAberturaInicio || filtros.dataAberturaFim) count++;
+    if (filtros.valorMinimo || filtros.valorMaximo) count++;
+    if (buscarAPI || buscarPNCP) count++;
+    return count;
+  }, [filtros.dataAberturaInicio, filtros.dataAberturaFim, filtros.valorMinimo, filtros.valorMaximo, buscarAPI, buscarPNCP]);
 
   useEffect(() => {
     if (!usuarioLogado) return;
@@ -67,8 +84,6 @@ export default function BuscaAvancada() {
   const [municipios, setMunicipios] = useState([]);
   const [buscaMunicipio, setBuscaMunicipio] = useState("");
 
-  // Selecionados sempre no topo (pra desmarcar sem caçar na lista); os demais
-  // seguem alfabéticos e filtrados pelo texto de busca.
   const municipiosOrdenados = useMemo(() => {
     const termo = buscaMunicipio.trim().toLowerCase();
     const selecionados = municipios.filter((m) => filtros.municipios.includes(m));
@@ -79,7 +94,6 @@ export default function BuscaAvancada() {
     return [...selecionados, ...filtrados];
   }, [municipios, filtros.municipios, buscaMunicipio]);
 
-  // Carrega municípios quando UFs mudam
   useEffect(() => {
     if (filtros.ufs.length > 0) {
       carregarMunicipios(filtros.ufs);
@@ -91,21 +105,12 @@ export default function BuscaAvancada() {
   async function carregarMunicipios(ufs) {
     try {
       const allMunicipios = new Set();
-
       for (const uf of ufs) {
-        const dados = await base44.entities.Licitacao.filter(
-          { uf },
-          "-created_date",
-          500
-        );
+        const dados = await base44.entities.Licitacao.filter({ uf }, "-created_date", 500);
         const lista = toArray(dados);
-        lista.forEach(l => {
-          if (l.municipio) allMunicipios.add(l.municipio);
-        });
+        lista.forEach(l => { if (l.municipio) allMunicipios.add(l.municipio); });
       }
-
-      const municipiosUnicos = Array.from(allMunicipios).sort();
-      setMunicipios(municipiosUnicos);
+      setMunicipios(Array.from(allMunicipios).sort());
     } catch (err) {
       console.error("Erro ao carregar municípios:", err);
     }
@@ -114,12 +119,7 @@ export default function BuscaAvancada() {
   async function executarBusca() {
     setCarregando(true);
     setErro("");
-
     try {
-      // Busca Avançada pertence ao sistema, não à unidade: a base é o
-      // ConsultaCache (banco global, compartilhado por toda busca já feita
-      // por qualquer unidade), sobreposto com os registros da PRÓPRIA unidade
-      // (Licitacao) quando existirem — é de lá que vem favorito/status/leitura.
       const [cachesList, licitacoesDb] = await Promise.all([
         base44.entities.ConsultaCache.list("-updated_date", 1000),
         base44.entities.Licitacao.filter(escopoUnidade(isAdmin, filtroUnidade), "-updated_date", 2000),
@@ -133,51 +133,35 @@ export default function BuscaAvancada() {
       const poolMap = new Map();
       for (const cache of toArray(cachesList)) {
         for (const l of toArray(cache.resultado?.licitacoes)) {
-          if (l?.id_licitacao && !poolMap.has(l.id_licitacao)) {
-            poolMap.set(l.id_licitacao, l);
-          }
+          if (l?.id_licitacao && !poolMap.has(l.id_licitacao)) poolMap.set(l.id_licitacao, l);
         }
       }
-      // Garante que registros já vinculados à unidade apareçam mesmo que
-      // tenham saído da janela recente do cache.
       for (const [id, l] of licitacoesDbMap) {
         if (!poolMap.has(id)) poolMap.set(id, l);
       }
 
-      // Filtros adicionais no cliente (UFs, modalidades, datas, valores e palavras-chave)
       let resultado = Array.from(poolMap.values()).map((l) => {
         const doBanco = licitacoesDbMap.get(String(l.id_licitacao));
         return doBanco ? { ...l, ...doBanco } : l;
       });
 
-      // Descartada é um conceito da unidade — some da lista assim que marcada.
       resultado = resultado.filter((l) => !l.oculto);
 
-      // Filtrar por UFs
       if (filtros.ufs.length > 0) {
         resultado = resultado.filter(l => filtros.ufs.includes(l.uf));
       }
-
-      // Filtrar por Municípios (só funciona com um único UF selecionado)
       if (filtros.municipios.length > 0) {
         resultado = resultado.filter(l => filtros.municipios.includes(l.municipio));
       }
-
-      // Filtrar por Modalidades
       if (filtros.modalidades.length > 0) {
         resultado = resultado.filter(l => filtros.modalidades.includes(l.tipo));
       }
-
-      // Filtrar por Palavras-chave (buscar todos os termos no título ou objeto)
       if (filtros.palavrasChave.length > 0) {
         resultado = resultado.filter(l => {
           const textoCompleto = `${l.titulo || ''} ${l.objeto || ''}`.toLowerCase();
-          return filtros.palavrasChave.every(palavra =>
-            textoCompleto.includes(palavra.toLowerCase())
-          );
+          return filtros.palavrasChave.every(palavra => textoCompleto.includes(palavra.toLowerCase()));
         });
       }
-
       if (filtros.dataAberturaInicio) {
         const dataInicio = new Date(filtros.dataAberturaInicio);
         resultado = resultado.filter(l => {
@@ -185,7 +169,6 @@ export default function BuscaAvancada() {
           return dataAbertura && dataAbertura >= dataInicio;
         });
       }
-
       if (filtros.dataAberturaFim) {
         const dataFim = new Date(filtros.dataAberturaFim);
         dataFim.setHours(23, 59, 59);
@@ -194,24 +177,15 @@ export default function BuscaAvancada() {
           return dataAbertura && dataAbertura <= dataFim;
         });
       }
-
       if (filtros.valorMinimo) {
         const min = parseFloat(filtros.valorMinimo);
-        resultado = resultado.filter(l => {
-          const valor = parseFloat(l.valor) || 0;
-          return valor >= min;
-        });
+        resultado = resultado.filter(l => (parseFloat(l.valor) || 0) >= min);
       }
-
       if (filtros.valorMaximo) {
         const max = parseFloat(filtros.valorMaximo);
-        resultado = resultado.filter(l => {
-          const valor = parseFloat(l.valor) || 0;
-          return valor <= max;
-        });
+        resultado = resultado.filter(l => (parseFloat(l.valor) || 0) <= max);
       }
 
-      // Busca integrada na API externa (Alerta Licitação)
       if (buscarAPI) {
         try {
           const ufsParaBuscar = filtros.ufs.length > 0 ? filtros.ufs : [undefined];
@@ -221,7 +195,6 @@ export default function BuscaAvancada() {
           const modalidadeParaBuscar = modalidadesCodigos.length > 0 ? modalidadesCodigos.join(",") : undefined;
           const palavraChaveParaBuscar = filtros.palavrasChave.length > 0 ? filtros.palavrasChave.join(", ") : undefined;
 
-          // Executa as consultas na API para cada UF selecionada (ou consulta geral se nenhuma UF selecionada)
           const chamadasApi = ufsParaBuscar.map(uf =>
             buscarLicitacoes({
               data_inicio: dataPublicacaoAPIInicio || undefined,
@@ -233,17 +206,12 @@ export default function BuscaAvancada() {
               licitacoesPorPagina: 50,
             })
           );
-
           const respostas = await Promise.all(chamadasApi);
           const apiLicitacoes = [];
           for (const res of respostas) {
-            if (res?.licitacoes) {
-              apiLicitacoes.push(...toArray(res.licitacoes));
-            }
+            if (res?.licitacoes) apiLicitacoes.push(...toArray(res.licitacoes));
           }
-
           if (apiLicitacoes.length > 0) {
-            // Mesclar e remover duplicatas pelo id_licitacao
             const idsLocais = new Set(resultado.map(l => l.id_licitacao));
             const novasDaApi = apiLicitacoes.filter(l => !idsLocais.has(l.id_licitacao));
             resultado = [...resultado, ...novasDaApi];
@@ -254,14 +222,12 @@ export default function BuscaAvancada() {
         }
       }
 
-      // Busca direta no PNCP (fonte pública do sistema, sem depender do Alerta Licitação)
       if (buscarPNCP) {
         try {
           const ufsParaBuscar = filtros.ufs.length > 0 ? filtros.ufs : [undefined];
           const modalidadesCodigos = filtros.modalidades
             .map(modNome => MODALIDADES_API.find(m => m.nome.toLowerCase() === modNome.toLowerCase())?.id)
             .filter(Boolean);
-
           const chamadasPncp = ufsParaBuscar.map(uf =>
             buscarLicitacoes({
               fonte: "pncp",
@@ -272,13 +238,11 @@ export default function BuscaAvancada() {
               licitacoesPorPagina: 50,
             })
           );
-
           const respostasPncp = await Promise.all(chamadasPncp);
           const pncpLicitacoes = [];
           for (const res of respostasPncp) {
             if (res?.licitacoes) pncpLicitacoes.push(...toArray(res.licitacoes));
           }
-
           if (pncpLicitacoes.length > 0) {
             const idsLocais = new Set(resultado.map(l => l.id_licitacao));
             const novasDoPncp = pncpLicitacoes.filter(l => !idsLocais.has(l.id_licitacao));
@@ -291,6 +255,7 @@ export default function BuscaAvancada() {
       }
 
       setLicitacoes(resultado);
+      setUltimaAtualizacao(hojeBR());
     } catch (err) {
       setErro("Erro ao executar busca: " + err.message);
     } finally {
@@ -317,13 +282,12 @@ export default function BuscaAvancada() {
     setLicitacoes([]);
     setSelecionados(new Set());
     setErro("");
+    setUltimaAtualizacao("");
   }
 
   function toggleUF(uf) {
     setFiltros(prev => {
-      const novasUFs = prev.ufs.includes(uf)
-        ? prev.ufs.filter(u => u !== uf)
-        : [...prev.ufs, uf];
+      const novasUFs = prev.ufs.includes(uf) ? prev.ufs.filter(u => u !== uf) : [...prev.ufs, uf];
       return { ...prev, ufs: novasUFs, municipios: [] };
     });
     setBuscaMunicipio("");
@@ -349,31 +313,19 @@ export default function BuscaAvancada() {
 
   function adicionarPalavraChave() {
     if (inputPalavraChave.trim()) {
-      setFiltros(prev => ({
-        ...prev,
-        palavrasChave: [...prev.palavrasChave, inputPalavraChave.trim()]
-      }));
+      setFiltros(prev => ({ ...prev, palavrasChave: [...prev.palavrasChave, inputPalavraChave.trim()] }));
       setInputPalavraChave("");
     }
   }
 
   function removerPalavraChave(palavra) {
-    setFiltros(prev => ({
-      ...prev,
-      palavrasChave: prev.palavrasChave.filter(p => p !== palavra)
-    }));
+    setFiltros(prev => ({ ...prev, palavrasChave: prev.palavrasChave.filter(p => p !== palavra) }));
   }
 
   function handleMudarFiltro(campo, valor) {
-    setFiltros(prev => ({
-      ...prev,
-      [campo]: valor
-    }));
+    setFiltros(prev => ({ ...prev, [campo]: valor }));
   }
 
-  // Garante que a licitação existe como registro DESTA unidade antes de
-  // qualquer ação — resultado vindo só do banco do sistema (ConsultaCache) ou
-  // da API ainda não tem `.id` até isso rodar (nasce "nova" na unidade agora).
   async function garantirNaUnidade(licacao, camposExtra = {}) {
     if (licacao.id) return licacao;
     const criada = await base44.entities.Licitacao.create({
@@ -401,7 +353,6 @@ export default function BuscaAvancada() {
     return { ...licacao, id: criada.id };
   }
 
-  // Descartar apenas oculta: o registro continua no banco.
   async function handleDelete(licacao) {
     if (!confirm("Descartar esta licitação? Ela sai da sua lista, mas continua no banco.")) return;
     try {
@@ -422,16 +373,11 @@ export default function BuscaAvancada() {
     alert("Funcionalidade de envio em desenvolvimento");
   }
 
-  // Mover para Em Triagem
   async function handleMoverParaTriagem(licacao) {
     try {
       const registrada = await garantirNaUnidade(licacao, { status_leitura: "vista", status: "em_analise" });
       if (registrada.id === licacao.id && licacao.id) {
-        await base44.entities.Licitacao.update(licacao.id, {
-          status_leitura: "vista",
-          status: "em_analise",
-          oculto: false,
-        });
+        await base44.entities.Licitacao.update(licacao.id, { status_leitura: "vista", status: "em_analise", oculto: false });
       }
       setLicitacoes((prev) =>
         prev.map((l) =>
@@ -447,11 +393,9 @@ export default function BuscaAvancada() {
     }
   }
 
-  // Favoritar abre o seletor de lista.
   const handleFavoritarLicitacao = (licacao) => setFavoritando([licacao]);
 
   const criarListaFavorita = async (nome) => {
-    // unidade_negocio_id: com uma unidade escolhida no seletor, a lista nasce dela.
     const nova = await base44.entities.FavoritaLista.create({
       nome,
       ordem: listasFavoritas.length,
@@ -463,8 +407,6 @@ export default function BuscaAvancada() {
 
   const confirmarFavoritar = async (listaId) => {
     const campos = { favorito: true, lista_favorita_id: listaId || "" };
-    // Materializa antes quem ainda não é registro da unidade (veio do banco do
-    // sistema ou da API), senão o bulkUpdate abaixo recebe `id` undefined.
     const registradas = await Promise.all(favoritando.map((l) => garantirNaUnidade(l)));
     await base44.entities.Licitacao.bulkUpdate(registradas.map((l) => ({ id: l.id, ...campos })));
     const idsOriginais = new Set(favoritando.map((f) => f.id_licitacao));
@@ -487,120 +429,168 @@ export default function BuscaAvancada() {
     });
   }
 
+  const totalFiltrosAtivos =
+    filtros.ufs.length + filtros.modalidades.length + filtros.palavrasChave.length +
+    (filtros.dataAberturaInicio ? 1 : 0) + (filtros.dataAberturaFim ? 1 : 0) +
+    (filtros.valorMinimo ? 1 : 0) + (filtros.valorMaximo ? 1 : 0) + (buscarAPI ? 1 : 0) + (buscarPNCP ? 1 : 0);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Busca Avançada</h1>
-          <p className="text-muted-foreground">Configure filtros avançados para encontrar licitações específicas</p>
+    <div className="min-h-screen bg-[#F9F7F3] dark:bg-background">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+
+        {/* ===== HERO ===== */}
+        <div className="mb-8 sm:mb-10">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-emerald-700 dark:text-emerald-500 mb-2">
+            Radar de Oportunidades
+          </p>
+          <h1 className="font-heading text-2xl sm:text-4xl font-bold text-foreground leading-tight mb-2">
+            Encontre a próxima conquista.
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
+            Pesquise em fontes públicas e privadas sem alternar entre portais. Compare, salve e avance com contexto.
+          </p>
         </div>
 
-        {/* Painel de Filtros */}
-        <div className="bg-card border rounded-xl p-6 shadow-sm mb-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Filter className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold">Filtros</h2>
+        {/* ===== BARRA DE BUSCA INLINE ===== */}
+        <div className="bg-white dark:bg-card border border-border rounded-2xl shadow-sm p-3 sm:p-4 mb-4">
+          {/* Linha 1: busca por texto + palavra-chave */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Busque por palavra-chave, órgão ou categoria..."
+                value={inputPalavraChave}
+                onChange={(e) => setInputPalavraChave(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && adicionarPalavraChave()}
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
+              />
+            </div>
+            {inputPalavraChave.trim() && (
+              <button
+                onClick={adicionarPalavraChave}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium border rounded-lg hover:bg-muted shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Adicionar termo
+              </button>
+            )}
           </div>
 
-          {/* Cada grupo de filtro é uma seção colapsável — só uma aberta por
-              vez (Accordion single+collapsible), pra não poluir a tela com
-              tudo expandido ao mesmo tempo. */}
-          <Accordion type="single" collapsible className="space-y-2 mb-6">
-            <AccordionItem value="palavras" className="border rounded-lg px-4">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2">
-                  Palavras-chave
-                  {filtros.palavrasChave.length > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
-                      {filtros.palavrasChave.length}
-                    </span>
-                  )}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    placeholder="Digite e pressione Enter ou clique em Adicionar"
-                    value={inputPalavraChave}
-                    onChange={(e) => setInputPalavraChave(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && adicionarPalavraChave()}
-                    className="flex-1 px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <button
-                    onClick={adicionarPalavraChave}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90"
-                  >
-                    Adicionar
+          {/* Tags de palavras-chave ativas */}
+          {filtros.palavrasChave.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {filtros.palavrasChave.map(palavra => (
+                <span key={palavra} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 rounded-full text-xs font-medium">
+                  {palavra}
+                  <button onClick={() => removerPalavraChave(palavra)} className="hover:opacity-70">
+                    <X className="w-3 h-3" />
                   </button>
-                </div>
-                {filtros.palavrasChave.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {filtros.palavrasChave.map(palavra => (
-                      <div
-                        key={palavra}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-sm"
-                      >
-                        <span>{palavra}</span>
-                        <button
-                          onClick={() => removerPalavraChave(palavra)}
-                          className="hover:opacity-70"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="uf" className="border rounded-lg px-4">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2">
-                  Estados (UF)
-                  {filtros.ufs.length > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
-                      {filtros.ufs.length}
-                    </span>
-                  )}
                 </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2">
-                  {ESTADOS.map(uf => (
-                    <label key={uf} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filtros.ufs.includes(uf)}
-                        onChange={() => toggleUF(uf)}
-                        className="w-4 h-4 rounded cursor-pointer"
-                      />
-                      <span className="text-sm text-foreground">{uf}</span>
-                    </label>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+              ))}
+            </div>
+          )}
 
-            <AccordionItem value="municipio" className="border rounded-lg px-4">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2">
-                  Município
-                  {filtros.municipios.length > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
-                      {filtros.municipios.length}
-                    </span>
-                  )}
-                  {filtros.ufs.length > 1 && <span className="text-xs text-destructive">(Desabilitado com múltiplos UFs)</span>}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
+          {/* Linha 2: filtros rápidos em dropdowns */}
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/60">
+            {/* Estados */}
+            <DropdownFilter
+              label="Estados"
+              badge={filtros.ufs.length}
+              summary={filtros.ufs.length === 0 ? "Todos os estados" : filtros.ufs.join(", ")}
+            >
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-56 overflow-y-auto p-1">
+                {ESTADOS.map(uf => (
+                  <label key={uf} className="flex items-center gap-1.5 cursor-pointer rounded px-1.5 py-1 hover:bg-muted text-xs">
+                    <input type="checkbox" checked={filtros.ufs.includes(uf)} onChange={() => toggleUF(uf)} className="w-3.5 h-3.5 rounded" />
+                    <span>{uf}</span>
+                  </label>
+                ))}
+              </div>
+            </DropdownFilter>
+
+            {/* Modalidades */}
+            <DropdownFilter
+              label="Modalidades"
+              badge={filtros.modalidades.length}
+              summary={filtros.modalidades.length === 0 ? "Modalidades" : `${filtros.modalidades.length} selecionada(s)`}
+            >
+              <div className="space-y-1 max-h-56 overflow-y-auto p-1">
+                {MODALIDADES.map(m => (
+                  <label key={m} className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-xs">
+                    <input type="checkbox" checked={filtros.modalidades.includes(m)} onChange={() => toggleModalidade(m)} className="w-3.5 h-3.5 rounded" />
+                    <span>{m}</span>
+                  </label>
+                ))}
+              </div>
+            </DropdownFilter>
+
+            {/* Fontes */}
+            <DropdownFilter
+              label="Fontes"
+              badge={(buscarAPI ? 1 : 0) + (buscarPNCP ? 1 : 0)}
+              summary={(!buscarAPI && !buscarPNCP) ? "Todas as fontes" : `${[buscarAPI && "Alerta Licitação", buscarPNCP && "PNCP"].filter(Boolean).join(" + ")}`}
+            >
+              <div className="space-y-2 p-1 min-w-56">
+                <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-xs">
+                  <input type="checkbox" checked={buscarAPI} onChange={(e) => setBuscarAPI(e.target.checked)} className="w-3.5 h-3.5 rounded" />
+                  <span>API (alertalicitacao.com.br)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-xs">
+                  <input type="checkbox" checked={buscarPNCP} onChange={(e) => setBuscarPNCP(e.target.checked)} className="w-3.5 h-3.5 rounded" />
+                  <span>PNCP (Portal Nacional)</span>
+                </label>
+              </div>
+            </DropdownFilter>
+
+            {/* Botão filtros avançados */}
+            <button
+              onClick={() => setMostrarAvancados(!mostrarAvancados)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors shrink-0 ${
+                mostrarAvancados || filtrosAvancadosAtivos > 0
+                  ? "border-emerald-600 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                  : "border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Avançado</span>
+              {filtrosAvancadosAtivos > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold">{filtrosAvancadosAtivos}</span>
+              )}
+            </button>
+
+            <div className="flex-1" />
+
+            {/* Limpar */}
+            {totalFiltrosAtivos > 0 && (
+              <button
+                onClick={limparFiltros}
+                className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Limpar
+              </button>
+            )}
+
+            {/* Buscar */}
+            <button
+              onClick={executarBusca}
+              disabled={carregando}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg disabled:opacity-50 shrink-0"
+            >
+              {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              <span className="hidden sm:inline">{carregando ? "Buscando..." : "Buscar"}</span>
+            </button>
+          </div>
+
+          {/* Filtros avançados recolhíveis */}
+          {mostrarAvancados && (
+            <div className="mt-3 pt-3 border-t border-border/60 space-y-4">
+              {/* Município */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-1.5">Município {filtros.ufs.length > 1 && <span className="text-destructive">(apenas 1 UF)</span>}</p>
                 {filtros.ufs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Selecione um estado para ver os municípios</p>
+                  <p className="text-xs text-muted-foreground">Selecione um estado para ver os municípios</p>
                 ) : filtros.ufs.length > 1 ? (
-                  <p className="text-sm text-destructive">Múltiplos estados selecionados. Selecione apenas um estado para filtrar por município.</p>
+                  <p className="text-xs text-destructive">Selecione apenas um estado para filtrar por município.</p>
                 ) : (
                   <>
                     <input
@@ -608,229 +598,99 @@ export default function BuscaAvancada() {
                       value={buscaMunicipio}
                       onChange={(e) => setBuscaMunicipio(e.target.value)}
                       placeholder="Filtrar municípios..."
-                      className="w-full px-3 py-2 mb-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 mb-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40"
                     />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-64 overflow-y-auto border border-border/60 rounded-lg p-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto border border-border/60 rounded-lg p-2.5">
                       {municipiosOrdenados.length === 0 ? (
-                        <p className="text-sm text-muted-foreground col-span-full">Nenhum município encontrado.</p>
+                        <p className="text-xs text-muted-foreground col-span-full">Nenhum município encontrado.</p>
                       ) : (
                         municipiosOrdenados.map(m => (
-                          <label key={m} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={filtros.municipios.includes(m)}
-                              onChange={() => toggleMunicipio(m)}
-                              className="w-4 h-4 rounded cursor-pointer"
-                            />
-                            <span className={`text-sm ${filtros.municipios.includes(m) ? "font-semibold text-primary" : "text-foreground"}`}>{m}</span>
+                          <label key={m} className="flex items-center gap-1.5 cursor-pointer text-xs">
+                            <input type="checkbox" checked={filtros.municipios.includes(m)} onChange={() => toggleMunicipio(m)} className="w-3.5 h-3.5 rounded" />
+                            <span className={filtros.municipios.includes(m) ? "font-semibold text-emerald-700 dark:text-emerald-400" : ""}>{m}</span>
                           </label>
                         ))
                       )}
                     </div>
                   </>
                 )}
-              </AccordionContent>
-            </AccordionItem>
+              </div>
 
-            <AccordionItem value="modalidades" className="border rounded-lg px-4">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2">
-                  Modalidades
-                  {filtros.modalidades.length > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
-                      {filtros.modalidades.length}
-                    </span>
-                  )}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  {MODALIDADES.map(m => (
-                    <label key={m} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filtros.modalidades.includes(m)}
-                        onChange={() => toggleModalidade(m)}
-                        className="w-4 h-4 rounded cursor-pointer"
-                      />
-                      <span className="text-sm text-foreground">{m}</span>
-                    </label>
-                  ))}
+              {/* Datas e valores */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Início</label>
+                  <input type="date" value={filtros.dataAberturaInicio} onChange={(e) => handleMudarFiltro("dataAberturaInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="datas-valor" className="border rounded-lg px-4">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2">
-                  Abertura e Valor
-                  {(filtros.dataAberturaInicio || filtros.dataAberturaFim || filtros.valorMinimo || filtros.valorMaximo) && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">ativo</span>
-                  )}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Abertura - Início</label>
-                    <input
-                      type="date"
-                      value={filtros.dataAberturaInicio}
-                      onChange={(e) => handleMudarFiltro("dataAberturaInicio", e.target.value)}
-                      className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Abertura - Fim</label>
-                    <input
-                      type="date"
-                      value={filtros.dataAberturaFim}
-                      onChange={(e) => handleMudarFiltro("dataAberturaFim", e.target.value)}
-                      className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Valor Mínimo</label>
-                    <input
-                      type="number"
-                      placeholder="R$ 0,00"
-                      value={filtros.valorMinimo}
-                      onChange={(e) => handleMudarFiltro("valorMinimo", e.target.value)}
-                      className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Valor Máximo</label>
-                    <input
-                      type="number"
-                      placeholder="R$ 999.999,99"
-                      value={filtros.valorMaximo}
-                      onChange={(e) => handleMudarFiltro("valorMaximo", e.target.value)}
-                      className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Fim</label>
+                  <input type="date" value={filtros.dataAberturaFim} onChange={(e) => handleMudarFiltro("dataAberturaFim", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="fontes-externas" className="border rounded-lg px-4">
-              <AccordionTrigger>
-                <span className="flex items-center gap-2">
-                  Fontes Externas
-                  {(buscarAPI || buscarPNCP) && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">ativo</span>
-                  )}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="buscarAPI"
-                      checked={buscarAPI}
-                      onChange={(e) => setBuscarAPI(e.target.checked)}
-                      className="w-4 h-4 rounded cursor-pointer"
-                    />
-                    <label htmlFor="buscarAPI" className="text-sm font-medium text-foreground cursor-pointer">
-                      Buscar também na API (alertalicitacao.com.br)
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="buscarPNCP"
-                      checked={buscarPNCP}
-                      onChange={(e) => setBuscarPNCP(e.target.checked)}
-                      className="w-4 h-4 rounded cursor-pointer"
-                    />
-                    <label htmlFor="buscarPNCP" className="text-sm font-medium text-foreground cursor-pointer">
-                      Buscar direto no PNCP (Portal Nacional de Contratações Públicas)
-                    </label>
-                  </div>
-                  {buscarPNCP && filtros.modalidades.length === 0 && (
-                    <p className="text-xs text-amber-600 pl-7">
-                      ⚠️ O PNCP exige modalidade — escolha ao menos uma em "Modalidades" (Concorrência, Leilão, Pregão eletrônico/presencial, Dispensas ou Chamamento público).
-                    </p>
-                  )}
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Valor Mínimo</label>
+                  <input type="number" placeholder="R$ 0,00" value={filtros.valorMinimo} onChange={(e) => handleMudarFiltro("valorMinimo", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Valor Máximo</label>
+                  <input type="number" placeholder="R$ 999.999,99" value={filtros.valorMaximo} onChange={(e) => handleMudarFiltro("valorMaximo", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                </div>
+              </div>
 
-                {(buscarAPI || buscarPNCP) && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Publicação - Início</label>
-                        <input
-                          type="date"
-                          value={dataPublicacaoAPIInicio}
-                          onChange={(e) => setDataPublicacaoAPIInicio(e.target.value)}
-                          className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-1">Publicação - Fim</label>
-                        <input
-                          type="date"
-                          value={dataPublicacaoAPIFim}
-                          onChange={(e) => setDataPublicacaoAPIFim(e.target.value)}
-                          className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
+              {/* Fontes externas — datas de publicação */}
+              {(buscarAPI || buscarPNCP) && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Início</label>
+                      <input type="date" value={dataPublicacaoAPIInicio} onChange={(e) => setDataPublicacaoAPIInicio(e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      💡 <strong>Dica de velocidade:</strong> Se não preencher as datas, a busca considera o dia de hoje (no PNCP, o que está com propostas abertas agora) com resposta instantânea. Intervalos longos consultam dia a dia em paralelo (só no Alerta Licitação — o PNCP usa sempre a data de início).
-                    </p>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Fim</label>
+                      <input type="date" value={dataPublicacaoAPIFim} onChange={(e) => setDataPublicacaoAPIFim(e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-600/40" />
+                    </div>
                   </div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          {/* Botões de Ação */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={executarBusca}
-              disabled={carregando}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
-            >
-              <Search className="w-4 h-4" />
-              {carregando ? "Buscando..." : "Buscar"}
-            </button>
-            <button
-              onClick={limparFiltros}
-              className="inline-flex items-center gap-2 px-4 py-2.5 border border-input text-foreground rounded-lg font-medium hover:bg-muted"
-            >
-              <Trash2 className="w-4 h-4" />
-              Limpar
-            </button>
-          </div>
-
-          {licitacoes.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mt-3">
-              <span className="text-xs px-3 py-1.5 rounded-full font-bold bg-primary/10 text-primary">
-                {licitacoes.length} resultado{licitacoes.length !== 1 ? "s" : ""}
-              </span>
-              <span className="text-xs px-3 py-1.5 rounded-full font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                {qtdJaNaUnidade} já na sua unidade
-              </span>
-              <span className="text-xs px-3 py-1.5 rounded-full font-bold bg-muted text-muted-foreground">
-                {licitacoes.length - qtdJaNaUnidade} só no banco do sistema
-              </span>
-            </div>
-          )}
-
-          {erro && (
-            <div className="mt-4 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-              {erro}
+                  <p className="text-xs text-muted-foreground">
+                    💡 Se não preencher as datas, a busca considera o dia de hoje com resposta instantânea.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Resultados */}
+        {/* ===== BARRA DE STATUS ===== */}
+        {(licitacoes.length > 0 || carregando) && (
+          <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
+            {carregando ? (
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Buscando oportunidades...
+              </span>
+            ) : (
+              <>
+                <span className="font-bold text-foreground">
+                  {licitacoes.length} oportunidade{licitacoes.length !== 1 ? "s" : ""} encontrada{licitacoes.length !== 1 ? "s" : ""}
+                </span>
+                {ultimaAtualizacao && (
+                  <span className="text-muted-foreground text-xs">· Última atualização {ultimaAtualizacao}</span>
+                )}
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  {qtdJaNaUnidade} já na sua unidade
+                </span>
+                {(licitacoes.length - qtdJaNaUnidade) > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
+                    {licitacoes.length - qtdJaNaUnidade} só no banco do sistema
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {erro && (
+          <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{erro}</div>
+        )}
+
+        {/* ===== RESULTADOS ===== */}
         {licitacoes.length > 0 && (
           <LicitacoesVisualizacao
             licitacoes={licitacoes}
@@ -840,18 +700,13 @@ export default function BuscaAvancada() {
             selecionados={selecionados}
             onToggleSelecao={handleToggleSelecao}
             tagEstado={(lic) => {
-              // Sem `.id` é resultado só do banco do sistema/API, ainda não
-              // vinculado a esta unidade — sem etiqueta, pra não sugerir que já
-              // está em algum estágio do funil que ainda não existe pra ela.
               if (!lic.id) return null;
-              if (lic.favorito) {
-                return { label: "Minha", icone: "⭐", className: "bg-amber-500 text-white ring-amber-500/30" };
-              }
+              if (lic.favorito) return { label: "Minha", icone: "⭐", className: "bg-amber-500 text-white ring-amber-500/30" };
               if (lic.status_leitura === "vista" || lic.status_leitura === "lida" || lic.status === "em_analise") {
                 return { label: "Em Triagem", icone: "⏱️", className: "bg-blue-600 text-white ring-blue-600/30" };
               }
               if (lic.status_leitura === "nova") {
-                return { label: "Nova", icone: "✨", className: "bg-primary text-primary-foreground ring-primary/30" };
+                return { label: "Nova", icone: "✨", className: "bg-emerald-600 text-white ring-emerald-600/30" };
               }
               return null;
             }}
@@ -868,9 +723,14 @@ export default function BuscaAvancada() {
         )}
 
         {!carregando && licitacoes.length === 0 && !erro && (
-          <div className="text-center py-12">
-            <Search className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">Configure os filtros e clique em "Buscar" para começar</p>
+          <div className="text-center py-16 sm:py-24">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
+              <Database className="w-8 h-8" />
+            </div>
+            <h3 className="font-heading text-lg font-semibold text-foreground mb-1">Pronto para buscar</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Configure os filtros acima e clique em <strong>Buscar</strong> para explorar oportunidades em todas as fontes disponíveis.
+            </p>
           </div>
         )}
       </div>
@@ -883,6 +743,43 @@ export default function BuscaAvancada() {
           onConfirm={confirmarFavoritar}
           onClose={() => setFavoritando(null)}
         />
+      )}
+    </div>
+  );
+}
+
+// Dropdown de filtro reutilizável — abre ao clicar, fecha ao clicar fora.
+function DropdownFilter({ label, badge, summary, children }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setAberto(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [aberto]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setAberto(!aberto)}
+        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+          badge > 0
+            ? "border-emerald-600 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+            : "border-border text-muted-foreground hover:bg-muted"
+        }`}
+      >
+        <span className="truncate max-w-32">{badge > 0 ? summary : label}</span>
+        {badge > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold">{badge}</span>
+        )}
+        <ChevronDown className={`w-3 h-3 transition-transform ${aberto ? "rotate-180" : ""}`} />
+      </button>
+      {aberto && (
+        <div className="absolute z-30 mt-1 left-0 bg-white dark:bg-card border border-border rounded-lg shadow-lg p-1 min-w-56">
+          {children}
+        </div>
       )}
     </div>
   );
