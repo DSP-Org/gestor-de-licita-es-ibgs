@@ -76,7 +76,11 @@ export default function Configuracao() {
 
   // Funções de Busca
   const salvarBusca = async (form) => {
-    const dados = isAdmin && filtroUnidade !== "todos" ? { ...form, unidade_negocio_id: filtroUnidade } : form;
+    const unidadeId = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
+    const dados = {
+      ...form,
+      ...(unidadeId ? { unidade_negocio_id: unidadeId } : {}),
+    };
     if (editando?.id) {
       await base44.entities.BuscaSalva.update(editando.id, dados);
     } else {

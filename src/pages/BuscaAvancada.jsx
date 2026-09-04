@@ -233,7 +233,7 @@ export default function BuscaAvancada() {
       const novasUFs = prev.ufs.includes(uf)
         ? prev.ufs.filter(u => u !== uf)
         : [...prev.ufs, uf];
-      return { ...prev, ufs: novasUFs, municipio: "" };
+      return { ...prev, ufs: novasUFs, municipios: [] };
     });
   }
 

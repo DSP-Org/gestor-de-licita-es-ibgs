@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Sliders } from "lucide-react";
+import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Sliders, Bookmark } from "lucide-react";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 
 const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
+  { to: "/minhas-licitacoes", label: "Minhas Licitações", icon: Bookmark },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [

@@ -111,10 +111,18 @@ export default function BancoLicitacoes() {
   }, [buscasFiltradas]);
 
   const novasFiltradas = useMemo(() => {
+    const agora = new Date();
+    const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+
     return novas.filter((l) => {
       if (!pertenceAUnidade(l, filtroUnidade)) return false;
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
+      // Se não for favorita e a data de abertura já passou, não exibe em Novas
+      if (!l.favorito && l.abertura_datetime) {
+        const dtAbertura = new Date(l.abertura_datetime);
+        if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) return false;
+      }
       if (busca) {
         const q = busca.toLowerCase();
         const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
@@ -128,11 +136,17 @@ export default function BancoLicitacoes() {
   // propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
   // origem zeraria as demais e não haveria como trocar de seleção.
   const porBuscaOrigem = useMemo(() => {
+    const agora = new Date();
+    const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     const grupos = {};
     novas
       .filter((l) => {
         if (!pertenceAUnidade(l, filtroUnidade)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
+        if (!l.favorito && l.abertura_datetime) {
+          const dtAbertura = new Date(l.abertura_datetime);
+          if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) return false;
+        }
         if (busca) {
           const q = busca.toLowerCase();
           const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
@@ -575,27 +589,23 @@ export default function BancoLicitacoes() {
             Novidades da sincronização automática e o acervo que corresponde às suas buscas, em um só lugar.
           </p>
         </div>
-        {/* O contador acompanha a aba ativa e usa as listas já filtradas, para
-            bater com o que está visível. Na aba Favoritas ele some: lá o
-            FavoritasTab exibe as próprias estatísticas. */}
-        {aba !== "favoritas" && (
-          <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              {aba === "novas" ? <Sparkles className="w-5 h-5" /> : <Database className="w-5 h-5" />}
-            </div>
-            <div>
-              <p className="text-xl font-bold leading-none">
-                {aba === "novas" ? novasFiltradas.length : acervoFiltrado.length}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {aba === "novas" ? "novas" : "no acervo"}
-              </p>
-            </div>
+        {/* O contador acompanha a aba ativa e usa as listas já filtradas */}
+        <div className="flex items-center gap-3 bg-card border rounded-xl px-4 py-3 shadow-sm shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            {aba === "novas" ? <Sparkles className="w-5 h-5" /> : <Database className="w-5 h-5" />}
           </div>
-        )}
+          <div>
+            <p className="text-xl font-bold leading-none">
+              {aba === "novas" ? novasFiltradas.length : acervoFiltrado.length}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {aba === "novas" ? "novas" : "no acervo"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Abas + seletor de usuário (persistente entre abas) */}
+      {/* Abas */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <div className="inline-flex items-center border rounded-lg overflow-hidden bg-card shadow-sm">
           <button
@@ -610,18 +620,10 @@ export default function BancoLicitacoes() {
           >
             <Database className="w-4 h-4" /> Acervo
           </button>
-          <button
-            onClick={() => setAba("favoritas")}
-            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l ${aba === "favoritas" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-          >
-            <Star className="w-4 h-4" /> Favoritas
-          </button>
         </div>
       </div>
 
-      {aba === "favoritas" ? (
-        <FavoritasTab />
-      ) : aba === "novas" ? (
+      {aba === "novas" ? (
         <>
           {/* Painel de sincronização */}
           <div className="bg-card border rounded-xl p-3 sm:p-5 shadow-sm space-y-2.5 sm:space-y-3">

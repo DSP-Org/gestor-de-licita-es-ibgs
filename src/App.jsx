@@ -23,6 +23,8 @@ import Assistente from "@/pages/Assistente";
 import BancoLicitacoes from "@/pages/BancoLicitacoes";
 import BuscaAvancada from "@/pages/BuscaAvancada";
 
+import MinhasLicitacoes from "@/pages/MinhasLicitacoes";
+
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 const AuthenticatedApp = () => {
@@ -89,6 +91,8 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route element={<Layout />}>
         <Route path="/" element={<BancoLicitacoes />} />
+        <Route path="/minhas-licitacoes" element={<MinhasLicitacoes />} />
+        <Route path="/favoritas" element={<Navigate to="/minhas-licitacoes" replace />} />
         <Route path="/atualizacao" element={<Navigate to="/" replace />} />
         <Route path="/explorar" element={<Navigate to="/" replace />} />
         <Route path="/banco-licitacoes" element={<Navigate to="/" replace />} />

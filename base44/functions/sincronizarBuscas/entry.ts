@@ -113,10 +113,21 @@ export default async function(req) {
           : [];
         const existIds = new Set(existentes.map((l) => l.id_licitacao));
 
-        const hoje = hojeSP();
+        const agora = new Date();
+        const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
 
         const novas = resultados
-          .filter((l) => !existIds.has(l.id_licitacao))
+          .filter((l) => {
+            if (existIds.has(l.id_licitacao)) return false;
+            // Se tiver data de abertura definida, ignora se já venceu (abertura < hoje)
+            if (l.abertura_datetime) {
+              const dtAbertura = new Date(l.abertura_datetime);
+              if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) {
+                return false;
+              }
+            }
+            return true;
+          })
           .map((l) => ({
             id_licitacao: l.id_licitacao,
             titulo: l.titulo,
@@ -242,6 +253,30 @@ export default async function(req) {
               console.error(`[Telegram] Erro na busca ${busca.nome}:`, e instanceof Error ? e.message : String(e));
             }
           }
+        }
+
+        // Housekeeping / Descarte automático: oculta licitações vencidas que não foram favoritadas
+        try {
+          const licsUnidade = await base44.asServiceRole.entities.Licitacao.filter({
+            unidade_negocio_id: busca.unidade_negocio_id,
+            favorito: false,
+            status: "interessado",
+            oculto: { $ne: true },
+          }, "-created_date", 200);
+
+          const vencidasParaOcultar = toArray(licsUnidade).filter((l) => {
+            if (!l.abertura_datetime) return false;
+            const dt = new Date(l.abertura_datetime);
+            return !isNaN(dt.getTime()) && dt < hojeZeroHora;
+          });
+
+          if (vencidasParaOcultar.length > 0) {
+            await base44.asServiceRole.entities.Licitacao.bulkUpdate(
+              vencidasParaOcultar.map((l) => ({ id: l.id, oculto: true, status: "vencida" }))
+            );
+          }
+        } catch (errLimpeza) {
+          console.warn(`[Housekeeping] Erro ao limpar vencidas para busca ${busca.nome}:`, errLimpeza);
         }
 
         await base44.asServiceRole.entities.BuscaSalva.update(busca.id, {
