@@ -46,7 +46,7 @@ export default function BuscaAvancada() {
   const [licitacoes, setLicitacoes] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
-  const [selecionados, setSelecionados] = useState([]);
+  const [selecionados, setSelecionados] = useState(new Set());
   const [listasFavoritas, setListasFavoritas] = useState([]);
   // Licitações aguardando a escolha da lista no seletor.
   const [favoritando, setFavoritando] = useState(null);
@@ -206,6 +206,7 @@ export default function BuscaAvancada() {
     setDataPublicacaoAPIInicio("");
     setDataPublicacaoAPIFim("");
     setLicitacoes([]);
+    setSelecionados(new Set());
     setErro("");
   }
 
@@ -315,11 +316,12 @@ export default function BuscaAvancada() {
   };
 
   function handleToggleSelecao(licId) {
-    setSelecionados(prev =>
-      prev.includes(licId)
-        ? prev.filter(id => id !== licId)
-        : [...prev, licId]
-    );
+    setSelecionados(prev => {
+      const novo = new Set(prev);
+      if (novo.has(licId)) novo.delete(licId);
+      else novo.add(licId);
+      return novo;
+    });
   }
 
   return (
