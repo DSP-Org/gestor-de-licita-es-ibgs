@@ -1,3 +1,96 @@
+import { useState, useRef, useEffect, useMemo } from "react";
+import { ChevronDown, Search } from "lucide-react";
+
+const selectClass =
+  "flex-1 sm:flex-none min-w-0 px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring";
+
+function FiltroBuscavel({ value, onChange, placeholder, options, disabled }) {
+  const [aberto, setAberto] = useState(false);
+  const [busca, setBusca] = useState("");
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setAberto(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtrados = useMemo(() => {
+    const q = busca.toLowerCase().trim();
+    if (!q) return options;
+    return options.filter((opt) => opt.toLowerCase().includes(q));
+  }, [options, busca]);
+
+  const selecionado = value !== "todos" ? value : "";
+
+  return (
+    <div className="relative flex-1 sm:flex-none min-w-0" ref={ref}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          setBusca("");
+          setAberto((v) => !v);
+        }}
+        className={`${selectClass} text-left flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      >
+        <span className={selecionado ? "" : "text-muted-foreground"}>
+          {selecionado || placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${aberto ? "rotate-180" : ""}`} />
+      </button>
+
+      {aberto && (
+        <div className="absolute z-50 mt-1 w-full min-w-48 bg-popover border rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+          <div className="p-2 border-b sticky top-0 bg-popover">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                autoFocus
+                type="text"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("todos");
+                setAberto(false);
+              }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${value === "todos" ? "bg-primary/10 font-medium" : ""}`}
+            >
+              {placeholder}
+            </button>
+            {filtrados.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  onChange(opt);
+                  setAberto(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${value === opt ? "bg-primary/10 font-medium" : ""}`}
+              >
+                {opt}
+              </button>
+            ))}
+            {filtrados.length === 0 && (
+              <p className="px-3 py-4 text-sm text-muted-foreground text-center">Nenhum resultado</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FiltrosGeograficos({
   ufs,
   municipios,
@@ -9,46 +102,31 @@ export default function FiltrosGeograficos({
   filtroModalidade,
   setFiltroModalidade,
 }) {
-  const selectClass =
-    "flex-1 sm:flex-none min-w-0 px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring";
-
   return (
     <>
-      <select
+      <FiltroBuscavel
         value={filtroUF}
-        onChange={(e) => {
-          setFiltroUF(e.target.value);
+        onChange={(v) => {
+          setFiltroUF(v);
           setFiltroMunicipio("todos");
         }}
-        className={selectClass}
-      >
-        <option value="todos">Todos os estados</option>
-        {ufs.map((uf) => (
-          <option key={uf} value={uf}>{uf}</option>
-        ))}
-      </select>
+        placeholder="Todos os estados"
+        options={ufs}
+      />
 
-      <select
+      <FiltroBuscavel
         value={filtroMunicipio}
-        onChange={(e) => setFiltroMunicipio(e.target.value)}
-        className={selectClass}
-      >
-        <option value="todos">Todas as cidades</option>
-        {municipios.map((m) => (
-          <option key={m} value={m}>{m}</option>
-        ))}
-      </select>
+        onChange={setFiltroMunicipio}
+        placeholder="Todas as cidades"
+        options={municipios}
+      />
 
-      <select
+      <FiltroBuscavel
         value={filtroModalidade}
-        onChange={(e) => setFiltroModalidade(e.target.value)}
-        className={selectClass}
-      >
-        <option value="todos">Todas as modalidades</option>
-        {modalidades.map((mod) => (
-          <option key={mod} value={mod}>{mod}</option>
-        ))}
-      </select>
+        onChange={setFiltroModalidade}
+        placeholder="Todas as modalidades"
+        options={modalidades}
+      />
     </>
   );
 }
