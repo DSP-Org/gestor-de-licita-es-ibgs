@@ -20,6 +20,7 @@ import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 import { calcularUrgenciaAbertura } from "@/lib/prazosLicitacao";
+import { resolverEstadoLicitacao } from "@/lib/licitacaoCicloVida";
 
 const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
@@ -95,42 +96,43 @@ export default function BancoLicitacoes() {
   // { modo: "atualizar" | "criar", itens: [...] } enquanto o seletor de lista está aberto.
   const [favoritando, setFavoritando] = useState(null);
 
-  const carregarNovas = async () => {
+  // Carrega oportunidades ativas (não favoritadas e não descartadas) e particiona:
+  // - Novas: sincronizadas há até 3 dias e status_leitura === "nova"
+  // - Em Triagem: sincronizadas há mais de 3 dias OU já visualizadas/lidas/em_analise
+  const carregarAtivas = async () => {
     setNovasLoading(true);
+    setTriagemLoading(true);
     try {
-      // Filtra APENAS licitações com status_leitura = "nova", não favoritadas e não ocultas
       const modoSemUnidade = isAdmin && filtroSemUnidade;
       const filtro = modoSemUnidade
         ? { unidade_negocio_id: null }
-        : { status_leitura: "nova", oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
+        : { oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
 
       const lista = await base44.entities.Licitacao.filter(
         filtro,
         "-created_date",
-        modoSemUnidade ? 5000 : 500
+        modoSemUnidade ? 5000 : 1000
       );
-      setNovas(toArray(lista));
+      const listaArray = toArray(lista);
+      const arrNovas = [];
+      const arrTriagem = [];
+      for (const item of listaArray) {
+        if (resolverEstadoLicitacao(item) === "novas") {
+          arrNovas.push(item);
+        } else {
+          arrTriagem.push(item);
+        }
+      }
+      setNovas(arrNovas);
+      setTriagem(arrTriagem);
     } finally {
       setNovasLoading(false);
-    }
-  };
-
-  const carregarTriagem = async () => {
-    setTriagemLoading(true);
-    try {
-      // Itens em análise / triagem: status_leitura != "nova", não ocultos e não favoritados
-      const filtro = {
-        status_leitura: { $in: ["vista", "lida"] },
-        oculto: { $ne: true },
-        favorito: { $ne: true },
-        ...escopoUnidade(isAdmin, filtroUnidade),
-      };
-      const lista = await base44.entities.Licitacao.filter(filtro, "-updated_date", 500);
-      setTriagem(toArray(lista));
-    } finally {
       setTriagemLoading(false);
     }
   };
+
+  const carregarNovas = carregarAtivas;
+  const carregarTriagem = carregarAtivas;
 
   const carregarDescartadas = async () => {
     setDescartadasLoading(true);
@@ -236,11 +238,6 @@ export default function BancoLicitacoes() {
         if (!origemBate && !criterioBate) return false;
       }
 
-      // Se não for favorita e a data de abertura já passou, não exibe em Novas
-      if (!l.favorito && l.abertura_datetime && aba === "novas") {
-        const dtAbertura = new Date(l.abertura_datetime);
-        if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) return false;
-      }
       if (busca) {
         const q = busca.toLowerCase();
         const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
@@ -280,10 +277,6 @@ export default function BancoLicitacoes() {
         const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
         if (!origemBate && !criterioBate) return false;
 
-        if (!l.favorito && l.abertura_datetime) {
-          const dtAbertura = new Date(l.abertura_datetime);
-          if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) return false;
-        }
         if (busca) {
           const q = busca.toLowerCase();
           const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
@@ -678,16 +671,7 @@ export default function BancoLicitacoes() {
     (l) => {
       const doBanco = licitacoesBancoMap.get(String(l.id_licitacao));
       if (!doBanco) return "fora_do_funil";
-      if (doBanco.oculto) return "descartadas";
-      if (doBanco.favorito) return "minhas";
-      if (
-        doBanco.status_leitura === "vista" ||
-        doBanco.status_leitura === "lida" ||
-        doBanco.status === "em_analise"
-      ) {
-        return "triagem";
-      }
-      return "novas";
+      return resolverEstadoLicitacao(doBanco);
     },
     [licitacoesBancoMap]
   );

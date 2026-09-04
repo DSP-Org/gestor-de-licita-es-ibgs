@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { RefreshCw, Mail, Clock } from "lucide-react";
 import { HORARIOS_SINCRONIZACAO } from "@/shared/alertaApi";
+import { useToast } from "@/components/ui/use-toast";
 
 function Toggle({ label, icon: Icon, checked, onChange, loading, description }) {
   return (
@@ -23,6 +24,7 @@ function Toggle({ label, icon: Icon, checked, onChange, loading, description }) 
 }
 
 export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
+  const { toast } = useToast();
   const [atualizando, setAtualizando] = useState(null);
   // O job de sincronização do Base44 espera uma string "HH:MM" neste campo.
   const [horario, setHorario] = useState(busca.horario_sincronizacao || "09:00");
@@ -36,6 +38,13 @@ export default function BuscaToggles({ busca, onUpdated, modo = "alerta" }) {
     try {
       await base44.entities.BuscaSalva.update(busca.id, { [campo]: valor });
       onUpdated?.(busca.id, campo, valor);
+    } catch (e) {
+      console.error("Erro ao atualizar configuração da busca:", e);
+      toast({
+        title: "Erro ao salvar alteração",
+        description: e?.message || "Não foi possível atualizar a configuração da busca.",
+        variant: "destructive",
+      });
     } finally {
       setAtualizando(null);
     }

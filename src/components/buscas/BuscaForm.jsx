@@ -80,12 +80,22 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     setErro("");
     setSalvando(true);
     try {
-      const { id, created_date, updated_date, created_by_id, created_by, ...dados } = form;
-      await onSave({
-        ...dados,
-        nome: dados.nome.trim(),
-        licitacoes_por_pagina: Number(dados.licitacoes_por_pagina) || 50,
-      });
+      const payload = {
+        nome: form.nome.trim(),
+        uf: (form.uf || "").trim(),
+        palavra_chave: form.palavra_chave?.trim() || "",
+        modo_palavras: form.modo_palavras === "todas" ? "todas" : "qualquer",
+        modalidade: form.modalidade || "",
+        municipio_nome: form.municipio_nome || "",
+        municipio_ibge: form.municipio_ibge?.trim() || "",
+        licitacoes_por_pagina: Number(form.licitacoes_por_pagina) || 50,
+        ativa: form.ativa !== false,
+        notificar_email: form.notificar_email !== false,
+        destinatarios_email: Array.isArray(form.destinatarios_email) ? form.destinatarios_email.filter(Boolean) : [],
+        destinatarios_extras: Array.isArray(form.destinatarios_extras) ? form.destinatarios_extras.filter(Boolean) : [],
+        telegram_chats: form.telegram_chats?.trim() || "",
+      };
+      await onSave(payload);
     } catch (e) {
       setErro(e?.message || "Não foi possível salvar a busca.");
     } finally {

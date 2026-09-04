@@ -76,9 +76,12 @@ export default function Configuracao() {
   // Funções de Busca
   const salvarBusca = async (form) => {
     const unidadeId = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
+    if (!unidadeId) {
+      throw new Error("Selecione uma unidade de negócio ativa no cabeçalho antes de salvar a busca.");
+    }
     const dados = {
       ...form,
-      ...(unidadeId ? { unidade_negocio_id: unidadeId } : {}),
+      unidade_negocio_id: unidadeId,
     };
     if (editando?.id) {
       await base44.entities.BuscaSalva.update(editando.id, dados);
@@ -87,7 +90,7 @@ export default function Configuracao() {
     }
     setMostrarForm(false);
     setEditando(null);
-    carregarBuscas();
+    await carregarBuscas();
   };
 
   const enviarEmail = async (busca) => {

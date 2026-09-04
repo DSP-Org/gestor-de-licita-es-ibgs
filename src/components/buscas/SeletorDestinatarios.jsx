@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Users, Loader2, ChevronDown } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // `contatos` são registros da agenda Destinatario, carregados uma única vez pelo pai.
 // O campo destinatarios_email guarda endereços; buscas antigas podem ter IDs de User,
 // que aparecem aqui como selecionados sem contato correspondente até serem trocados.
 export default function SeletorDestinatarios({ busca, onUpdated, contatos = [], carregando = false }) {
+  const { toast } = useToast();
   const [atualizando, setAtualizando] = useState(false);
   const [selecionados, setSelecionados] = useState(busca.destinatarios_email || []);
   const [expandido, setExpandido] = useState(false);
@@ -21,6 +23,13 @@ export default function SeletorDestinatarios({ busca, onUpdated, contatos = [], 
         destinatarios_email: novosSelecionados,
       });
       onUpdated?.(busca.id, "destinatarios_email", novosSelecionados);
+    } catch (e) {
+      console.error("Erro ao salvar destinatários:", e);
+      toast({
+        title: "Erro ao salvar destinatários",
+        description: e?.message || "Não foi possível atualizar a lista de destinatários desta busca.",
+        variant: "destructive",
+      });
     } finally {
       setAtualizando(false);
     }

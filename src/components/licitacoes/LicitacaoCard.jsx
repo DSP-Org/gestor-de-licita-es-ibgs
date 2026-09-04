@@ -2,6 +2,7 @@ import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import BadgeUrgencia from "@/components/licitacoes/BadgeUrgencia";
 import ObjetoExpandivel from "@/components/licitacoes/ObjetoExpandivel";
 import { ExternalLink, MapPin, Calendar, DollarSign, FileText, Globe } from "lucide-react";
+import { resolverEstadoLicitacao } from "@/lib/licitacaoCicloVida";
 
 export function StatusBadge({ status }) {
   const opt = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
@@ -42,32 +43,29 @@ export default function LicitacaoCard({
   // Suporta prop customizada `tagEstado` ou auto-resolução pelos atributos do objeto
   const tagResolvida = (() => {
     if (tagEstado) return tagEstado;
-    if (licitacao.oculto) {
+    const estado = resolverEstadoLicitacao(licitacao);
+    if (estado === "descartadas") {
       return {
         label: "Descartada",
         icone: "🗑️",
         className: "bg-rose-600 text-white ring-rose-600/30",
       };
     }
-    if (licitacao.favorito) {
+    if (estado === "minhas") {
       return {
         label: "Minha",
         icone: "⭐",
         className: "bg-amber-500 text-white ring-amber-500/30",
       };
     }
-    if (
-      licitacao.status_leitura === "vista" ||
-      licitacao.status_leitura === "lida" ||
-      licitacao.status === "em_analise"
-    ) {
+    if (estado === "triagem") {
       return {
         label: "Em Triagem",
         icone: "⏱️",
         className: "bg-blue-600 text-white ring-blue-600/30",
       };
     }
-    if (licitacao.status_leitura === "nova") {
+    if (estado === "novas") {
       return {
         label: "Nova",
         icone: "✨",
