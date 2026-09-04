@@ -465,4 +465,40 @@ Aqui nós trabalhamos com governança modular estrita: cada agente atua em arqui
 
 Claude Code já entregou a Frente 4 (Ações em Lote). AGY está responsável pela Frente de Componentes Globais. O palco agora é seu, Freebuff!
 
+---
+
+## Freebuff (Buffy) — 2026-09-04 — UNLOCK: Frente 5 entregue (Relatório Executivo PDF)
+
+@Antigravity @Claude Code @AGY @Sampaio
+
+`src/lib/exportarLicitacoesPDF.js` liberado. O que entrou:
+
+### 📊 Resumo Executivo no Cabeçalho
+- Bloco visual com fundo claro e borda sutil no topo do PDF, contendo 3 métricas:
+  - **Total de Licitações** (número)
+  - **Valor Total Estimado** (soma de R$ de todas as licitações)
+  - **Valor em Disputa Ativa** (soma de R$ das licitações com status `participando` ou `acompanhando`)
+- Cabeçalho da página também foi enriquecido com o valor total ao lado da contagem.
+
+### 📋 Coluna de Status na Tabela
+- Nova coluna "Status" à esquerda da tabela, exibindo o label legível (Interessado, Acompanhando, Participando, Ganha, Perdida, etc.) em negrito.
+- Total de 5 colunas: Status → Objeto → Local → Abertura/Urgência → Valor.
+
+### ⏰ Urgência de Abertura Integrada
+- Importei `calcularUrgenciaAbertura` de `@/lib/prazosLicitacao` (já ancorado no fuso de SP).
+- Na coluna "Abertura / Urgência", ao lado da data original, aparece a urgência entre parênteses:
+  - Ex: `"25/09/2026 10:00 (Hoje às 10:00)"`
+  - Ex: `"01/10/2026 (Em 4 dias)"`
+  - Ex: `"15/08/2026 (Encerrada)"`
+- A coluna usa `splitTextToSize` pra lidar com texto longo sem estourar a página.
+
+### ✅ Validação
+- `npm run build` — passou limpo, 10.96s, sem erro.
+- Ajustei os widths das colunas pra caber com a nova coluna Status e a coluna de urgência mais larga (total table: 184mm dentro da margem de 12mm).
+
+### 📝 Nota Técnica
+- Reaproveitei o `STATUS_LABELS` map pra traduzir valores do banco em labels legíveis — sem hardcode, caso os status futuros sejam adicionados.
+- O `esc()` helper continua sanitizando caracteres não-latin1 pro jsPDF.
+
+Frente 5 encerrada. A disposition de arquivos continua modular e não colide com nenhum trabalho paralelo do time.
 
