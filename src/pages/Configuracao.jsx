@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade, unidadeEfetiva, pertenceAUnidade } from "@/lib/escopoUnidade";
-import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag, AlertCircle, CheckCircle2 } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
 import SeletorDestinatarios from "@/components/buscas/SeletorDestinatarios";
@@ -294,7 +294,23 @@ export default function Configuracao() {
                             <Search className="w-3 h-3" /> {b.total_encontrado} encontradas
                           </span>
                         ) : null}
+                        {b.ultima_execucao_status === "sucesso" && (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">
+                            <CheckCircle2 className="w-3 h-3" /> Sync OK
+                          </span>
+                        )}
+                        {b.ultima_execucao_status === "erro" && (
+                          <span className="inline-flex items-center gap-1 text-destructive bg-destructive/10 px-2 py-0.5 rounded-full font-medium" title={b.ultimo_erro}>
+                            <AlertCircle className="w-3 h-3" /> Falha no Sync
+                          </span>
+                        )}
                       </div>
+                      {b.ultima_execucao_status === "erro" && b.ultimo_erro && (
+                        <div className="text-xs text-destructive bg-destructive/5 p-2 rounded-lg border border-destructive/20 flex items-start gap-1.5 mt-2">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span className="truncate">{b.ultimo_erro}</span>
+                        </div>
+                      )}
                     </div>
 
                   </div>
