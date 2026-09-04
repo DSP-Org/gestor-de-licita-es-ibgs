@@ -605,26 +605,31 @@ export default function BuscaAvancada() {
             </div>
 
             {buscarAPI && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Publicação na API - Início</label>
-                  <input
-                    type="date"
-                    value={dataPublicacaoAPIInicio}
-                    onChange={(e) => setDataPublicacaoAPIInicio(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Publicação na API - Início</label>
+                    <input
+                      type="date"
+                      value={dataPublicacaoAPIInicio}
+                      onChange={(e) => setDataPublicacaoAPIInicio(e.target.value)}
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Publicação na API - Fim</label>
-                  <input
-                    type="date"
-                    value={dataPublicacaoAPIFim}
-                    onChange={(e) => setDataPublicacaoAPIFim(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Publicação na API - Fim</label>
+                    <input
+                      type="date"
+                      value={dataPublicacaoAPIFim}
+                      onChange={(e) => setDataPublicacaoAPIFim(e.target.value)}
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 <strong>Dica de velocidade:</strong> Se não preencher as datas, a API consulta as publicações de hoje com resposta instantânea. Intervalos longos consultam dia a dia em paralelo.
+                </p>
               </div>
             )}
           </div>

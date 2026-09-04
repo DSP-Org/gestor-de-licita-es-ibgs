@@ -39,22 +39,37 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
 
-    // Período: percorre cada data do intervalo e consolida os resultados
+    // Período: percorre as datas do intervalo em paralelo com cache e consolida
     if (body.data_inicio && body.data_fim) {
       const datas = datasNoIntervalo(body.data_inicio, body.data_fim);
-      const todas = [];
       let totalErros = 0;
       const erros = [];
       let paginas = 0;
 
-      for (const data of datas) {
-        const resultado = await consultarComCache(base44, { ...body, data_insercao: data, data_inicio: undefined, data_fim: undefined });
-        if (resultado.totalErros > 0) {
+      // Executa as consultas em paralelo para máxima velocidade
+      const resultados = await Promise.all(
+        datas.map((data) =>
+          consultarComCache(base44, {
+            ...body,
+            data_insercao: data,
+            data_inicio: undefined,
+            data_fim: undefined,
+          }).catch((err) => ({
+            totalErros: 1,
+            erros: [{ codigo: "FALHA_DATA", descricao: `Erro na data ${data}: ${err?.message || err}` }],
+            licitacoes: [],
+          }))
+        )
+      );
+
+      const todas = [];
+      for (const resultado of resultados) {
+        if (resultado?.totalErros > 0) {
           totalErros += resultado.totalErros;
           erros.push(...(resultado.erros || []));
         } else {
-          todas.push(...(resultado.licitacoes || []));
-          paginas = Math.max(paginas, resultado.paginas || 1);
+          todas.push(...(resultado?.licitacoes || []));
+          paginas = Math.max(paginas, resultado?.paginas || 1);
         }
       }
 
