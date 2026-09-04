@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { buscarLicitacoes } from "@/shared/alertaApi";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
-import { escopoUnidade, unidadeEfetiva, pertenceAUnidade } from "@/lib/escopoUnidade";
+import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
 import { Plus, Pencil, Trash2, RefreshCw, Loader2, Check, Mail, Search, MapPin, Clock, Tag, AlertCircle, CheckCircle2 } from "lucide-react";
 import BuscaForm from "@/components/buscas/BuscaForm";
 import BuscaToggles from "@/components/buscas/BuscaToggles";
@@ -69,10 +69,9 @@ export default function Configuracao() {
     }
   }, [filtroUnidade, isAdmin, usuarioLogado]);
 
-  const buscasExibidas = useMemo(() => {
-    if (!isAdmin || filtroUnidade === "todos") return buscas;
-    return buscas.filter((b) => pertenceAUnidade(b, filtroUnidade));
-  }, [buscas, isAdmin, filtroUnidade]);
+  // carregarBuscas já traz só a unidade ativa (escopoUnidade), então a lista
+  // buscada é sempre a exibida — sem recorte adicional de "todas as unidades".
+  const buscasExibidas = buscas;
 
   // Funções de Busca
   const salvarBusca = async (form) => {

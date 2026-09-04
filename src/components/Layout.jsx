@@ -4,6 +4,7 @@ import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Slid
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
+import { toast } from "@/components/ui/use-toast";
 
 const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
@@ -33,7 +34,7 @@ export default function Layout() {
   const [sidebarExpandido, setSidebarExpandido] = useState(false);
   const { permissao, solicitarPermissao } = useNotificacoesNativas();
   const location = useLocation();
-  const { isAdmin, filtroUnidade, setFiltroUnidade, unidades, unidadesPermitidas, trocarUnidadeAtiva, usuarioLogado } = useUnidadeFilter();
+  const { isAdmin, filtroUnidade, unidades, unidadesPermitidas, trocarUnidadeAtiva, usuarioLogado } = useUnidadeFilter();
 
   useEffect(() => {
     setMenuAberto(false);
@@ -45,14 +46,26 @@ export default function Layout() {
 
   const userInitials = getInitials(usuarioLogado?.full_name || usuarioLogado?.email);
 
-  // Master vê o seletor pra recortar a visão (não altera o próprio cadastro).
-  // Usuário comum vê a própria unidade sempre que tiver ao menos uma — com só
-  // uma, não faz sentido oferecer uma troca que não existe, então mostra o
-  // nome como texto fixo em vez de dropdown.
+  // Sem isso, uma troca rejeitada pelo backend (ex: sem permissão) falhava em
+  // silêncio — só um erro no console, nada visível pro usuário.
+  const handleTrocarUnidade = (novaUnidadeId) => {
+    trocarUnidadeAtiva(novaUnidadeId).catch((err) => {
+      toast({
+        title: "Não foi possível trocar de unidade",
+        description: err.message,
+        variant: "destructive",
+      });
+    });
+  };
+
+  // Cada unidade é uma empresa diferente — trocar a unidade ativa vale pra
+  // tudo (todas as páginas e filtros), pro admin igual pra qualquer usuário.
+  // Admin escolhe entre todas as unidades cadastradas; usuário comum só entre
+  // as que tem permissão. Com uma unidade só, não faz sentido oferecer uma
+  // troca que não existe, então mostra o nome como texto fixo em vez de dropdown.
   const mostrarSeletorUnidade = isAdmin || unidadesPermitidas.length >= 1;
   const unidadeUnicaSemEscolha = !isAdmin && unidadesPermitidas.length === 1;
   const opcoesSeletorUnidade = isAdmin ? unidades : unidadesPermitidas;
-  const trocarUnidadeSelecionada = (id) => (isAdmin ? setFiltroUnidade(id) : trocarUnidadeAtiva(id));
 
   return (
     <>
@@ -80,7 +93,7 @@ export default function Layout() {
         {mostrarSeletorUnidade && sidebarExpandido && (
           <div className="px-3 pb-3">
             <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#7a8fa3" }}>
-              {isAdmin ? "Visualizando" : "Unidade ativa"}
+              Unidade ativa
             </label>
             {unidadeUnicaSemEscolha ? (
               <p className="w-full px-2 py-1.5 text-xs rounded-lg border truncate" style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}>
@@ -88,12 +101,12 @@ export default function Layout() {
               </p>
             ) : (
               <select
-                value={filtroUnidade}
-                onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
+                value={filtroUnidade || ""}
+                onChange={(e) => handleTrocarUnidade(e.target.value)}
                 className="w-full px-2 py-1.5 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
                 style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
               >
-                {isAdmin && <option value="todos">Todas as unidades</option>}
+                {!filtroUnidade && <option value="">Selecione uma unidade</option>}
                 {opcoesSeletorUnidade.map((un) => (
                   <option key={un.id} value={un.id}>
                     {un.nome}
@@ -176,12 +189,12 @@ export default function Layout() {
                 </p>
               ) : (
                 <select
-                  value={filtroUnidade}
-                  onChange={(e) => trocarUnidadeSelecionada(e.target.value)}
+                  value={filtroUnidade || ""}
+                  onChange={(e) => handleTrocarUnidade(e.target.value)}
                   className="mt-0.5 max-w-full px-1.5 py-0.5 text-[11px] rounded border focus:outline-none"
                   style={{ backgroundColor: "#1a2d52", borderColor: "#2a3d62", color: "white" }}
                 >
-                  {isAdmin && <option value="todos">Todas as unidades</option>}
+                  {!filtroUnidade && <option value="">Selecione uma unidade</option>}
                   {opcoesSeletorUnidade.map((un) => (
                     <option key={un.id} value={un.id}>
                       {un.nome}

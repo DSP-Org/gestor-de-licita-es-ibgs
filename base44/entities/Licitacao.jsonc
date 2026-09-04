@@ -134,52 +134,16 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
-        },
-        {
-          "user_condition": {
-            "email": "nailton.alsampaio@gmail.com"
-          }
-        }
-      ]
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
     },
     "read": {
-      "$or": [
-        {
-          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
-        },
-        {
-          "user_condition": {
-            "email": "nailton.alsampaio@gmail.com"
-          }
-        }
-      ]
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
     },
     "update": {
-      "$or": [
-        {
-          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
-        },
-        {
-          "user_condition": {
-            "email": "nailton.alsampaio@gmail.com"
-          }
-        }
-      ]
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
     },
     "delete": {
-      "$or": [
-        {
-          "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
-        },
-        {
-          "user_condition": {
-            "email": "nailton.alsampaio@gmail.com"
-          }
-        }
-      ]
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
     }
   }
 }

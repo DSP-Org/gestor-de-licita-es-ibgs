@@ -6,8 +6,10 @@ import { toArray } from "@/lib/toArray";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 
 export default function Usuarios({ embedded = false }) {
-  // isAdmin aqui reflete o master (único e-mail com RLS de escrita em
-  // UnidadeNegocio) — só ele pode ver/usar a exclusão de unidade.
+  // isAdmin aqui reflete role === "admin". A escrita em User/UnidadeNegocio
+  // (aprovar usuário, criar/editar/excluir unidade) ainda é restrita ao RLS
+  // hardcoded do e-mail master — não faz parte do modelo de acesso por
+  // unidade, é uma decisão de governança separada.
   const { isAdmin: isMaster, recarregarUnidades } = useUnidadeFilter();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);

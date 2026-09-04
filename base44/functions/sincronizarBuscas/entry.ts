@@ -4,7 +4,7 @@ import { datasParaSincronizar, filtrarPorTodasPalavras } from "../../shared/aler
 import { consultarComCache } from "../../shared/consultaCache.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
 import { enviarEmailExterno } from "../../shared/email.ts";
-import { hojeSP, escapaHTML, criaEmailTemplate } from "../../shared/utils.ts";
+import { hojeSP, dataSP, escapaHTML, criaEmailTemplate } from "../../shared/utils.ts";
 
 export default async function(req) {
   try {
@@ -256,20 +256,21 @@ export default async function(req) {
           }
         }
 
-        // Housekeeping / Descarte automático: oculta licitações vencidas que não foram favoritadas
+        // Housekeeping / Descarte automático: oculta licitações vencidas que não
+        // foram favoritadas, em qualquer estágio do funil (nova ou em triagem).
+        //
+        // O filtro de abertura_datetime vai direto na consulta — antes buscava
+        // as 200 licitações mais recentes da unidade e filtrava vencida em
+        // memória, então qualquer atraso na limpeza (ex: busca desativada que
+        // parou de rodar por um tempo) deixava um acúmulo de vencidas antigas
+        // fora da janela dos 200 mais recentes, nunca mais alcançadas.
         try {
-          const licsUnidade = await base44.asServiceRole.entities.Licitacao.filter({
+          const vencidasParaOcultar = await base44.asServiceRole.entities.Licitacao.filter({
             unidade_negocio_id: busca.unidade_negocio_id,
             favorito: false,
-            status: "interessado",
             oculto: { $ne: true },
-          }, "-created_date", 200);
-
-          const vencidasParaOcultar = (licsUnidade || []).filter((l) => {
-            if (!l.abertura_datetime) return false;
-            const dt = new Date(l.abertura_datetime);
-            return !isNaN(dt.getTime()) && dt < hojeZeroHora;
-          });
+            abertura_datetime: { $lt: hojeZeroHora.toISOString() },
+          }, "-abertura_datetime", 2000);
 
           if (vencidasParaOcultar.length > 0) {
             await base44.asServiceRole.entities.Licitacao.bulkUpdate(
@@ -278,6 +279,28 @@ export default async function(req) {
           }
         } catch (errLimpeza) {
           console.warn(`[Housekeeping] Erro ao limpar vencidas para busca ${busca.nome}:`, errLimpeza);
+        }
+
+        // Auto-triagem: licitação "nova" há mais de 3 dias sem ação do usuário
+        // (não favoritada, não descartada) é promovida automaticamente para Em Triagem.
+        try {
+          const limiteAutoTriagem = dataSP(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
+
+          const novasParaTriagem = await base44.asServiceRole.entities.Licitacao.filter({
+            unidade_negocio_id: busca.unidade_negocio_id,
+            status_leitura: "nova",
+            favorito: { $ne: true },
+            oculto: { $ne: true },
+            data_sincronizacao: { $lte: limiteAutoTriagem },
+          }, "-created_date", 2000);
+
+          if (novasParaTriagem.length > 0) {
+            await base44.asServiceRole.entities.Licitacao.bulkUpdate(
+              novasParaTriagem.map((l) => ({ id: l.id, status_leitura: "vista", status: "em_analise" }))
+            );
+          }
+        } catch (errAutoTriagem) {
+          console.warn(`[AutoTriagem] Erro ao promover novas para triagem na busca ${busca.nome}:`, errAutoTriagem);
         }
 
         // Alerta de Prazo Crítico (≤ 24h a 48h): notifica sobre pregões iminentes favoritados

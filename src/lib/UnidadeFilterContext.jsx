@@ -5,11 +5,12 @@ import { toArray } from "@/lib/toArray";
 const UnidadeFilterContext = createContext();
 
 export function UnidadeFilterProvider({ children }) {
-  const [filtroUnidade, setFiltroUnidade] = useState("todos");
+  const [filtroUnidade, setFiltroUnidade] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [usuarioLogado, setUsuarioLogado] = useState(null);
+  // Todas as unidades cadastradas — só carregado/usado para admin escolher entre elas.
   const [unidades, setUnidades] = useState([]);
-  // Unidades que o usuário logado (não-master) tem permissão de usar como ativa.
+  // Unidades que o usuário logado (não-admin) tem permissão de usar como ativa.
   const [unidadesPermitidas, setUnidadesPermitidas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [trocandoUnidade, setTrocandoUnidade] = useState(false);
@@ -20,8 +21,8 @@ export function UnidadeFilterProvider({ children }) {
   // dados velhos (ex: unidade excluída continuando a aparecer) até recarregar a página.
   const recarregarUnidades = async (usuarioAtual) => {
     const u = usuarioAtual ?? usuarioLogado;
-    const isMaster = u?.email === "nailton.alsampaio@gmail.com";
-    if (isMaster) {
+    const isAdminUser = u?.role === "admin";
+    if (isAdminUser) {
       try {
         const res = await base44.entities.UnidadeNegocio.list();
         setUnidades(toArray(res).filter((un) => un && un.id));
@@ -48,12 +49,11 @@ export function UnidadeFilterProvider({ children }) {
   useEffect(() => {
     base44.auth.me().then(async (u) => {
       setUsuarioLogado(u);
-      const isMaster = u?.email === "nailton.alsampaio@gmail.com";
-      setIsAdmin(isMaster);
+      setIsAdmin(u?.role === "admin");
 
-      // Master: começa com "todos", pode selecionar qualquer unidade
-      // Usuário normal: sempre filtrado para a própria unidade ATIVA (OBRIGATÓRIO)
-      setFiltroUnidade(isMaster ? "todos" : u?.unidade_negocio_id);
+      // Todo usuário, inclusive admin, sempre filtrado para a própria unidade
+      // ATIVA — não existe mais visão combinada de "todas as unidades".
+      setFiltroUnidade(u?.unidade_negocio_id);
       await recarregarUnidades(u);
       setLoading(false);
     }).catch((err) => {
@@ -62,10 +62,8 @@ export function UnidadeFilterProvider({ children }) {
     });
   }, []);
 
-  // Só vale para usuário comum: troca a unidade ativa de verdade (persiste no
-  // backend via função que valida se ele pertence à unidade pedida). O
-  // seletor do master não passa por aqui — para ele filtroUnidade é só um
-  // recorte de visualização local, não altera nada no próprio cadastro.
+  // Único caminho pra trocar a unidade ativa (inclusive admin): persiste no
+  // backend via função que valida se o usuário pode acessar a unidade pedida.
   const trocarUnidadeAtiva = async (novaUnidadeId) => {
     setTrocandoUnidade(true);
     try {

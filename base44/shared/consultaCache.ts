@@ -1,12 +1,18 @@
 import { consultarAlertaLicitacao } from "./alertaApi.ts";
+import { consultarPNCP } from "./pncpApi.ts";
 
 /**
- * Consulta a API Alerta Licitação reaproveitando resultados já buscados.
+ * Consulta a API Alerta Licitação (ou, se filtros.fonte === "pncp", o PNCP
+ * diretamente) reaproveitando resultados já buscados.
  * O cache é compartilhado entre todos os usuários e buscas — se duas buscas
- * usarem os mesmos filtros e data, a segunda reaproveita o resultado da
- * primeira em vez de consumir a API novamente.
+ * usarem os mesmos filtros, fonte e data, a segunda reaproveita o resultado
+ * da primeira em vez de consumir a API novamente.
  */
 const hojeSP = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+function consultarFonte(fonte: string | undefined, filtros: any) {
+  return fonte === "pncp" ? consultarPNCP(filtros) : consultarAlertaLicitacao(filtros);
+}
 
 /**
  * Dias passados não recebem novas licitações — o resultado pode ser reaproveitado
@@ -18,8 +24,10 @@ function ttlPadrao(dataInsercao?: string) {
 }
 
 export async function consultarComCache(base44: any, filtros: any, ttlHoras?: number) {
+  const fonte = filtros.fonte || "alerta_licitacao";
   const ttl = ttlHoras ?? ttlPadrao(filtros.data_insercao);
   const chave = JSON.stringify({
+    fonte,
     uf: filtros.uf || "",
     palavra_chave: filtros.palavra_chave || "",
     modalidade: filtros.modalidade || "",
@@ -37,7 +45,7 @@ export async function consultarComCache(base44: any, filtros: any, ttlHoras?: nu
 
   let resultado;
   try {
-    resultado = await consultarAlertaLicitacao(filtros);
+    resultado = await consultarFonte(fonte, filtros);
   } catch (e) {
     // Falha na API: entrega o último resultado conhecido em vez de quebrar a listagem.
     if (cache) return cache.resultado;

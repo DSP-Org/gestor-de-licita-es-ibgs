@@ -1,9 +1,8 @@
 
-// Filtros da aba "Acervo": seleciona uma configuração de busca salva e pílulas de urgência
+// Filtros da aba "Acervo": pílulas de estado (Novas/Triagem/...) e de urgência.
+// O recorte de quais licitações aparecem vem sempre das buscas ativas em
+// Configuração — não há mais seletor de busca aqui, pra não divergir do funil.
 export default function AcervoFiltros({
-  buscasSalvas = [],
-  filtroBuscaId = "",
-  onChangeBuscaId,
   filtroUrgencia = "todos",
   onChangeUrgencia,
   filtroEstado = "todas",
@@ -62,21 +61,8 @@ export default function AcervoFiltros({
         </div>
       )}
 
-      {/* Linha 2: Busca Salva e Pílulas de Urgência */}
+      {/* Linha 2: Pílulas de Urgência */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className="flex-1 min-w-[200px]">
-          <select
-            value={filtroBuscaId}
-            onChange={(e) => onChangeBuscaId?.(e.target.value)}
-            className="w-full px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Selecione uma busca salva...</option>
-            {buscasSalvas.map((b) => (
-              <option key={b.id} value={b.id}>{b.nome}</option>
-            ))}
-          </select>
-        </div>
-
         {onChangeUrgencia && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 shrink-0">
             {opcoesUrgencia.map((opt) => {
