@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
-  { to: "/minhas-licitacoes", label: "Minhas Licitações", icon: Bookmark },
+  { to: "/minhas-licitacoes", label: "Alertas", icon: Bookmark },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
