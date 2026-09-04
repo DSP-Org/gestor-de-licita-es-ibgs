@@ -61,8 +61,8 @@ export default function FavoritasTab() {
       setLicitacoes(toArray(licData));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
       setListas(listasOrdenadas);
-      if (listasOrdenadas.length > 0 && !listaSelecionada) {
-        setListaSelecionada(listasOrdenadas[0].id);
+      if (!listaSelecionada) {
+        setListaSelecionada("todos");
       }
     } finally {
       setLoading(false);
@@ -78,7 +78,9 @@ export default function FavoritasTab() {
   const filtradas = useMemo(() => {
     let resultado = licitacoes;
 
-    if (listaSelecionada) {
+    if (listaSelecionada === "sem_lista") {
+      resultado = resultado.filter((l) => !l.lista_favorita_id);
+    } else if (listaSelecionada && listaSelecionada !== "todos") {
       resultado = resultado.filter((l) => l.lista_favorita_id === listaSelecionada);
     }
 
@@ -256,8 +258,34 @@ export default function FavoritasTab() {
           </button>
         </div>
 
+        {/* Filtro Rápido Geral de Favoritas */}
+        <div className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-border/50">
+          <button
+            onClick={() => setListaSelecionada("todos")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+              listaSelecionada === "todos" || !listaSelecionada
+                ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                : "bg-muted/50 border-border hover:bg-muted text-foreground"
+            }`}
+          >
+            🌟 Todas as Favoritas ({licitacoes.length})
+          </button>
+          {licitacoes.some((l) => !l.lista_favorita_id) && (
+            <button
+              onClick={() => setListaSelecionada("sem_lista")}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                listaSelecionada === "sem_lista"
+                  ? "bg-amber-500 text-white border-amber-500 shadow-xs"
+                  : "bg-muted/50 border-border hover:bg-muted text-foreground"
+              }`}
+            >
+              📥 Sem Lista ({licitacoes.filter((l) => !l.lista_favorita_id).length})
+            </button>
+          )}
+        </div>
+
         {listas.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhuma lista criada. Crie a primeira!</p>
+          <p className="text-xs text-muted-foreground">Nenhuma lista personalizada criada ainda. Crie uma para organizar suas licitações!</p>
         ) : (
           <DragDropContext onDragEnd={handleDragDropListas}>
             <Droppable droppableId="listas" direction="vertical">

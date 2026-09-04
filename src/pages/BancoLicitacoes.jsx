@@ -170,10 +170,10 @@ export default function BancoLicitacoes() {
     carregarTriagem();
     carregarDescartadas();
 
-    const filtroBuscas = { ativa: true, ...escopoUnidade(isAdmin, filtroUnidade) };
+    const filtroBuscas = escopoUnidade(isAdmin, filtroUnidade);
 
     base44.entities.BuscaSalva.filter(filtroBuscas, "nome", 100).then((res) => {
-      const lista = toArray(res);
+      const lista = toArray(res).filter((b) => b.ativa !== false);
       setBuscasSalvas(lista);
       setBuscasSelecionadas(lista.map((item) => item.id));
     });
@@ -198,11 +198,15 @@ export default function BancoLicitacoes() {
     setBuscasSelecionadas([]);
   }, [buscasFiltradas]);
 
+  const nomesBuscasAtivas = useMemo(
+    () => new Set(buscasFiltradas.map((b) => b.nome?.trim().toLowerCase()).filter(Boolean)),
+    [buscasFiltradas]
+  );
+
   const filtrarLista = (lista) => {
-    // REGRA DE NEGÓCIO: as abas do funil (novas, triagem, descartadas) só exibem
-    // oportunidades que atendem aos critérios de buscas salvas ativas da unidade.
-    // Se não houver buscas ativas ou se a busca foi excluída, nada é exibido.
-    if (filtrosDasBuscasAtivas.length === 0) return [];
+    // Se não há buscas ativas configuradas para esta unidade, as abas de funil ficam vazias
+    // para indicar a necessidade de configurar as buscas.
+    if (buscasFiltradas.length === 0) return [];
 
     const agora = new Date();
     const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
@@ -212,9 +216,13 @@ export default function BancoLicitacoes() {
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
 
-      // Precisa casar com ao menos uma busca ativa da unidade
-      const casaComAlgumaBusca = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
-      if (!casaComAlgumaBusca) return false;
+      // REGRA DO USUÁRIO: precisa atender às buscas ativas.
+      // Atende se:
+      // 1) A origem gravada na licitação (busca_origem) corresponde a uma busca ativa atual; OU
+      // 2) Os critérios da licitação casam com os filtros de alguma busca ativa configurada.
+      const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
+      const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
+      if (!origemBate && !criterioBate) return false;
 
       // Se não for favorita e a data de abertura já passou, não exibe em Novas
       if (!l.favorito && l.abertura_datetime && aba === "novas") {
@@ -232,22 +240,22 @@ export default function BancoLicitacoes() {
 
   const novasFiltradas = useMemo(
     () => filtrarLista(novas),
-    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas]
+    [novas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]
   );
   const triagemFiltradas = useMemo(
     () => filtrarLista(triagem),
-    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas]
+    [triagem, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]
   );
   const descartadasFiltradas = useMemo(
     () => filtrarLista(descartadas),
-    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas]
+    [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]
   );
 
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
   // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
   // origem zeraria as demais e não haveria como trocar de seleção.
   const porBuscaOrigem = useMemo(() => {
-    if (filtrosDasBuscasAtivas.length === 0) return {};
+    if (buscasFiltradas.length === 0) return {};
 
     const agora = new Date();
     const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
@@ -256,8 +264,9 @@ export default function BancoLicitacoes() {
       .filter((l) => {
         if (!pertenceAUnidade(l, filtroUnidade)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
-        const casaComAlgumaBusca = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
-        if (!casaComAlgumaBusca) return false;
+        const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
+        const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
+        if (!origemBate && !criterioBate) return false;
 
         if (!l.favorito && l.abertura_datetime) {
           const dtAbertura = new Date(l.abertura_datetime);
@@ -275,7 +284,7 @@ export default function BancoLicitacoes() {
         grupos[key] = (grupos[key] || 0) + 1;
       });
     return grupos;
-  }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas]);
+  }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
