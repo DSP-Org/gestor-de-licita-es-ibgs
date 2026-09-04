@@ -78,6 +78,11 @@ export default function BancoLicitacoes() {
   const [descartadasLoading, setDescartadasLoading] = useState(false);
   const [selecionadasDescartadas, setSelecionadasDescartadas] = useState(new Set());
 
+  // ---------- Aba "Selecionadas" (favoritadas) ----------
+  const [selecionadas, setSelecionadas] = useState([]);
+  const [selecionadasLoading, setSelecionadasLoading] = useState(false);
+  const [selecionadasSelecionadas, setSelecionadasSelecionadas] = useState(new Set());
+
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [sincronizando, setSincronizando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState(null);
@@ -185,9 +190,21 @@ export default function BancoLicitacoes() {
     }
   };
 
+  const carregarSelecionadas = async () => {
+    setSelecionadasLoading(true);
+    try {
+      const filtro = { favorito: true, oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
+      const lista = await base44.entities.Licitacao.filter(filtro, "-updated_date", 500);
+      setSelecionadas(toArray(lista));
+    } finally {
+      setSelecionadasLoading(false);
+    }
+  };
+
   const carregarTudo = () => {
     carregarAtivas();
     carregarDescartadas();
+    carregarSelecionadas();
   };
 
   const marcarLeitura = async (licId, novoStatus) => {
@@ -203,6 +220,7 @@ export default function BancoLicitacoes() {
     if (!usuarioLogado) return;
     carregarAtivas();
     carregarDescartadas();
+    carregarSelecionadas();
 
     const filtroBuscas = escopoUnidade(isAdmin, filtroUnidade);
 
@@ -299,26 +317,42 @@ export default function BancoLicitacoes() {
     [descartadas, filtroStatus, busca, filtroUnidade, filtroOrigem, aba, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas, filtroUF, filtroMunicipio, filtroModalidade]
   );
 
+  // Filtro da aba "Selecionadas" — não depende de buscas ativas, só dos filtros
+  // geográficos e do termo de busca, porque favoritadas são um recorte do usuário.
+  const selecionadasFiltradas = useMemo(() => {
+    return selecionadas.filter((l) => {
+      if (filtroUF !== "todos" && l.uf !== filtroUF) return false;
+      if (filtroMunicipio !== "todos" && l.municipio !== filtroMunicipio) return false;
+      if (filtroModalidade !== "todos" && l.tipo !== filtroModalidade) return false;
+      if (busca) {
+        const q = busca.toLowerCase();
+        const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao}`.toLowerCase();
+        if (!txt.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [selecionadas, busca, filtroUF, filtroMunicipio, filtroModalidade]);
+
   // Opções de UF, município e modalidade derivadas de todas as licitações carregadas
   const ufsDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas].forEach((l) => { if (l.uf) set.add(l.uf); });
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => { if (l.uf) set.add(l.uf); });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas]);
+  }, [novas, triagem, descartadas, selecionadas]);
 
   const municipiosDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas].forEach((l) => {
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => {
       if (l.municipio && (!filtroUF || filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
     });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, filtroUF]);
+  }, [novas, triagem, descartadas, selecionadas, filtroUF]);
 
   const modalidadesDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas].forEach((l) => { if (l.tipo) set.add(l.tipo); });
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => { if (l.tipo) set.add(l.tipo); });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas]);
+  }, [novas, triagem, descartadas, selecionadas]);
 
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
   // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
@@ -476,6 +510,7 @@ export default function BancoLicitacoes() {
       await base44.entities.Licitacao.update(licitacao.id, { oculto: true });
       setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
       setTriagem((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setSelecionadas((prev) => prev.filter((l) => l.id !== licitacao.id));
       setDescartadas((prev) => [{ ...licitacao, oculto: true }, ...prev]);
       setSelecionadasNovas((prev) => {
         const next = new Set(prev);
@@ -500,6 +535,7 @@ export default function BancoLicitacoes() {
       setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
       setTriagem((prev) => prev.filter((l) => l.id !== licitacao.id));
       setDescartadas((prev) => prev.filter((l) => l.id !== licitacao.id));
+      setSelecionadas((prev) => prev.filter((l) => l.id !== licitacao.id));
     } catch (e) {
       console.error("Erro ao excluir do banco:", e);
     }
@@ -784,6 +820,8 @@ export default function BancoLicitacoes() {
       ? triagemFiltradas
       : aba === "descartadas"
       ? descartadasFiltradas
+      : aba === "selecionadas"
+      ? selecionadasFiltradas
       : aba === "acervo"
       ? paginadas
       : [];
@@ -798,6 +836,8 @@ export default function BancoLicitacoes() {
       ? triagemFiltradas.length
       : aba === "descartadas"
       ? descartadasFiltradas.length
+      : aba === "selecionadas"
+      ? selecionadasFiltradas.length
       : acervoFiltrado.length;
 
   const labelAbaAtual =
@@ -807,6 +847,8 @@ export default function BancoLicitacoes() {
       ? "em triagem"
       : aba === "descartadas"
       ? "descartadas"
+      : aba === "selecionadas"
+      ? "selecionadas"
       : "no acervo";
 
   return (
@@ -829,6 +871,8 @@ export default function BancoLicitacoes() {
               <Clock className="w-5 h-5 text-status-blue" />
             ) : aba === "descartadas" ? (
               <Trash2 className="w-5 h-5 text-destructive" />
+            ) : aba === "selecionadas" ? (
+              <Star className="w-5 h-5 text-status-amber" />
             ) : (
               <Database className="w-5 h-5" />
             )}
@@ -893,6 +937,24 @@ export default function BancoLicitacoes() {
                 aba === "descartadas" ? "bg-background/30 text-background" : "bg-muted text-muted-foreground"
               }`}>
                 {descartadasFiltradas.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setAba("selecionadas")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+              aba === "selecionadas"
+                ? "bg-status-amber text-status-amber-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+            }`}
+          >
+            <Star className="w-4 h-4" /> Selecionadas
+            {selecionadasFiltradas.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                aba === "selecionadas" ? "bg-white/20 text-white" : "bg-status-amber/10 text-status-amber"
+              }`}>
+                {selecionadasFiltradas.length}
               </span>
             )}
           </button>
@@ -1178,6 +1240,74 @@ export default function BancoLicitacoes() {
             selecionados={selecionadasDescartadas}
             onToggleSelecao={toggleSelecaoDescartadas}
             renderActions={(lic) => renderActionsFunil(lic, "descartadas")}
+          />
+        </>
+      ) : aba === "selecionadas" ? (
+        <>
+          {/* Informações da Aba Selecionadas */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-status-amber/5 border border-status-amber/20 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-status-amber text-status-amber-foreground flex items-center justify-center shrink-0">
+                <Star className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Licitações Selecionadas</h3>
+                <p className="text-xs text-muted-foreground">
+                  Todas as licitações que você favoritou, reunidas em um só lugar para acompanhamento prioritário.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => exportarLicitacoesPDF(selecionadasFiltradas, "Licitações Selecionadas")}
+                disabled={selecionadasFiltradas.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+              >
+                <FileDown className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
+              </button>
+              <button
+                onClick={() => exportarLicitacoesExcel(selecionadasFiltradas, "selecionadas")}
+                disabled={selecionadasFiltradas.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 shrink-0"
+              >
+                <Sheet className="w-4 h-4" /> <span className="hidden sm:inline">Excel</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filtros Selecionadas */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-xs">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar nas selecionadas por título, órgão, cidade..."
+                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <FiltrosGeograficos
+              ufs={ufsDisponiveis}
+              municipios={municipiosDisponiveis}
+              modalidades={modalidadesDisponiveis}
+              filtroUF={filtroUF}
+              setFiltroUF={setFiltroUF}
+              filtroMunicipio={filtroMunicipio}
+              setFiltroMunicipio={setFiltroMunicipio}
+              filtroModalidade={filtroModalidade}
+              setFiltroModalidade={setFiltroModalidade}
+            />
+          </div>
+
+          <LicitacoesVisualizacao
+            licitacoes={selecionadasFiltradas}
+            loading={selecionadasLoading}
+            vazio={selecionadasFiltradas.length === 0}
+            onRowClick={setSelecionada}
+            selecionados={selecionadasSelecionadas}
+            onToggleSelecao={toggleSelecao(setSelecionadasSelecionadas)}
+            renderActions={(lic) => renderActionsFunil(lic, "selecionadas")}
+            renderGestao={renderGestaoFunil}
           />
         </>
       ) : (
