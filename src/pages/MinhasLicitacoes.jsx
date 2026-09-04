@@ -1029,18 +1029,18 @@ function StatCard({ icon: Icon, label, value, color, active = false, onClick }) 
     <button
       type="button"
       onClick={onClick}
-      className={`bg-card border rounded-xl p-4 flex items-center gap-3 shadow-sm transition-all text-left ${
+      className={`bg-card border rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 shadow-sm transition-all text-left ${
         active
           ? "border-primary ring-2 ring-primary/30 shadow-md"
           : "border-border hover:shadow-md hover:border-primary/30"
       }`}
     >
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
-        <Icon className="w-5 h-5" />
+      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
+        <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground truncate">{label}</p>
-        <p className="text-lg sm:text-xl font-bold leading-tight mt-0.5">{value}</p>
+        <p className="text-[11px] sm:text-xs text-muted-foreground truncate leading-tight">{label}</p>
+        <p className="text-base sm:text-xl font-bold leading-tight mt-0.5">{value}</p>
       </div>
     </button>
   );
