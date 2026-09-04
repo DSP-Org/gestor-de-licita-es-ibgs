@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Radar, Bookmark } from "lucide-react";
+import { Users, Settings, BellRing, RefreshCw, MoreHorizontal, X, Sparkles, Radar } from "lucide-react";
 import { useNotificacoesNativas } from "@/hooks/useNotificacoesNativas";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import InstalarAppPrompt from "@/components/InstalarAppPrompt";
@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const mainItems = [
   { to: "/", label: "Licitações", icon: RefreshCw, end: true },
-  { to: "/minhas-licitacoes", label: "Alertas", icon: Bookmark },
+  { to: "/minhas-licitacoes", label: "Alertas", icon: BellRing },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
 const moreItems = [
