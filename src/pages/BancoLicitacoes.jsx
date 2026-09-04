@@ -239,7 +239,7 @@ export default function BancoLicitacoes() {
   );
 
   useEffect(() => {
-    setBuscasSelecionadas([]);
+    setBuscasSelecionadas(buscasFiltradas.map((b) => b.id));
   }, [buscasFiltradas]);
 
   const nomesBuscasAtivas = useMemo(
