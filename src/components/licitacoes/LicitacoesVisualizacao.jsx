@@ -54,8 +54,8 @@ export default function LicitacoesVisualizacao({
 
   return (
     <div className="space-y-4">
-      {/* Barra de controle */}
-      <div className="flex items-center gap-2 justify-end">
+      {/* Barra de controle — oculta no mobile (sempre cards) */}
+      <div className="hidden sm:flex items-center gap-2 justify-end">
         <button
           onClick={() => setModo("cards")}
           title="Visualização em cards"

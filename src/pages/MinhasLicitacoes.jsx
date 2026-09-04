@@ -645,11 +645,11 @@ export default function MinhasLicitacoes() {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <select
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="todos">Todos os status</option>
               {STATUS_OPTIONS.map((s) => (
@@ -660,7 +660,7 @@ export default function MinhasLicitacoes() {
             <select
               value={filtroUF}
               onChange={(e) => setFiltroUF(e.target.value)}
-              className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="todos">Todos os estados</option>
               {ufsDisponiveis.map((uf) => (
@@ -671,7 +671,7 @@ export default function MinhasLicitacoes() {
             <select
               value={filtroPessoa}
               onChange={(e) => setFiltroPessoa(e.target.value)}
-              className="px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="todos">Todas as pessoas</option>
               {usuariosComLicitacoes.map((u) => (
@@ -679,8 +679,8 @@ export default function MinhasLicitacoes() {
               ))}
             </select>
 
-            {/* Alternador de visualizações: Kanban, Cards e Tabela */}
-            <div className="flex items-center gap-1 border rounded-lg p-1 bg-background shrink-0">
+            {/* Alternador de visualizações — oculto no mobile (sempre cards) */}
+            <div className="hidden sm:flex items-center gap-1 border rounded-lg p-1 bg-background shrink-0">
               <button
                 onClick={() => setModo("cards")}
                 className={`p-1.5 rounded transition-all ${
