@@ -50,13 +50,20 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
 
   const set = (campo, valor) => setForm((f) => ({ ...f, [campo]: valor }));
 
-  const selecionarMunicipio = (nome) => {
+  const toggleMunicipio = (nome) => {
     const mun = municipios.find((m) => m.nome === nome);
-    if (mun) {
-      setForm((f) => ({ ...f, municipio_nome: nome, municipio_ibge: String(mun.id) }));
+    if (!mun) return;
+    const nomesAtuais = (form.municipio_nome || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const ibgesAtuais = (form.municipio_ibge || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const idx = nomesAtuais.indexOf(nome);
+    if (idx >= 0) {
+      nomesAtuais.splice(idx, 1);
+      ibgesAtuais.splice(idx, 1);
     } else {
-      set("municipio_nome", nome);
+      nomesAtuais.push(nome);
+      ibgesAtuais.push(String(mun.id));
     }
+    setForm((f) => ({ ...f, municipio_nome: nomesAtuais.join(", "), municipio_ibge: ibgesAtuais.join(",") }));
   };
 
   const submit = async () => {
@@ -124,21 +131,39 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">
-            Município (por nome) {form.uf && !form.uf.includes(",") && !carregandoMun && `(${municipios.length})`}
+            Municípios {form.uf && !form.uf.includes(",") && !carregandoMun && `(${municipios.length})`}
           </label>
-          <input
-            list="mun-list"
-            value={form.municipio_nome || ""}
-            onChange={(e) => selecionarMunicipio(e.target.value)}
-            disabled={!form.uf || form.uf.includes(",")}
-            placeholder={form.uf && !form.uf.includes(",") ? "Selecione a cidade" : "Informe uma UF primeiro"}
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-          />
-          <datalist id="mun-list">
-            {municipios.map((m) => (
-              <option key={m.id} value={m.nome} />
-            ))}
-          </datalist>
+          {form.uf && !form.uf.includes(",") ? (
+            <>
+              {(form.municipio_nome || "").split(",").map((s) => s.trim()).filter(Boolean).length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {(form.municipio_nome || "").split(",").map((s) => s.trim()).filter(Boolean).map((nome) => (
+                    <span key={nome} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
+                      {nome}
+                      <button type="button" onClick={() => toggleMunicipio(nome)} className="hover:text-destructive">✕</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <select
+                value=""
+                onChange={(e) => { if (e.target.value) toggleMunicipio(e.target.value); }}
+                disabled={carregandoMun}
+                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">{carregandoMun ? "Carregando..." : "Selecionar município..."}</option>
+                {municipios.map((m) => (
+                  <option key={m.id} value={m.nome}>{m.nome}</option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <input
+              disabled
+              placeholder="Informe uma única UF primeiro"
+              className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background disabled:opacity-50"
+            />
+          )}
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Código IBGE</label>
