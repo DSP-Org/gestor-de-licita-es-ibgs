@@ -294,7 +294,12 @@ export default function BancoLicitacoes() {
       if (filtroUF !== "todos" && l.uf !== filtroUF) return false;
       if (filtroMunicipio !== "todos" && l.municipio !== filtroMunicipio) return false;
       if (filtroModalidade !== "todos" && l.tipo !== filtroModalidade) return false;
-      if (filtroOrigem && (l.busca_origem || "Sem origem") !== filtroOrigem) return false;
+      if (filtroOrigem) {
+        const alertaSelecionado = buscasFiltradas.find((b) => b.nome === filtroOrigem);
+        const bateOrigem = (l.busca_origem || "Sem origem") === filtroOrigem;
+        const bateCriterio = alertaSelecionado ? combinaComFiltros(l, filtrosDaBusca(alertaSelecionado)) : false;
+        if (!bateOrigem && !bateCriterio) return false;
+      }
 
       // Se uma busca específica estiver marcada no seletor, a licitação só aparece se atender a ela
       if (buscaAtivaSelecionada) {
