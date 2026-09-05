@@ -9,6 +9,7 @@ import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import { toArray } from "@/lib/toArray";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Search, SlidersHorizontal, Trash2, X, ChevronDown, Bell, Sparkles, Loader2, Database } from "lucide-react";
+import { combinarLicitacoesVinculos, atualizarVinculoLicitacao } from "@/lib/licitacaoUnidade";
 
 const ESTADOS = [
   { uf: "AC", nome: "Acre" },
@@ -84,8 +85,9 @@ export default function BuscaAvancada() {
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [mostrarAvancados, setMostrarAvancados] = useState(false);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
+  const unidadeAtual = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
 
-  const qtdJaNaUnidade = useMemo(() => licitacoes.filter((l) => l.id).length, [licitacoes]);
+  const qtdJaNaUnidade = useMemo(() => licitacoes.filter((l) => l.vinculo_id).length, [licitacoes]);
 
   // Conta quantos filtros avançados estão ativos pra mostrar no badge do botão.
   const filtrosAvancadosAtivos = useMemo(() => {
@@ -142,13 +144,18 @@ export default function BuscaAvancada() {
     setCarregando(true);
     setErro("");
     try {
-      const [cachesList, licitacoesDb] = await Promise.all([
+      const [cachesList, licitacoesDb, vinculos] = await Promise.all([
         base44.entities.ConsultaCache.list("-updated_date", 1000),
-        base44.entities.Licitacao.filter(escopoUnidade(isAdmin, filtroUnidade), "-updated_date", 2000),
+        base44.entities.Licitacao.list("-updated_date", 2000),
+        unidadeAtual
+          ? base44.entities.LicitacaoUnidade.filter({ unidade_negocio_id: unidadeAtual }, "-updated_date", 2000)
+          : [],
       ]);
 
+      const resultado = combinarLicitacoesVinculos(toArray(licitacoesDb), toArray(vinculos));
+
       const licitacoesDbMap = new Map();
-      for (const l of toArray(licitacoesDb)) {
+      for (const l of resultado) {
         if (l.id_licitacao) licitacoesDbMap.set(String(l.id_licitacao), l);
       }
 
@@ -162,12 +169,12 @@ export default function BuscaAvancada() {
         if (!poolMap.has(id)) poolMap.set(id, l);
       }
 
-      let resultado = Array.from(poolMap.values()).map((l) => {
+      let resultadoFinal = Array.from(poolMap.values()).map((l) => {
         const doBanco = licitacoesDbMap.get(String(l.id_licitacao));
         return doBanco ? { ...l, ...doBanco } : l;
       });
 
-      resultado = resultado.filter((l) => !l.oculto);
+      resultadoFinal = resultadoFinal.filter((l) => !l.oculto);
 
       if (filtros.ufs.length > 0) {
         resultado = resultado.filter(l => filtros.ufs.includes(l.uf));
@@ -242,9 +249,9 @@ export default function BuscaAvancada() {
             if (res?.licitacoes) apiLicitacoes.push(...toArray(res.licitacoes));
           }
           if (apiLicitacoes.length > 0) {
-            const idsLocais = new Set(resultado.map(l => l.id_licitacao));
+            const idsLocais = new Set(resultadoFinal.map(l => l.id_licitacao));
             const novasDaApi = apiLicitacoes.filter(l => !idsLocais.has(l.id_licitacao));
-            resultado = [...resultado, ...novasDaApi];
+            resultadoFinal = [...resultadoFinal, ...novasDaApi];
           }
         } catch (apiErr) {
           console.error("Erro na busca da API:", apiErr);
@@ -280,9 +287,9 @@ export default function BuscaAvancada() {
             if (res?.licitacoes) pncpLicitacoes.push(...toArray(res.licitacoes));
           }
           if (pncpLicitacoes.length > 0) {
-            const idsLocais = new Set(resultado.map(l => l.id_licitacao));
+            const idsLocais = new Set(resultadoFinal.map(l => l.id_licitacao));
             const novasDoPncp = pncpLicitacoes.filter(l => !idsLocais.has(l.id_licitacao));
-            resultado = [...resultado, ...novasDoPncp];
+            resultadoFinal = [...resultadoFinal, ...novasDoPncp];
           }
         } catch (pncpErr) {
           console.error("Erro na busca do PNCP:", pncpErr);
@@ -290,7 +297,7 @@ export default function BuscaAvancada() {
         }
       }
 
-      setLicitacoes(resultado);
+      setLicitacoes(resultadoFinal);
       setUltimaAtualizacao(hojeBR());
     } catch (err) {
       setErro("Erro ao executar busca: " + err.message);
@@ -361,39 +368,19 @@ export default function BuscaAvancada() {
   }
 
   async function garantirNaUnidade(licacao, camposExtra = {}) {
-    if (licacao.id) return licacao;
-    const criada = await base44.entities.Licitacao.create({
-      unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
-      id_licitacao: licacao.id_licitacao,
-      titulo: licacao.titulo,
-      objeto: licacao.objeto,
-      uf: licacao.uf,
-      municipio: licacao.municipio,
-      municipio_ibge: licacao.municipio_IBGE || licacao.municipio_ibge,
-      orgao: licacao.orgao,
-      abertura_datetime: licacao.abertura_datetime,
-      abertura: licacao.abertura,
-      tipo: licacao.tipo,
-      id_tipo: licacao.id_tipo,
-      valor: licacao.valor,
-      link: licacao.link,
-      link_externo: licacao.linkExterno || licacao.link_externo,
-      status: "interessado",
-      status_leitura: "nova",
-      oculto: false,
-      favorito: false,
-      ...camposExtra,
-    });
-    return { ...licacao, id: criada.id };
+    let global = licacao;
+    if (!licacao.id) {
+      const resposta = await base44.functions.invoke("salvarLicitacaoNoBanco", licacao);
+      global = { ...licacao, ...resposta.data?.licitacao };
+    }
+    await atualizarVinculoLicitacao(global, unidadeAtual, { oculto: false, ...camposExtra });
+    return global;
   }
 
   async function handleDelete(licacao) {
     if (!confirm("Descartar esta licitação? Ela sai da sua lista, mas continua no banco.")) return;
     try {
-      const registrada = await garantirNaUnidade(licacao, { oculto: true });
-      if (registrada.id === licacao.id && licacao.id) {
-        await base44.entities.Licitacao.update(licacao.id, { oculto: true });
-      }
+      await garantirNaUnidade(licacao, { oculto: true });
       setLicitacoes(prev => prev.filter(l => l.id_licitacao !== licacao.id_licitacao));
     } catch (err) {
       console.error("Erro ao descartar:", err);
@@ -409,14 +396,11 @@ export default function BuscaAvancada() {
 
   async function handleMoverParaTriagem(licacao) {
     try {
-      const registrada = await garantirNaUnidade(licacao, { status_leitura: "vista", status: "em_analise" });
-      if (registrada.id === licacao.id && licacao.id) {
-        await base44.entities.Licitacao.update(licacao.id, { status_leitura: "vista", status: "em_analise", oculto: false });
-      }
+      const global = await garantirNaUnidade(licacao, { status_leitura: "vista" });
       setLicitacoes((prev) =>
         prev.map((l) =>
           l.id_licitacao === licacao.id_licitacao
-            ? { ...l, id: registrada.id, status_leitura: "vista", status: "em_analise" }
+            ? { ...l, ...global, status_leitura: "vista" }
             : l
         )
       );
@@ -440,15 +424,14 @@ export default function BuscaAvancada() {
   };
 
   const confirmarFavoritar = async (listaId) => {
-    const campos = { favorito: true, lista_favorita_id: listaId || "" };
-    const registradas = await Promise.all(favoritando.map((l) => garantirNaUnidade(l)));
-    await base44.entities.Licitacao.bulkUpdate(registradas.map((l) => ({ id: l.id, ...campos })));
+    const campos = { favorito: true, oculto: false, lista_favorita_id: listaId || "" };
+    const registradas = await Promise.all(favoritando.map((l) => garantirNaUnidade(l, campos)));
     const idsOriginais = new Set(favoritando.map((f) => f.id_licitacao));
     setLicitacoes((prev) =>
       prev.map((l) => {
         if (!idsOriginais.has(l.id_licitacao)) return l;
         const registrada = registradas.find((r) => r.id_licitacao === l.id_licitacao);
-        return { ...l, id: registrada?.id || l.id, ...campos };
+        return { ...l, ...registrada, ...campos };
       }),
     );
     setFavoritando(null);
