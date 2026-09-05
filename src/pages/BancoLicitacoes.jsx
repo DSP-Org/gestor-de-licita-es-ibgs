@@ -804,9 +804,10 @@ export default function BancoLicitacoes() {
     : -1;
 
   // Total geral: soma de tudo no banco — registros Licitacao (ativas + descartadas)
-  // + itens do cache que ainda não foram importados.
-  const totalGeral = novas.length + triagem.length + descartadas.length + selecionadas.length +
-    acervo.filter((l) => !licitacoesBancoMap.has(String(l.id_licitacao))).length;
+  // + itens do cache que ainda não foram importados. Respeita os filtros aplicados.
+  const totalGeralFiltrado = novasFiltradas.length + triagemFiltradas.length +
+    descartadasFiltradas.length + selecionadasFiltradas.length +
+    acervoFiltrado.filter((l) => !licitacoesBancoMap.has(String(l.id_licitacao))).length;
 
   const countAbaAtual =
     aba === "novas"
@@ -817,7 +818,7 @@ export default function BancoLicitacoes() {
       ? descartadasFiltradas.length
       : aba === "selecionadas"
       ? selecionadasFiltradas.length
-      : acervoFiltrado.length;
+      : totalGeralFiltrado;
 
   const labelAbaAtual =
     aba === "novas"
@@ -949,11 +950,11 @@ export default function BancoLicitacoes() {
             }`}
           >
             <Database className="w-4 h-4" /> Acervo Geral
-            {acervoFiltrado.length > 0 && (
+            {totalGeralFiltrado > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 aba === "acervo" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"
               }`}>
-                {acervoFiltrado.length}
+                {totalGeralFiltrado}
               </span>
             )}
           </button>
