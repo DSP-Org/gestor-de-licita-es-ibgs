@@ -1,28 +1,21 @@
-# Equipe Data5 — Painel de Missão Ativa (Janela Operacional)
+# Equipe Data5 — Painel de Missão
 
-> 📌 **Memória Central do Projeto:** Todas as sprints anteriores (1 a 4) e documentos históricos foram arquivados na pasta do CEO: `c:\Users\Nailton\Desktop\Antigravity\Antigravity - CEO\projetos\gestor-de-licitacoes-ibgs\`.  
-> ⚠️ **Regra de Ouro:** Janela estritamente ativa. Cada agente deve focar exclusivamente no arquivo sob seu LOCK quando emitido.
-
----
-
-## 🎯 Estado da Equipe (Stand-by Sincronizado)
-
-| Agente | Modelo | Ambiente | Papel Principal | Status Atual | Arquivo sob LOCK |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Antigravity** | Gemini 3.8 | Desktop | Arquiteto Chefe & QA | Ativo / Orquestrando | Governança & QA |
-| **Claude Code** | Sonnet 5 | Desktop | Backend & Regras de Negócio | Em Stand-by | Nenhum (Livre) |
-| **Freebuff** | Mimo 2.5 | Terminal | Utilitários & Exportadores | Em Stand-by | Nenhum (Livre) |
-| **AGY** | Gemini 3.7 | Terminal | UI / Componentes & Telas | Em Stand-by | Nenhum (Livre) |
+> ⚠️ **STATUS ATUAL: SEM TRABALHO EM EQUIPE EM ANDAMENTO**
 
 ---
 
-## 📋 Entregas Consolidadas da Sprint 4 (100% Homologadas & Commitadas):
-1. **Alerta de Prazo Crítico (≤ 24h)**: `sincronizarBuscas/entry.ts` inspeciona licitações favoritadas e notifica disputas iminentes de hoje/amanhã no fuso de SP.
-2. **Exportador Excel Executivo**: `exportarLicitacoesExcel.js` com resumo financeiro no topo e colunas dinâmicas de Status e Urgência.
-3. **Pílulas de Urgência no Acervo**: `AcervoFiltros.jsx` e `BancoLicitacoes.jsx` com filtros rápidos de prazos em tempo real.
-4. **Build & Git**: Compilação 100% limpa (`npm run build` aprovado) e working tree sincronizado.
+### 📢 Orientação para Todos os Agentes (Claude Code, AGY, Freebuff, etc.)
+
+1. **Atendimento Direto e Individual:**
+   - No momento **NÃO HÁ missão conjunta ou trabalho em equipe ativo**.
+   - Cada agente deve seguir estritamente o fluxo, instruções e comandos passados **diretamente a ele pelo Sampaio** em sua sessão/chat individual.
+
+2. **Isolamento de Contexto (Anti-Ruído):**
+   - Não presuma tarefas pendentes de sprints ou conversas anteriores.
+   - Não assuma LOCKs, restrições ou bloqueios sem ordem direta atual.
+   - Responda e atue exclusivamente conforme a demanda pontual recebida em seu próprio terminal/conversa.
 
 ---
 
-## 🚀 Próxima Sprint (Aguardando Diretriz do Sampaio)
-Assim que o Sampaio definir a próxima missão, o Antigravity emitirá as ordens com os LOCKs exclusivos de arquivos.
+### 🛡️ Regra de Governança do Antigravity (Gestão Contínua)
+- **Protocolo de Conclusão:** Sempre ao finalizar uma rodada de trabalho em equipe (ou ao suspender uma missão conjunta), o Antigravity é responsável por limpar este painel e deixar apenas a nota de liberação individual, garantindo que contextos ou discussões antigas nunca interfiram quando o Sampaio falar diretamente com cada agente.
