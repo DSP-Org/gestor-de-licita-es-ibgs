@@ -395,13 +395,12 @@ export default function BancoLicitacoes() {
           const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
           if (!origemBate && !criterioBate) return false;
         } else {
+          // Busca específica selecionada: só conta licitações cuja origem
+          // é exatamente o nome da busca marcada — filtro rigoroso.
           const selecionada = buscasFiltradas.find((b) => buscasSelecionadas.includes(b.id));
           if (!selecionada) return false;
           const nomeBusca = selecionada.nome?.trim().toLowerCase();
-          const filtroBusca = filtrosDaBusca(selecionada);
-          const bateNome = l.busca_origem && l.busca_origem.trim().toLowerCase() === nomeBusca;
-          const bateCriterio = combinaComFiltros(l, filtroBusca);
-          if (!bateNome && !bateCriterio) return false;
+          if (!l.busca_origem || l.busca_origem.trim().toLowerCase() !== nomeBusca) return false;
         }
 
         if (busca) {
