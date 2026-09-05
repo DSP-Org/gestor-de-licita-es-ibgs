@@ -340,18 +340,12 @@ export default function BancoLicitacoes() {
   }, [novas, triagem, descartadas, selecionadas]);
 
   const municipiosDisponiveis = useMemo(() => {
-    const ativa =
-      aba === "acervo" ? acervoFiltrado
-      : aba === "triagem" ? triagemFiltradas
-      : aba === "descartadas" ? descartadasFiltradas
-      : aba === "selecionadas" ? selecionadasFiltradas
-      : novasFiltradas;
     const set = new Set();
-    ativa.forEach((l) => {
-      if (l.municipio && (filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
+    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => {
+      if (l.municipio && (!filtroUF || filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
     });
     return Array.from(set).sort();
-  }, [aba, novasFiltradas, triagemFiltradas, descartadasFiltradas, selecionadasFiltradas, acervoFiltrado, filtroUF]);
+  }, [novas, triagem, descartadas, selecionadas, filtroUF]);
 
   const modalidadesDisponiveis = useMemo(() => {
     const set = new Set();
