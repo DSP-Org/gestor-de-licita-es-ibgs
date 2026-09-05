@@ -7,7 +7,7 @@ import InstalarAppPrompt from "@/components/InstalarAppPrompt";
 import { toast } from "@/components/ui/use-toast";
 
 const mainItems = [
-  { to: "/", label: "Licitações", icon: RefreshCw, end: true },
+  { to: "/", label: "Funil", icon: RefreshCw, end: true },
   { to: "/minhas-licitacoes", label: "Painel", icon: LayoutDashboard },
   { to: "/assistente", label: "Assistente", icon: Sparkles },
 ];
