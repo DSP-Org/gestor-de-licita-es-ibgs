@@ -381,22 +381,32 @@ export default function BancoLicitacoes() {
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
 
+    // Mapeia nomes de origem antigos (gravados nas licitações) para o nome
+    // atual do alerta, para que as pílulas reflitam exatamente os alertas da
+    // Configuração mesmo se a busca foi renomeada após a sincronização.
+    const origemParaNomeBusca = new Map();
+    for (const b of buscasFiltradas) {
+      const nomeAtual = b.nome?.trim();
+      if (!nomeAtual) continue;
+      const chave = nomeAtual.toLowerCase();
+      origemParaNomeBusca.set(chave, nomeAtual);
+      // Compatibiliza com variações antigas do nome no campo busca_origem
+      if (b.nome && !origemParaNomeBusca.has(b.nome.toLowerCase())) {
+        origemParaNomeBusca.set(b.nome.toLowerCase(), nomeAtual);
+      }
+    }
+
     const grupos = {};
     novas
       .filter((l) => {
         if (!pertenceAUnidade(l, filtroUnidade)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
 
-        // Respeita a busca selecionada no seletor. Se "todas" está selecionada,
-        // usa os critérios de todas as buscas ativas; se uma específica está
-        // marcada, conta só o que pertence a ela.
         if (todasBuscasSelecionadas) {
           const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
           const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
           if (!origemBate && !criterioBate) return false;
         } else {
-          // Busca específica selecionada: só conta licitações cuja origem
-          // é exatamente o nome da busca marcada — filtro rigoroso.
           const selecionada = buscasFiltradas.find((b) => buscasSelecionadas.includes(b.id));
           if (!selecionada) return false;
           const nomeBusca = selecionada.nome?.trim().toLowerCase();
@@ -411,7 +421,8 @@ export default function BancoLicitacoes() {
         return true;
       })
       .forEach((l) => {
-        const key = l.busca_origem || "Sem origem";
+        const chave = (l.busca_origem || "Sem origem").trim().toLowerCase();
+        const key = origemParaNomeBusca.get(chave) || l.busca_origem || "Sem origem";
         grupos[key] = (grupos[key] || 0) + 1;
       });
     return grupos;
