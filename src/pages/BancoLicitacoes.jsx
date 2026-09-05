@@ -378,12 +378,11 @@ export default function BancoLicitacoes() {
   // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
   // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
   // origem zeraria as demais e não haveria como trocar de seleção.
+  // Agrupa licitações por alerta ativo, usando os critérios de cada busca
+  // (uf, modalidade, município, palavra-chave) — não o campo busca_origem,
+  // que pode estar desatualizado se a busca foi renomeada.
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
-
-    // Só mostra pílulas para origens que correspondem a alertas ativos —
-    // origens órfãs (ex: busca renomeada/excluída) não aparecem.
-    const nomesValidos = new Set(buscasFiltradas.map((b) => b.nome?.trim().toLowerCase()).filter(Boolean));
 
     const grupos = {};
     novas
@@ -410,10 +409,13 @@ export default function BancoLicitacoes() {
         return true;
       })
       .forEach((l) => {
-        const origem = (l.busca_origem || "").trim().toLowerCase();
-        if (!origem || !nomesValidos.has(origem)) return;
-        const key = l.busca_origem.trim();
-        grupos[key] = (grupos[key] || 0) + 1;
+        // Conta a licitação em cada alerta cujos critérios ela atende
+        for (const b of buscasFiltradas) {
+          const f = filtrosDaBusca(b);
+          if (combinaComFiltros(l, f)) {
+            grupos[b.nome] = (grupos[b.nome] || 0) + 1;
+          }
+        }
       });
     return grupos;
   }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]);
