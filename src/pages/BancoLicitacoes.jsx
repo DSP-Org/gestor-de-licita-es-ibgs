@@ -1444,24 +1444,9 @@ export default function BancoLicitacoes() {
         <LicitacaoDetailDialog
           licitacao={selecionada}
           onClose={() => setSelecionada(null)}
-          onSave={
-            aba === "acervo"
-              ? async (dados) => {
-                  await salvar(dados);
-                  setSelecionada(null);
-                }
-              : async (dados) => {
-                  const { id, created_date, updated_date, created_by_id, ...rest } = dados;
-                  if (selecionada?.id) {
-                    await base44.entities.Licitacao.update(selecionada.id, rest);
-                  }
-                  setSelecionada(null);
-                  carregarTudo();
-                }
-          }
+          onFavoritar={aba === "acervo" ? salvar : handleSaveManual}
           onPrev={idxSelecionada > 0 ? () => setSelecionada(listaNavegacao[idxSelecionada - 1]) : null}
           onNext={idxSelecionada >= 0 && idxSelecionada < listaNavegacao.length - 1 ? () => setSelecionada(listaNavegacao[idxSelecionada + 1]) : null}
-          onMarcarLeitura={aba !== "acervo" ? marcarLeitura : null}
         />
       )}
 

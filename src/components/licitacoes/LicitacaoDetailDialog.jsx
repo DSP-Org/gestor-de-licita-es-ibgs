@@ -1,69 +1,14 @@
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { X, ExternalLink, Star, Save, FileDown, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { X, ExternalLink, Star, FileDown, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
-import { toArray } from "@/lib/toArray";
-import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
-import { escopoUnidade } from "@/lib/escopoUnidade";
 import { StatusBadge, formatValor, formatDataBr } from "./LicitacaoCard";
 import ShareDialog from "./ShareDialog";
 
-export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPrev, onNext, onMarcarLeitura }) {
-  const { isAdmin, filtroUnidade } = useUnidadeFilter();
-  const [status, setStatus] = useState(licitacao?.status || "interessado");
-  const [favorito, setFavorito] = useState(!!licitacao?.favorito);
-  const [notas, setNotas] = useState(licitacao?.notas || "");
-  const [valorProposta, setValorProposta] = useState(licitacao?.valor_proposta || "");
-  const [listaVinculada, setListaVinculada] = useState(licitacao?.lista_favorita_id || "");
-  const [listas, setListas] = useState([]);
-  const [carregandoListas, setCarregandoListas] = useState(false);
+export default function LicitacaoDetailDialog({ licitacao, onClose, onFavoritar, onPrev, onNext }) {
   const [compartilhar, setCompartilhar] = useState(false);
-  const [statusLeitura, setStatusLeitura] = useState(licitacao?.status_leitura || "nova");
-
-  useEffect(() => {
-    if (licitacao) {
-      setStatus(licitacao.status || "interessado");
-      setFavorito(!!licitacao.favorito);
-      setNotas(licitacao.notas || "");
-      setValorProposta(licitacao.valor_proposta || "");
-      setListaVinculada(licitacao.lista_favorita_id || "");
-      setStatusLeitura(licitacao.status_leitura || "nova");
-    }
-  }, [licitacao]);
-
-  useEffect(() => {
-    const carregarListas = async () => {
-      setCarregandoListas(true);
-      try {
-        const listasData = await base44.entities.FavoritaLista.filter(
-          escopoUnidade(isAdmin, filtroUnidade),
-          "ordem",
-          100,
-        );
-        setListas(toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
-      } catch (err) {
-        console.error("Erro ao carregar listas:", err);
-      } finally {
-        setCarregandoListas(false);
-      }
-    };
-
-    carregarListas();
-  }, [isAdmin, filtroUnidade]);
 
   if (!licitacao) return null;
-
-  const handleSave = () => {
-    onSave({
-      ...licitacao,
-      status,
-      favorito,
-      notas,
-      valor_proposta: valorProposta === "" ? null : Number(valorProposta),
-      lista_favorita_id: listaVinculada || null,
-    });
-  };
 
   const gerarPDF = () => {
     const doc = new jsPDF();
@@ -110,7 +55,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
     doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, y);
     y += 8;
 
-    const statusLabel = STATUS_OPTIONS.find((s) => s.value === status)?.label || status;
+    const statusLabel = STATUS_OPTIONS.find((s) => s.value === licitacao.status)?.label || licitacao.status || "—";
     const linhas = [
       ["ID", licitacao.id_licitacao],
       ["Título", licitacao.titulo],
@@ -123,7 +68,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       ["Sincronização", formatDataBr(licitacao.data_sincronizacao || licitacao.created_date)],
       ["Abertura", licitacao.aberturaComHora || licitacao.abertura],
       ["Valor estimado", formatValor(licitacao.valor)],
-      ["Valor da proposta", valorProposta ? `R$ ${Number(valorProposta).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"],
+      ["Valor da proposta", licitacao.valor_proposta ? `R$ ${Number(licitacao.valor_proposta).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"],
       ["Link", licitacao.link || "—"],
       ["Portal oficial", licitacao.link_externo || "—"],
     ];
@@ -151,13 +96,13 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
     doc.text(linhasObj, margin, y);
     y += 5 * linhasObj.length + 6;
 
-    if (notas) {
+    if (licitacao.notas) {
       if (y > 250) { doc.addPage(); y = 20; }
       doc.setFont("helvetica", "bold");
       doc.text("Anotações:", margin, y);
       y += 5;
       doc.setFont("helvetica", "normal");
-      const linhasNotas = doc.splitTextToSize(notas, maxW);
+      const linhasNotas = doc.splitTextToSize(licitacao.notas, maxW);
       doc.text(linhasNotas, margin, y);
     }
 
@@ -182,7 +127,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
       >
         <div className="sticky top-0 bg-card border-b px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <StatusBadge status={status} />
+            <StatusBadge status={licitacao.status} />
             <span className="text-xs font-mono text-muted-foreground">{licitacao.id_licitacao}</span>
           </div>
           <div className="flex items-center gap-1">
@@ -205,12 +150,15 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
         <div className="p-5 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-heading text-lg font-semibold leading-snug">{licitacao.titulo}</h2>
-            <button
-              onClick={() => setFavorito(!favorito)}
-              className={`p-2 rounded-md border ${favorito ? "bg-status-amber/10 border-status-amber/30" : "hover:bg-muted"}`}
-            >
-              <Star className={`w-4 h-4 ${favorito ? "fill-status-amber text-status-amber" : ""}`} />
-            </button>
+            {onFavoritar && (
+              <button
+                onClick={() => onFavoritar(licitacao)}
+                title="Adicionar às listas de favoritos"
+                className={`p-2 rounded-md border ${licitacao.favorito ? "bg-status-amber/10 border-status-amber/30" : "hover:bg-muted"}`}
+              >
+                <Star className={`w-4 h-4 ${licitacao.favorito ? "fill-status-amber text-status-amber" : ""}`} />
+              </button>
+            )}
           </div>
 
           <div>
