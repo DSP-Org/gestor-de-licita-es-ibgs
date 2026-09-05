@@ -12,6 +12,7 @@ import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
 import { toArray } from "@/lib/toArray";
 import { parseDataAbertura } from "@/lib/prazosLicitacao";
+import { combinarLicitacoesVinculos, atualizarVinculoLicitacao } from "@/lib/licitacaoUnidade";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 import LicitacaoCard from "@/components/licitacoes/LicitacaoCard";
@@ -67,19 +68,26 @@ export default function MinhasLicitacoes() {
   const [filtroRapido, setFiltroRapido] = useState("todos");
   const [usuarios, setUsuarios] = useState([]);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
+  const unidadeAtual = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
 
   const carregar = async () => {
+    if (!unidadeAtual) return;
     setLoading(true);
     try {
-      const [licData, listasData] = await Promise.all([
-        base44.entities.Licitacao.filter(
-          { favorito: true, oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) },
+      const [vinculosData, listasData] = await Promise.all([
+        base44.entities.LicitacaoUnidade.filter(
+          { unidade_negocio_id: unidadeAtual, favorito: true, oculto: { $ne: true } },
           "-updated_date",
           500,
         ),
         base44.entities.FavoritaLista.filter(escopoUnidade(isAdmin, filtroUnidade), "ordem", 100)
       ]);
-      setLicitacoes(toArray(licData));
+      const vinculos = toArray(vinculosData);
+      const ids = vinculos.map((v) => v.licitacao_id);
+      const licData = ids.length > 0
+        ? await base44.entities.Licitacao.filter({ id: { $in: ids } }, "-updated_date", 500)
+        : [];
+      setLicitacoes(combinarLicitacoesVinculos(toArray(licData), vinculos));
       const listasOrdenadas = toArray(listasData).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
       setListas(listasOrdenadas);
       try {
@@ -95,7 +103,7 @@ export default function MinhasLicitacoes() {
     if (usuarioLogado) {
       carregar();
     }
-  }, [usuarioLogado, filtroUnidade, isAdmin]);
+  }, [usuarioLogado, filtroUnidade, isAdmin, unidadeAtual]);
 
   const qtdSemLista = useMemo(() => {
     return licitacoes.filter((l) => !l.lista_favorita_id).length;
@@ -181,7 +189,7 @@ export default function MinhasLicitacoes() {
     try {
       await Promise.all(
         alvo.map((l) =>
-          base44.entities.Licitacao.update(l.id, { lista_favorita_id: novaListaId || "", favorito: true })
+          atualizarVinculoLicitacao(l, unidadeAtual, { lista_favorita_id: novaListaId || "", favorito: true })
         )
       );
       setLicitacoes((prev) =>
@@ -202,7 +210,7 @@ export default function MinhasLicitacoes() {
       prev.map((l) => (selecionados.has(l.id_licitacao) ? { ...l, status: novoStatus } : l))
     );
     try {
-      await Promise.all(alvo.map((l) => base44.entities.Licitacao.update(l.id, { status: novoStatus })));
+      await Promise.all(alvo.map((l) => atualizarVinculoLicitacao(l, unidadeAtual, { status: novoStatus })));
     } catch (err) {
       console.error("Erro ao mudar status em lote:", err);
       carregar();
@@ -216,7 +224,7 @@ export default function MinhasLicitacoes() {
     if (alvo.length === 0) return;
     if (!confirm(`Remover ${alvo.length} licitação(ões) selecionada(s) do painel?`)) return;
     try {
-      await Promise.all(alvo.map((l) => base44.entities.Licitacao.update(l.id, { favorito: false })));
+      await Promise.all(alvo.map((l) => atualizarVinculoLicitacao(l, unidadeAtual, { favorito: false })));
       setLicitacoes((prev) => prev.filter((l) => !selecionados.has(l.id_licitacao)));
     } catch (err) {
       console.error("Erro ao desfavoritar em lote:", err);
@@ -303,20 +311,21 @@ export default function MinhasLicitacoes() {
 
   const handleSave = async (dados) => {
     const { id, created_date, updated_date, created_by_id, ...rest } = dados;
-    await base44.entities.Licitacao.update(selecionada.id, rest);
+    await atualizarVinculoLicitacao(selecionada, unidadeAtual, rest);
     setSelecionada(null);
     carregar();
   };
 
   const handleRemoverFavorito = async (licitacao) => {
-    await base44.entities.Licitacao.update(licitacao.id, { favorito: false });
+    await atualizarVinculoLicitacao(licitacao, unidadeAtual, { favorito: false });
     setLicitacoes((prev) => prev.filter((l) => l.id !== licitacao.id));
   };
 
   const handleMudarStatus = async (licId, novoStatus) => {
     setLicitacoes((prev) => prev.map((l) => (l.id === licId ? { ...l, status: novoStatus } : l)));
     try {
-      await base44.entities.Licitacao.update(licId, { status: novoStatus });
+      const licitacao = licitacoes.find((l) => l.id === licId);
+      if (licitacao) await atualizarVinculoLicitacao(licitacao, unidadeAtual, { status: novoStatus });
     } catch (e) {
       console.error("Erro ao atualizar status:", e);
       carregar();
@@ -373,7 +382,7 @@ export default function MinhasLicitacoes() {
   const handleMoverPara = async (novaListaId) => {
     if (!modalMoverPara) return;
     try {
-      await base44.entities.Licitacao.update(modalMoverPara.id, {
+      await atualizarVinculoLicitacao(modalMoverPara, unidadeAtual, {
         lista_favorita_id: novaListaId || "",
         favorito: true
       });
@@ -861,6 +870,7 @@ export default function MinhasLicitacoes() {
                   <GestaoRapida
                     licitacao={lic}
                     listas={listas}
+                    onUpdate={(item, campos) => atualizarVinculoLicitacao(item, unidadeAtual, campos)}
                     onUpdated={(id, campo, valor) =>
                       setLicitacoes((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)))
                     }

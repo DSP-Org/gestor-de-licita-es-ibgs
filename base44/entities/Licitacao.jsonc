@@ -4,7 +4,7 @@
   "properties": {
     "id_licitacao": {
       "type": "string",
-      "description": "Identificador \u00fanico da licita\u00e7\u00e3o no Alerta Licita\u00e7\u00e3o"
+      "description": "Identificador \u00fanico da licita\u00e7\u00e3o na fonte externa"
     },
     "titulo": {
       "type": "string",
@@ -37,11 +37,11 @@
     },
     "abertura": {
       "type": "string",
-      "description": "Data de abertura formatada (dd/mm/aaaa)"
+      "description": "Data de abertura formatada"
     },
     "tipo": {
       "type": "string",
-      "description": "Modalidade da licita\u00e7\u00e3o (ex: Preg\u00e3o eletr\u00f4nico)"
+      "description": "Modalidade da licita\u00e7\u00e3o"
     },
     "id_tipo": {
       "type": "string",
@@ -53,79 +53,24 @@
     },
     "link": {
       "type": "string",
-      "description": "Link da licita\u00e7\u00e3o no Alerta Licita\u00e7\u00e3o"
+      "description": "Link da licita\u00e7\u00e3o na fonte"
     },
     "link_externo": {
       "type": "string",
-      "description": "Link externo (portal oficial)"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "interessado",
-        "acompanhando",
-        "participando",
-        "vencida",
-        "ganha",
-        "perdida",
-        "descartada"
-      ],
-      "default": "interessado",
-      "description": "Status de gest\u00e3o da licita\u00e7\u00e3o"
-    },
-    "favorito": {
-      "type": "boolean",
-      "default": false,
-      "description": "Marcada como favorita"
-    },
-    "salva_manualmente": {
-      "type": "boolean",
-      "default": false,
-      "description": "True se foi salva manualmente pelo usu\u00e1rio"
-    },
-    "notas": {
-      "type": "string",
-      "description": "Anota\u00e7\u00f5es internas sobre a licita\u00e7\u00e3o"
-    },
-    "valor_proposta": {
-      "type": "number",
-      "description": "Valor da proposta apresentada"
+      "description": "Link do portal oficial"
     },
     "busca_origem": {
       "type": "string",
-      "description": "Nome da busca salva que originou este registro"
-    },
-    "usuario_id": {
-      "type": "string",
-      "description": "Usu\u00e1rio propriet\u00e1rio do resultado de sincroniza\u00e7\u00e3o autom\u00e1tica"
-    },
-    "unidade_negocio_id": {
-      "type": "string",
-      "description": "ID da unidade de neg\u00f3cio dona deste registro. Controla o acesso: qualquer usu\u00e1rio da unidade enxerga o registro."
-    },
-    "lista_favorita_id": {
-      "type": "string",
-      "description": "ID da lista de favoritos em que esta licitacao esta organizada"
+      "description": "Nome da busca que inseriu originalmente o registro global"
     },
     "data_sincronizacao": {
       "type": "string",
       "format": "date",
-      "description": "Data em que foi sincronizada (YYYY-MM-DD)"
+      "description": "Data da primeira sincroniza\u00e7\u00e3o"
     },
     "data_publicacao": {
       "type": "string",
-      "description": "Data em que a licitação foi publicada/inserida (YYYY-MM-DD)"
-    },
-    "oculto": {
-      "type": "boolean",
-      "default": false,
-      "description": "Descartada pelo usuario: some das listagens dele mas continua no banco. Apagar o registro de vez e restrito ao administrador."
-    },
-    "status_leitura": {
-      "type": "string",
-      "enum": ["nova", "vista", "lida"],
-      "default": "nova",
-      "description": "Status de leitura do usuario (nova, vista ou lida)"
+      "description": "Data de publica\u00e7\u00e3o ou inser\u00e7\u00e3o"
     }
   },
   "required": [
@@ -133,17 +78,21 @@
     "titulo"
   ],
   "rls": {
+    "read": {},
     "create": {
-      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
-    },
-    "read": {
-      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "update": {
-      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

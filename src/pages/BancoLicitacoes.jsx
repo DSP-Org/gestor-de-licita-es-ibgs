@@ -23,6 +23,7 @@ import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
 import { calcularUrgenciaAbertura } from "@/lib/prazosLicitacao";
 import { resolverEstadoLicitacao } from "@/lib/licitacaoCicloVida";
+import { combinarLicitacoesVinculos, atualizarVinculoLicitacao } from "@/lib/licitacaoUnidade";
 
 const hojeISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
@@ -71,6 +72,7 @@ export default function BancoLicitacoes() {
   const [busca, setBusca] = useState("");
   const [selecionada, setSelecionada] = useState(null);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
+  const unidadeAtual = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
 
   // ---------- Aba "Novas" (sincronização automática) ----------
   const [novas, setNovas] = useState([]);
@@ -113,73 +115,30 @@ export default function BancoLicitacoes() {
   // { modo: "atualizar" | "criar", itens: [...] } enquanto o seletor de lista está aberto.
   const [favoritando, setFavoritando] = useState(null);
 
-  // Carrega oportunidades ativas (não favoritadas e não descartadas) e particiona:
-  // - Novas: sincronizadas há até 3 dias e status_leitura === "nova"
-  // - Em Triagem: sincronizadas há mais de 3 dias OU já visualizadas/lidas/em_analise
+  const carregarVinculadas = async (filtroVinculo, limite = 500) => {
+    if (!unidadeAtual) return [];
+    const vinculos = toArray(await base44.entities.LicitacaoUnidade.filter(
+      { unidade_negocio_id: unidadeAtual, ...filtroVinculo },
+      "-updated_date",
+      limite,
+    ));
+    const ids = vinculos.map((v) => v.licitacao_id);
+    if (ids.length === 0) return [];
+    const globais = toArray(await base44.entities.Licitacao.filter({ id: { $in: ids } }, "-updated_date", limite));
+    return combinarLicitacoesVinculos(globais, vinculos);
+  };
+
   const carregarAtivas = async () => {
     setNovasLoading(true);
     setTriagemLoading(true);
     try {
-      const filtro = { oculto: { $ne: true }, favorito: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
-
-      const [lista, cachesList, buscasList] = await Promise.all([
-        base44.entities.Licitacao.filter(
-          filtro,
-          "-created_date",
-          200
-        ),
-        // Banco global consolidado: de onde vêm as licitações que casam com as
-        // buscas da unidade mas ainda não foram materializadas como Licitacao.
-        base44.entities.ConsultaCache.list("-updated_date", 100),
-        // Buscas ativas da unidade: necessárias pra saber quais critérios usar
-        // ao trazer licitações do cache que ainda não estão no banco.
-        base44.entities.BuscaSalva.filter(
-          escopoUnidade(isAdmin, filtroUnidade),
-          "nome",
-          100
-        ),
-      ]);
-
-      const listaArray = toArray(lista);
-      const idsNoBanco = new Set(listaArray.map((l) => l.id_licitacao));
-
-      // Critérios das buscas ativas da unidade — uma licitação do cache entra
-      // no funil se casar com pelo menos uma delas e ainda estiver em aberto.
-      const buscasAtivas = toArray(buscasList).filter((b) => b.ativa !== false);
-      const filtrosAtivas = buscasAtivas.map(filtrosDaBusca);
-
-      const cacheNovas = [];
-      if (filtrosAtivas.length > 0) {
-        const cacheMap = new Map();
-        for (const cache of toArray(cachesList)) {
-          const lics = toArray(cache.resultado?.licitacoes);
-          for (const l of lics) {
-            if (l?.id_licitacao && !cacheMap.has(l.id_licitacao)) {
-              cacheMap.set(l.id_licitacao, l);
-            }
-          }
-        }
-        for (const l of cacheMap.values()) {
-          if (idsNoBanco.has(l.id_licitacao)) continue;
-          if (!filtrosAtivas.some((f) => combinaComFiltros(l, f))) continue;
-          // Só entra quem ainda está em aberto (abertura hoje ou no futuro).
-          const urg = calcularUrgenciaAbertura(l.abertura_datetime, l.abertura);
-          if (urg.tipo === "encerrada" || urg.tipo === "sem_data") continue;
-          cacheNovas.push(l);
-        }
-      }
-
+      const listaArray = await carregarVinculadas({ oculto: { $ne: true }, favorito: { $ne: true } }, 1000);
       const arrNovas = [];
       const arrTriagem = [];
       for (const item of listaArray) {
-        if (resolverEstadoLicitacao(item) === "novas") {
-          arrNovas.push(item);
-        } else {
-          arrTriagem.push(item);
-        }
+        if (resolverEstadoLicitacao(item) === "novas") arrNovas.push(item);
+        else arrTriagem.push(item);
       }
-      arrNovas.push(...cacheNovas);
-
       setNovas(arrNovas);
       setTriagem(arrTriagem);
     } finally {
@@ -191,13 +150,7 @@ export default function BancoLicitacoes() {
   const carregarDescartadas = async () => {
     setDescartadasLoading(true);
     try {
-      // Itens descartados / ocultos
-      const filtro = {
-        oculto: true,
-        ...escopoUnidade(isAdmin, filtroUnidade),
-      };
-      const lista = await base44.entities.Licitacao.filter(filtro, "-updated_date", 500);
-      setDescartadas(toArray(lista));
+      setDescartadas(await carregarVinculadas({ oculto: true }));
     } finally {
       setDescartadasLoading(false);
     }
@@ -206,9 +159,7 @@ export default function BancoLicitacoes() {
   const carregarSelecionadas = async () => {
     setSelecionadasLoading(true);
     try {
-      const filtro = { favorito: true, oculto: { $ne: true }, ...escopoUnidade(isAdmin, filtroUnidade) };
-      const lista = await base44.entities.Licitacao.filter(filtro, "-updated_date", 500);
-      setSelecionadas(toArray(lista));
+      setSelecionadas(await carregarVinculadas({ favorito: true, oculto: { $ne: true } }));
     } finally {
       setSelecionadasLoading(false);
     }
@@ -222,7 +173,8 @@ export default function BancoLicitacoes() {
 
   const marcarLeitura = async (licId, novoStatus) => {
     try {
-      await base44.entities.Licitacao.update(licId, { status_leitura: novoStatus });
+      const licitacao = [...novas, ...triagem].find((l) => l.id === licId);
+      if (licitacao) await atualizarVinculoLicitacao(licitacao, unidadeAtual, { status_leitura: novoStatus });
       carregarAtivas();
     } catch (e) {
       console.error("Erro ao marcar leitura:", e);
@@ -428,7 +380,7 @@ export default function BancoLicitacoes() {
   const handleSaveNova = async (dados) => {
     const { id, created_date, updated_date, created_by_id, ...rest } = dados;
     if (selecionada?.id) {
-      await base44.entities.Licitacao.update(selecionada.id, rest);
+      await atualizarVinculoLicitacao(selecionada, unidadeAtual, rest);
     }
     setSelecionada(null);
     carregarAtivas();
@@ -450,54 +402,32 @@ export default function BancoLicitacoes() {
 
   const confirmarFavoritar = async (listaId) => {
     const { modo, itens } = favoritando;
-    const campos = { favorito: true, salva_manualmente: true, lista_favorita_id: listaId || "" };
+    const campos = { favorito: true, oculto: false, salva_manualmente: true, lista_favorita_id: listaId || "" };
 
-    if (modo === "criar") {
-      // Vindas do acervo (ConsultaCache), ainda não existem como Licitacao.
-      // unidade_negocio_id: com uma unidade escolhida no seletor, a licitação nasce dela.
-      await base44.entities.Licitacao.bulkCreate(
-        itens.map((lic) => ({
-          unidade_negocio_id: unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado),
-          id_licitacao: lic.id_licitacao,
-          titulo: lic.titulo,
-          objeto: lic.objeto,
-          uf: lic.uf,
-          municipio: lic.municipio,
-          municipio_ibge: lic.municipio_IBGE,
-          orgao: lic.orgao,
-          abertura_datetime: lic.abertura_datetime,
-          abertura: lic.abertura,
-          tipo: lic.tipo,
-          id_tipo: lic.id_tipo,
-          valor: lic.valor,
-          link: lic.link,
-          link_externo: lic.linkExterno,
-          status: "interessado",
-          data_sincronizacao: hojeISO(),
-          ...campos,
-        })),
-      );
-      setSalvasIds((prev) => new Set([...prev, ...itens.map((l) => l.id_licitacao)]));
-      // Alimenta o banco global compartilhado, economizando consultas futuras.
-      itens.forEach((lic) => base44.functions.invoke("salvarLicitacaoNoBanco", lic).catch(() => {}));
-    } else {
-      await base44.entities.Licitacao.bulkUpdate(itens.map((l) => ({ id: l.id, ...campos })));
+    for (const item of itens) {
+      let global = licitacoesBancoMap.get(String(item.id_licitacao)) || (item.vinculo_id ? item : null);
+      if (!global) {
+        const resposta = await base44.functions.invoke("salvarLicitacaoNoBanco", item);
+        global = resposta.data?.licitacao;
+      }
+      if (global?.id) await atualizarVinculoLicitacao(global, unidadeAtual, campos);
+    }
+    if (modo === "criar") setSalvasIds((prev) => new Set([...prev, ...itens.map((l) => l.id_licitacao)]));
+    else {
       setNovas((prev) => prev.filter((n) => !itens.some((i) => i.id === n.id)));
       setSelecionadasNovas(new Set());
     }
     setFavoritando(null);
+    carregarSelecionadas();
   };
 
   // Mover para Em Triagem (status_leitura: "vista", status: "em_analise")
   const handleMoverParaTriagem = async (licitacao) => {
     try {
-      await base44.entities.Licitacao.update(licitacao.id, {
-        status_leitura: "vista",
-        status: "em_analise",
-      });
+      await atualizarVinculoLicitacao(licitacao, unidadeAtual, { status_leitura: "vista" });
       // Atualiza os arrays locais imediatamente
       setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
-      setTriagem((prev) => [{ ...licitacao, status_leitura: "vista", status: "em_analise" }, ...prev]);
+      setTriagem((prev) => [{ ...licitacao, status_leitura: "vista" }, ...prev]);
       setSelecionadasNovas((prev) => {
         const next = new Set(prev);
         next.delete(licitacao.id_licitacao);
@@ -511,7 +441,7 @@ export default function BancoLicitacoes() {
   // Restaurar de Descartadas de volta para Novas
   const handleRestaurar = async (licitacao) => {
     try {
-      await base44.entities.Licitacao.update(licitacao.id, {
+      await atualizarVinculoLicitacao(licitacao, unidadeAtual, {
         oculto: false,
         status_leitura: "nova",
         status: "interessado",
@@ -533,7 +463,7 @@ export default function BancoLicitacoes() {
   const handleDeleteItem = async (licitacao) => {
     if (!window.confirm(`Descartar "${licitacao.titulo}"? Ela irá para a aba Descartadas.`)) return;
     try {
-      await base44.entities.Licitacao.update(licitacao.id, { oculto: true });
+      await atualizarVinculoLicitacao(licitacao, unidadeAtual, { oculto: true });
       setNovas((prev) => prev.filter((l) => l.id !== licitacao.id));
       setTriagem((prev) => prev.filter((l) => l.id !== licitacao.id));
       setSelecionadas((prev) => prev.filter((l) => l.id !== licitacao.id));
@@ -586,7 +516,7 @@ export default function BancoLicitacoes() {
   const excluirSelecionadasNovas = async () => {
     if (!window.confirm(`Descartar ${selecionadasNovas.size} licitação(ões)? Elas irão para a aba Descartadas.`)) return;
     const itens = itensSelecionadosNovas();
-    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, oculto: true })));
+    await Promise.all(itens.map((item) => atualizarVinculoLicitacao(item, unidadeAtual, { oculto: true })));
     setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
     setDescartadas((prev) => [...itens.map((i) => ({ ...i, oculto: true })), ...prev]);
     setSelecionadasNovas(new Set());
@@ -595,7 +525,7 @@ export default function BancoLicitacoes() {
   const excluirSelecionadasTriagem = async () => {
     if (!window.confirm(`Descartar ${selecionadasTriagem.size} licitação(ões)? Elas irão para a aba Descartadas.`)) return;
     const itens = itensSelecionadosTriagem();
-    await base44.entities.Licitacao.bulkUpdate(itens.map((item) => ({ id: item.id, oculto: true })));
+    await Promise.all(itens.map((item) => atualizarVinculoLicitacao(item, unidadeAtual, { oculto: true })));
     setTriagem((prev) => prev.filter((item) => !selecionadasTriagem.has(item.id_licitacao)));
     setDescartadas((prev) => [...itens.map((i) => ({ ...i, oculto: true })), ...prev]);
     setSelecionadasTriagem(new Set());
@@ -603,19 +533,17 @@ export default function BancoLicitacoes() {
 
   const moverSelecionadasTriagem = async () => {
     const itens = itensSelecionadosNovas();
-    await base44.entities.Licitacao.bulkUpdate(
-      itens.map((item) => ({ id: item.id, status_leitura: "vista", status: "em_analise" }))
-    );
+    await Promise.all(itens.map((item) => atualizarVinculoLicitacao(item, unidadeAtual, { status_leitura: "vista" })));
     setNovas((prev) => prev.filter((item) => !selecionadasNovas.has(item.id_licitacao)));
-    setTriagem((prev) => [...itens.map((i) => ({ ...i, status_leitura: "vista", status: "em_analise" })), ...prev]);
+    setTriagem((prev) => [...itens.map((i) => ({ ...i, status_leitura: "vista" })), ...prev]);
     setSelecionadasNovas(new Set());
   };
 
   const restaurarSelecionadasDescartadas = async () => {
     const itens = itensSelecionadosDescartadas();
-    await base44.entities.Licitacao.bulkUpdate(
-      itens.map((item) => ({ id: item.id, oculto: false, status_leitura: "nova", status: "interessado" }))
-    );
+    await Promise.all(itens.map((item) => atualizarVinculoLicitacao(item, unidadeAtual, {
+      oculto: false, status_leitura: "nova", status: "interessado",
+    })));
     setDescartadas((prev) => prev.filter((item) => !selecionadasDescartadas.has(item.id_licitacao)));
     setNovas((prev) => [...itens.map((i) => ({ ...i, oculto: false, status_leitura: "nova", status: "interessado" })), ...prev]);
     setSelecionadasDescartadas(new Set());
@@ -657,6 +585,7 @@ export default function BancoLicitacoes() {
       licitacao={licitacao}
       listas={listasFavoritas}
       empilhado={opcoes?.empilhado}
+      onUpdate={(item, campos) => atualizarVinculoLicitacao(item, unidadeAtual, campos)}
       onUpdated={(id, campo, valor) => {
         setNovas((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)));
         setTriagem((prev) => prev.map((l) => (l.id === id ? { ...l, [campo]: valor } : l)));
@@ -691,23 +620,24 @@ export default function BancoLicitacoes() {
     if (!usuarioLogado) return;
     (async () => {
       try {
-        const [cachesList, licitacoesDbList] = await Promise.all([
+        const [cachesList, licitacoesDbList, vinculosList] = await Promise.all([
           // O acervo é o banco global consolidado (ConsultaCache): compartilhado
           // entre usuários de propósito, para economizar chamadas à API.
           base44.entities.ConsultaCache.list("-updated_date", 500),
           // Carrega as licitações cadastradas da unidade para resolver o ciclo de vida
           // (Minhas, Em triagem, Descartadas, Novas) no Acervo Geral.
-          base44.entities.Licitacao.filter(
-            escopoUnidade(isAdmin, filtroUnidade),
+          base44.entities.Licitacao.list("-updated_date", 1000),
+          base44.entities.LicitacaoUnidade.filter(
+            { unidade_negocio_id: unidadeAtual },
             "-updated_date",
             1000,
           ),
         ]);
-        const listaDb = toArray(licitacoesDbList);
+        const listaDb = combinarLicitacoesVinculos(toArray(licitacoesDbList), toArray(vinculosList));
         const mapDb = new Map();
         const idsSalvas = new Set();
         for (const l of listaDb) {
-          if (l.id_licitacao) {
+          if (l.id_licitacao && l.vinculo_id) {
             mapDb.set(String(l.id_licitacao), l);
             if (!l.oculto && l.favorito) {
               idsSalvas.add(l.id_licitacao);
@@ -749,7 +679,7 @@ export default function BancoLicitacoes() {
       .then((res) => setBuscasSalvasAcervo(toArray(res).filter((b) => b.ativa !== false)));
     // Recarrega ao trocar de unidade no seletor: sem estas dependências a lista
     // ficava congelada no que foi carregado na primeira montagem.
-  }, [isAdmin, filtroUnidade, usuarioLogado]);
+  }, [isAdmin, filtroUnidade, usuarioLogado, unidadeAtual]);
 
   // O acervo vem do ConsultaCache, que é global por design (economiza chamadas à
   // API entre usuários). Para não expor o banco inteiro, o recorte é sempre a

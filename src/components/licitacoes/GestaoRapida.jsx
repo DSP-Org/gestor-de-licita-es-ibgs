@@ -10,7 +10,7 @@ const campo =
 // Triagem direto no card, para não obrigar a abrir o detalhe só para classificar.
 // `listas` vem do pai já carregado — buscar aqui dispararia uma consulta por card.
 // `empilhado` é usado no popover da tabela, onde não há largura para as colunas.
-export default function GestaoRapida({ licitacao, listas = [], onUpdated, empilhado = false }) {
+export default function GestaoRapida({ licitacao, listas = [], onUpdated, onUpdate, empilhado = false }) {
   const [salvando, setSalvando] = useState(null);
   const [erro, setErro] = useState("");
 
@@ -18,7 +18,8 @@ export default function GestaoRapida({ licitacao, listas = [], onUpdated, empilh
     setSalvando(marcador);
     setErro("");
     try {
-      await base44.entities.Licitacao.update(licitacao.id, campos);
+      if (onUpdate) await onUpdate(licitacao, campos);
+      else await base44.entities.Licitacao.update(licitacao.id, campos);
       Object.entries(campos).forEach(([k, v]) => onUpdated?.(licitacao.id, k, v));
     } catch (e) {
       setErro(e?.message || "Não foi possível salvar.");

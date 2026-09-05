@@ -5,6 +5,7 @@ import { consultarComCache } from "../../shared/consultaCache.ts";
 import { enviarTelegram } from "../../shared/telegram.ts";
 import { enviarEmailExterno } from "../../shared/email.ts";
 import { hojeSP, dataSP, escapaHTML, criaEmailTemplate } from "../../shared/utils.ts";
+import { upsertLicitacaoUnidade } from "../../shared/licitacaoUnidade.ts";
 
 export default async function(req) {
   try {
@@ -104,59 +105,59 @@ export default async function(req) {
           ? filtrarPorTodasPalavras(lics, busca.palavra_chave)
           : lics;
 
-        // Otimização: Filtra no banco apenas as licitações com id_licitacao pertencentes aos resultados atuais
-        const idsPesquisa = resultados.map((l) => l.id_licitacao).filter(Boolean);
-        const existentes = idsPesquisa.length > 0
-          ? await base44.asServiceRole.entities.Licitacao.filter({
-              unidade_negocio_id: busca.unidade_negocio_id,
-              id_licitacao: { $in: idsPesquisa },
-            })
-          : [];
-        const existIds = new Set(existentes.map((l) => l.id_licitacao));
-
         const hoje = hojeSP();
         const hojeZeroHora = new Date(`${hoje}T00:00:00-03:00`);
+        const resultadosAbertos = resultados.filter((l) => {
+          if (!l.abertura_datetime) return true;
+          const abertura = new Date(l.abertura_datetime);
+          return isNaN(abertura.getTime()) || abertura >= hojeZeroHora;
+        });
+        const idsPesquisa = resultadosAbertos.map((l) => l.id_licitacao).filter(Boolean);
+        const existentes = idsPesquisa.length > 0
+          ? await base44.asServiceRole.entities.Licitacao.filter({ id_licitacao: { $in: idsPesquisa } })
+          : [];
+        const porIdExterno = new Map(existentes.map((l) => [l.id_licitacao, l]));
+        const faltantes = resultadosAbertos.filter((l) => !porIdExterno.has(l.id_licitacao)).map((l) => ({
+          id_licitacao: l.id_licitacao,
+          titulo: l.titulo,
+          objeto: l.objeto,
+          uf: l.uf,
+          municipio: l.municipio,
+          municipio_ibge: l.municipio_IBGE,
+          orgao: l.orgao,
+          abertura_datetime: l.abertura_datetime,
+          abertura: l.abertura,
+          tipo: l.tipo,
+          id_tipo: l.id_tipo,
+          valor: l.valor,
+          link: l.link,
+          link_externo: l.linkExterno,
+          busca_origem: busca.nome,
+          data_sincronizacao: hoje,
+          data_publicacao: l._dataInsercao || hoje,
+        }));
+        const criadas = faltantes.length > 0
+          ? await base44.asServiceRole.entities.Licitacao.bulkCreate(faltantes)
+          : [];
+        for (const l of criadas) porIdExterno.set(l.id_licitacao, l);
 
-        const novas = resultados
-          .filter((l) => {
-            if (existIds.has(l.id_licitacao)) return false;
-            // Se tiver data de abertura definida, ignora se já venceu (abertura < hoje)
-            if (l.abertura_datetime) {
-              const dtAbertura = new Date(l.abertura_datetime);
-              if (!isNaN(dtAbertura.getTime()) && dtAbertura < hojeZeroHora) {
-                return false;
-              }
-            }
-            return true;
-          })
-          .map((l) => ({
-            id_licitacao: l.id_licitacao,
-            titulo: l.titulo,
-            objeto: l.objeto,
-            uf: l.uf,
-            municipio: l.municipio,
-            municipio_ibge: l.municipio_IBGE,
-            orgao: l.orgao,
-            abertura_datetime: l.abertura_datetime,
-            abertura: l.abertura,
-            tipo: l.tipo,
-            id_tipo: l.id_tipo,
-            valor: l.valor,
-            link: l.link,
-            link_externo: l.linkExterno,
-            status: "interessado",
-            favorito: false,
-            busca_origem: busca.nome,
-            usuario_id: donoId,
-            unidade_negocio_id: busca.unidade_negocio_id,
-            salva_manualmente: false,
-            data_sincronizacao: hoje,
-            data_publicacao: l._dataInsercao || hoje,
-            status_leitura: "nova",
-          }));
+        const idsGlobais = Array.from(porIdExterno.values()).map((l) => l.id);
+        const vinculosExistentes = idsGlobais.length > 0
+          ? await base44.asServiceRole.entities.LicitacaoUnidade.filter({
+              unidade_negocio_id: busca.unidade_negocio_id,
+              licitacao_id: { $in: idsGlobais },
+            })
+          : [];
+        const vinculadas = new Set(vinculosExistentes.map((v) => v.licitacao_id));
+        const novas = [];
+        for (const resultado of resultadosAbertos) {
+          const global = porIdExterno.get(resultado.id_licitacao);
+          if (!global || vinculadas.has(global.id)) continue;
+          await upsertLicitacaoUnidade(base44, global.id, busca.unidade_negocio_id, { status_leitura: 'nova' });
+          novas.push(global);
+        }
 
         if (novas.length > 0) {
-          await base44.asServiceRole.entities.Licitacao.bulkCreate(novas);
           totalNovas += novas.length;
 
           const codigo = crypto.randomUUID();
@@ -265,16 +266,24 @@ export default async function(req) {
         // parou de rodar por um tempo) deixava um acúmulo de vencidas antigas
         // fora da janela dos 200 mais recentes, nunca mais alcançadas.
         try {
-          const vencidasParaOcultar = await base44.asServiceRole.entities.Licitacao.filter({
+          const vinculosUnidade = await base44.asServiceRole.entities.LicitacaoUnidade.filter({
             unidade_negocio_id: busca.unidade_negocio_id,
             favorito: false,
             oculto: { $ne: true },
-            abertura_datetime: { $lt: hojeZeroHora.toISOString() },
-          }, "-abertura_datetime", 2000);
-
+          }, "-updated_date", 2000);
+          const idsVinculados = vinculosUnidade.map((v) => v.licitacao_id);
+          const globaisVinculadas = idsVinculados.length > 0
+            ? await base44.asServiceRole.entities.Licitacao.filter({ id: { $in: idsVinculados } })
+            : [];
+          const vencidasIds = new Set(globaisVinculadas.filter((l) => {
+            if (!l.abertura_datetime) return false;
+            const abertura = new Date(l.abertura_datetime);
+            return !isNaN(abertura.getTime()) && abertura < hojeZeroHora;
+          }).map((l) => l.id));
+          const vencidasParaOcultar = vinculosUnidade.filter((v) => vencidasIds.has(v.licitacao_id));
           if (vencidasParaOcultar.length > 0) {
-            await base44.asServiceRole.entities.Licitacao.bulkUpdate(
-              vencidasParaOcultar.map((l) => ({ id: l.id, oculto: true, status: "vencida" }))
+            await base44.asServiceRole.entities.LicitacaoUnidade.bulkUpdate(
+              vencidasParaOcultar.map((v) => ({ id: v.id, oculto: true, status: "vencida" }))
             );
           }
         } catch (errLimpeza) {
@@ -286,17 +295,17 @@ export default async function(req) {
         try {
           const limiteAutoTriagem = dataSP(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
 
-          const novasParaTriagem = await base44.asServiceRole.entities.Licitacao.filter({
+          const novasParaTriagem = await base44.asServiceRole.entities.LicitacaoUnidade.filter({
             unidade_negocio_id: busca.unidade_negocio_id,
             status_leitura: "nova",
             favorito: { $ne: true },
             oculto: { $ne: true },
-            data_sincronizacao: { $lte: limiteAutoTriagem },
+            created_date: { $lte: `${limiteAutoTriagem}T23:59:59.999Z` },
           }, "-created_date", 2000);
 
           if (novasParaTriagem.length > 0) {
-            await base44.asServiceRole.entities.Licitacao.bulkUpdate(
-              novasParaTriagem.map((l) => ({ id: l.id, status_leitura: "vista", status: "em_analise" }))
+            await base44.asServiceRole.entities.LicitacaoUnidade.bulkUpdate(
+              novasParaTriagem.map((v) => ({ id: v.id, status_leitura: "vista" }))
             );
           }
         } catch (errAutoTriagem) {
@@ -308,14 +317,18 @@ export default async function(req) {
           if (busca.notificar_email !== false) {
             const limitePrazoCritico = new Date(hojeZeroHora.getTime() + 48 * 60 * 60 * 1000); // próximas 48h
 
-            const favoritadasAtivas = await base44.asServiceRole.entities.Licitacao.filter({
+            const vinculosFavoritos = await base44.asServiceRole.entities.LicitacaoUnidade.filter({
               unidade_negocio_id: busca.unidade_negocio_id,
               favorito: true,
               status: { $in: ["interessado", "acompanhando", "participando"] },
               oculto: { $ne: true },
-            }, "-abertura_datetime", 100);
+            }, "-updated_date", 100);
+            const idsFavoritos = vinculosFavoritos.map((v) => v.licitacao_id);
+            const favoritadasAtivas = idsFavoritos.length > 0
+              ? await base44.asServiceRole.entities.Licitacao.filter({ id: { $in: idsFavoritos } })
+              : [];
 
-            const criticas = (favoritadasAtivas || []).filter((l) => {
+            const criticas = favoritadasAtivas.filter((l) => {
               if (!l.abertura_datetime) return false;
               const dt = new Date(l.abertura_datetime);
               return !isNaN(dt.getTime()) && dt >= hojeZeroHora && dt <= limitePrazoCritico;

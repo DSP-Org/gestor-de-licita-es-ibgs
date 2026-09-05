@@ -6,6 +6,9 @@ import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { StatusBadge, formatValor } from "@/components/licitacoes/LicitacaoCard";
 import ShareDialog from "@/components/licitacoes/ShareDialog";
+import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
+import { unidadeEfetiva } from "@/lib/escopoUnidade";
+import { atualizarVinculoLicitacao } from "@/lib/licitacaoUnidade";
 
 export default function LicitacaoDetalhe() {
   const { idLicitacao } = useParams();
@@ -18,38 +21,42 @@ export default function LicitacaoDetalhe() {
   const [notas, setNotas] = useState("");
   const [valorProposta, setValorProposta] = useState("");
   const [compartilhar, setCompartilhar] = useState(false);
+  const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
+  const unidadeAtual = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
 
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    base44.entities.Licitacao.filter({ id_licitacao: idLicitacao }, "-created_date", 1)
-      .then((lista) => {
+    Promise.all([
+      base44.entities.Licitacao.filter({ id_licitacao: idLicitacao }, "-created_date", 1),
+      unidadeAtual ? base44.entities.LicitacaoUnidade.filter({ unidade_negocio_id: unidadeAtual }, "-updated_date", 1000) : [],
+    ]).then(([lista, vinculos]) => {
         if (cancelado) return;
         const l = Array.isArray(lista) && lista.length > 0 ? lista[0] : null;
+        const vinculo = l ? vinculos.find((v) => v.licitacao_id === l.id) : null;
         setLicitacao(l);
         if (l) {
-          setStatus(l.status || "interessado");
-          setFavorito(!!l.favorito);
-          setNotas(l.notas || "");
-          setValorProposta(l.valor_proposta || "");
+          setStatus(vinculo?.status || "interessado");
+          setFavorito(!!vinculo?.favorito);
+          setNotas(vinculo?.notas || "");
+          setValorProposta(vinculo?.valor_proposta || "");
         }
       })
       .catch(() => !cancelado && setLicitacao(null))
       .finally(() => !cancelado && setLoading(false));
     return () => { cancelado = true; };
-  }, [idLicitacao]);
+  }, [idLicitacao, unidadeAtual]);
 
   const salvar = async () => {
     if (!licitacao) return;
     setSalvando(true);
     try {
-      const atualizada = await base44.entities.Licitacao.update(licitacao.id, {
+      await atualizarVinculoLicitacao(licitacao, unidadeAtual, {
         status,
         favorito,
         notas,
         valor_proposta: valorProposta === "" ? null : Number(valorProposta),
       });
-      setLicitacao(atualizada);
     } catch (e) {
       // erro silencioso — o erro sobe para o painel de erros
     } finally {
