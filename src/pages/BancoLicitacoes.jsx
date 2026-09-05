@@ -15,6 +15,7 @@ import GestaoRapida from "@/components/licitacoes/GestaoRapida";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import FiltrosGeograficos from "@/components/licitacoes/FiltrosGeograficos";
+import FiltroAlertas from "@/components/licitacoes/FiltroAlertas";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
 import Paginacao from "@/components/licitacoes/Paginacao";
 import { toArray } from "@/lib/toArray";
@@ -997,27 +998,6 @@ export default function BancoLicitacoes() {
 
       {aba === "novas" ? (
         <>
-          {Object.keys(porBuscaOrigem).length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(porBuscaOrigem).map(([origem, count]) => (
-                <button
-                  key={origem}
-                  onClick={() => setFiltroOrigem((prev) => (prev === origem ? null : origem))}
-                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
-                    filtroOrigem === origem ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/70"
-                  }`}
-                >
-                  {origem}: <b>{count}</b>
-                </button>
-              ))}
-              {filtroOrigem && (
-                <button onClick={() => setFiltroOrigem(null)} className="text-xs text-muted-foreground underline px-1">
-                  Limpar filtro
-                </button>
-              )}
-            </div>
-          )}
-
           {/* Filtros */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
             <div className="relative flex-1 min-w-0">
@@ -1029,6 +1009,11 @@ export default function BancoLicitacoes() {
                 className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+            <FiltroAlertas
+              alertas={Object.entries(porBuscaOrigem)}
+              filtroOrigem={filtroOrigem}
+              setFiltroOrigem={setFiltroOrigem}
+            />
             <FiltrosGeograficos
               ufs={ufsDisponiveis}
               municipios={municipiosDisponiveis}
