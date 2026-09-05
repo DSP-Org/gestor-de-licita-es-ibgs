@@ -16,6 +16,7 @@ import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import BuscaMultiSelect from "@/components/buscas/BuscaMultiSelect";
 import FiltrosGeograficos from "@/components/licitacoes/FiltrosGeograficos";
 import FavoritasTab from "@/components/licitacoes/FavoritasTab";
+import Paginacao from "@/components/licitacoes/Paginacao";
 import { toArray } from "@/lib/toArray";
 import { exportarLicitacoesPDF } from "@/lib/exportarLicitacoesPDF";
 import { exportarLicitacoesExcel } from "@/lib/exportarLicitacoesExcel";
@@ -93,6 +94,11 @@ export default function BancoLicitacoes() {
   const [filtroUF, setFiltroUF] = useState("todos");
   const [filtroMunicipio, setFiltroMunicipio] = useState("todos");
   const [filtroModalidade, setFiltroModalidade] = useState("todos");
+  const porPaginaFunil = 30;
+  const [paginaNovas, setPaginaNovas] = useState(1);
+  const [paginaTriagem, setPaginaTriagem] = useState(1);
+  const [paginaDescartadas, setPaginaDescartadas] = useState(1);
+  const [paginaSelecionadas, setPaginaSelecionadas] = useState(1);
   // Carregadas uma vez e compartilhadas por todos os cards, para o seletor de
   // lista não disparar uma consulta por licitação.
   const [listasFavoritas, setListasFavoritas] = useState([]);
@@ -331,6 +337,22 @@ export default function BancoLicitacoes() {
       return true;
     });
   }, [selecionadas, busca, filtroUF, filtroMunicipio, filtroModalidade]);
+
+  // Reset de paginação ao trocar filtros
+  useEffect(() => { setPaginaNovas(1); }, [busca, filtroUF, filtroMunicipio, filtroModalidade, filtroStatus, filtroOrigem, buscasSelecionadas]);
+  useEffect(() => { setPaginaTriagem(1); }, [busca, filtroUF, filtroMunicipio, filtroModalidade, filtroStatus, filtroOrigem, buscasSelecionadas]);
+  useEffect(() => { setPaginaDescartadas(1); }, [busca, filtroUF, filtroMunicipio, filtroModalidade, filtroStatus, filtroOrigem, buscasSelecionadas]);
+  useEffect(() => { setPaginaSelecionadas(1); }, [busca, filtroUF, filtroMunicipio, filtroModalidade]);
+
+  const totalPaginasNovas = Math.max(1, Math.ceil(novasFiltradas.length / porPaginaFunil));
+  const totalPaginasTriagem = Math.max(1, Math.ceil(triagemFiltradas.length / porPaginaFunil));
+  const totalPaginasDescartadas = Math.max(1, Math.ceil(descartadasFiltradas.length / porPaginaFunil));
+  const totalPaginasSelecionadas = Math.max(1, Math.ceil(selecionadasFiltradas.length / porPaginaFunil));
+
+  const novasPaginadas = useMemo(() => novasFiltradas.slice((paginaNovas - 1) * porPaginaFunil, paginaNovas * porPaginaFunil), [novasFiltradas, paginaNovas]);
+  const triagemPaginadas = useMemo(() => triagemFiltradas.slice((paginaTriagem - 1) * porPaginaFunil, paginaTriagem * porPaginaFunil), [triagemFiltradas, paginaTriagem]);
+  const descartadasPaginadas = useMemo(() => descartadasFiltradas.slice((paginaDescartadas - 1) * porPaginaFunil, paginaDescartadas * porPaginaFunil), [descartadasFiltradas, paginaDescartadas]);
+  const selecionadasPaginadas = useMemo(() => selecionadasFiltradas.slice((paginaSelecionadas - 1) * porPaginaFunil, paginaSelecionadas * porPaginaFunil), [selecionadasFiltradas, paginaSelecionadas]);
 
   // Opções de UF, município e modalidade derivadas de todas as licitações carregadas
   const ufsDisponiveis = useMemo(() => {
@@ -1032,7 +1054,7 @@ export default function BancoLicitacoes() {
           )}
 
           <LicitacoesVisualizacao
-            licitacoes={novasFiltradas}
+            licitacoes={novasPaginadas}
             loading={novasLoading}
             vazio={novasFiltradas.length === 0}
             mensagemVazio={
@@ -1059,6 +1081,8 @@ export default function BancoLicitacoes() {
               className: "bg-primary text-primary-foreground ring-primary/30",
             })}
           />
+
+          <Paginacao pagina={paginaNovas} totalPaginas={totalPaginasNovas} onChange={setPaginaNovas} />
         </>
       ) : aba === "triagem" ? (
         <>
@@ -1125,7 +1149,7 @@ export default function BancoLicitacoes() {
           )}
 
           <LicitacoesVisualizacao
-            licitacoes={triagemFiltradas}
+            licitacoes={triagemPaginadas}
             loading={triagemLoading}
             vazio={triagemFiltradas.length === 0}
             mensagemVazio={
@@ -1152,6 +1176,8 @@ export default function BancoLicitacoes() {
               className: "bg-status-blue text-status-blue-foreground ring-status-blue/30",
             })}
           />
+
+          <Paginacao pagina={paginaTriagem} totalPaginas={totalPaginasTriagem} onChange={setPaginaTriagem} />
         </>
       ) : aba === "descartadas" ? (
         <>
@@ -1216,7 +1242,7 @@ export default function BancoLicitacoes() {
           )}
 
           <LicitacoesVisualizacao
-            licitacoes={descartadasFiltradas}
+            licitacoes={descartadasPaginadas}
             loading={descartadasLoading}
             vazio={descartadasFiltradas.length === 0}
             mensagemVazio={
@@ -1237,6 +1263,8 @@ export default function BancoLicitacoes() {
             onToggleSelecao={toggleSelecaoDescartadas}
             renderActions={(lic) => renderActionsFunil(lic, "descartadas")}
           />
+
+          <Paginacao pagina={paginaDescartadas} totalPaginas={totalPaginasDescartadas} onChange={setPaginaDescartadas} />
         </>
       ) : aba === "selecionadas" ? (
         <>
@@ -1296,7 +1324,7 @@ export default function BancoLicitacoes() {
           </div>
 
           <LicitacoesVisualizacao
-            licitacoes={selecionadasFiltradas}
+            licitacoes={selecionadasPaginadas}
             loading={selecionadasLoading}
             vazio={selecionadasFiltradas.length === 0}
             onRowClick={setSelecionada}
@@ -1305,6 +1333,8 @@ export default function BancoLicitacoes() {
             renderActions={(lic) => renderActionsFunil(lic, "selecionadas")}
             renderGestao={renderGestaoFunil}
           />
+
+          <Paginacao pagina={paginaSelecionadas} totalPaginas={totalPaginasSelecionadas} onChange={setPaginaSelecionadas} />
         </>
       ) : (
         <>
@@ -1428,27 +1458,7 @@ export default function BancoLicitacoes() {
             }}
           />
 
-          {totalPaginas > 1 && (
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                disabled={pagina === 1}
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-4 h-4" /> Anterior
-              </button>
-              <span className="text-sm text-muted-foreground">
-                Página <span className="font-medium text-foreground">{pagina}</span> de {totalPaginas}
-              </span>
-              <button
-                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                disabled={pagina === totalPaginas}
-                className="inline-flex items-center gap-1 px-3 py-2 text-sm border rounded-md hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Próxima <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+          <Paginacao pagina={pagina} totalPaginas={totalPaginas} onChange={setPagina} />
         </>
       )}
 
