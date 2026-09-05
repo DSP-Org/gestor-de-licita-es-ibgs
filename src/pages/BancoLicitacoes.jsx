@@ -385,7 +385,11 @@ export default function BancoLicitacoes() {
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
 
+    // Inicializa com todos os alertas ativos, mesmo os sem correspondência
     const grupos = {};
+    for (const b of buscasFiltradas) {
+      grupos[b.nome] = 0;
+    }
     novas
       .filter((l) => {
         if (!pertenceAUnidade(l, filtroUnidade)) return false;
@@ -410,7 +414,6 @@ export default function BancoLicitacoes() {
         return true;
       })
       .forEach((l) => {
-        // Conta a licitação em cada alerta cujos critérios ela atende
         for (const b of buscasFiltradas) {
           const f = filtrosDaBusca(b);
           if (combinaComFiltros(l, f)) {
