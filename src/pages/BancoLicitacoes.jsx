@@ -388,25 +388,25 @@ export default function BancoLicitacoes() {
     return Array.from(set).sort();
   }, [novas, triagem, descartadas, selecionadas]);
 
-  // Contagem por alerta: percorre exatamente a lista já filtrada (novasFiltradas)
-  // e atribui cada licitação a um único alerta — primeiro pelo busca_origem,
-  // depois pelo critério (caso a busca tenha sido renomeada/editada). Assim a
-  // soma dos contadores é sempre igual ao total exibido na aba.
+  // Contagem por alerta: percorre a lista já filtrada (novasFiltradas) e conta
+  // cada licitação em TODOS os alertas cujos critérios ela atende, mais no
+  // alerta cujo nome bate com busca_origem (mesmo se os critérios foram
+  // editados depois). A soma pode passar do total porque uma licitação pode
+  // contar em mais de um alerta — e isso é correto.
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
     const grupos = {};
     for (const b of buscasFiltradas) grupos[b.nome] = 0;
     for (const l of novasFiltradas) {
-      const origem = (l.busca_origem || "").trim().toLowerCase();
-      const buscaOrigem = buscasFiltradas.find((b) => b.nome?.trim().toLowerCase() === origem);
-      if (buscaOrigem) {
-        grupos[buscaOrigem.nome] += 1;
-        continue;
+      for (const b of buscasFiltradas) {
+        const origem = (l.busca_origem || "").trim().toLowerCase();
+        const nomeBusca = b.nome?.trim().toLowerCase();
+        const bateNome = origem && origem === nomeBusca;
+        const bateCriterio = combinaComFiltros(l, filtrosDaBusca(b));
+        if (bateNome || bateCriterio) {
+          grupos[b.nome] += 1;
+        }
       }
-      // Origem não bate com nenhum alerta atual (renomeada/editada): conta no
-      // primeiro alerta cujos critérios a licitação atende.
-      const alertaCriterio = buscasFiltradas.find((b) => combinaComFiltros(l, filtrosDaBusca(b)));
-      if (alertaCriterio) grupos[alertaCriterio.nome] += 1;
     }
     return grupos;
   }, [novasFiltradas, buscasFiltradas]);
