@@ -426,10 +426,23 @@ export default function BancoLicitacoes() {
         return true;
       })
       .forEach((l) => {
+        // Conta a licitação no alerta cujo nome bate com busca_origem, mesmo
+        // que os critérios do alerta tenham sido editados depois da sincronização.
+        const origem = (l.busca_origem || "").trim().toLowerCase();
+        const buscaOrigem = buscasFiltradas.find((b) => b.nome?.trim().toLowerCase() === origem);
+        let contada = false;
+        if (buscaOrigem) {
+          grupos[buscaOrigem.nome] = (grupos[buscaOrigem.nome] || 0) + 1;
+          contada = true;
+        }
+        // Também conta nos alertas cujos critérios a licitação atende — uma
+        // licitação pode aparecer em mais de um alerta se casar com vários.
         for (const b of buscasFiltradas) {
+          if (b === buscaOrigem) continue;
           const f = filtrosDaBusca(b);
           if (combinaComFiltros(l, f)) {
             grupos[b.nome] = (grupos[b.nome] || 0) + 1;
+            contada = true;
           }
         }
       });
