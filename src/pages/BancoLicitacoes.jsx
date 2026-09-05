@@ -381,16 +381,28 @@ export default function BancoLicitacoes() {
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
 
-    const agora = new Date();
-    const hojeZeroHora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     const grupos = {};
     novas
       .filter((l) => {
         if (!pertenceAUnidade(l, filtroUnidade)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
-        const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
-        const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
-        if (!origemBate && !criterioBate) return false;
+
+        // Respeita a busca selecionada no seletor. Se "todas" está selecionada,
+        // usa os critérios de todas as buscas ativas; se uma específica está
+        // marcada, conta só o que pertence a ela.
+        if (todasBuscasSelecionadas) {
+          const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
+          const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
+          if (!origemBate && !criterioBate) return false;
+        } else {
+          const selecionada = buscasFiltradas.find((b) => buscasSelecionadas.includes(b.id));
+          if (!selecionada) return false;
+          const nomeBusca = selecionada.nome?.trim().toLowerCase();
+          const filtroBusca = filtrosDaBusca(selecionada);
+          const bateNome = l.busca_origem && l.busca_origem.trim().toLowerCase() === nomeBusca;
+          const bateCriterio = combinaComFiltros(l, filtroBusca);
+          if (!bateNome && !bateCriterio) return false;
+        }
 
         if (busca) {
           const q = busca.toLowerCase();
@@ -404,7 +416,7 @@ export default function BancoLicitacoes() {
         grupos[key] = (grupos[key] || 0) + 1;
       });
     return grupos;
-  }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas]);
+  }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
