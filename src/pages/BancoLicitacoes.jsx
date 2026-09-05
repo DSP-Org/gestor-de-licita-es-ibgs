@@ -388,66 +388,28 @@ export default function BancoLicitacoes() {
     return Array.from(set).sort();
   }, [novas, triagem, descartadas, selecionadas]);
 
-  // Contagem por origem. Respeita unidade, critérios de buscas ativas, status e termo de busca,
-  // mas de propósito ignora o próprio filtro de origem: se o considerasse, escolher uma
-  // origem zeraria as demais e não haveria como trocar de seleção.
-  // Agrupa licitações por alerta ativo, usando os critérios de cada busca
-  // (uf, modalidade, município, palavra-chave) — não o campo busca_origem,
-  // que pode estar desatualizado se a busca foi renomeada.
+  // Contagem por alerta: percorre exatamente a lista já filtrada (novasFiltradas)
+  // e atribui cada licitação a um único alerta — primeiro pelo busca_origem,
+  // depois pelo critério (caso a busca tenha sido renomeada/editada). Assim a
+  // soma dos contadores é sempre igual ao total exibido na aba.
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
-
-    // Inicializa com todos os alertas ativos, mesmo os sem correspondência
     const grupos = {};
-    for (const b of buscasFiltradas) {
-      grupos[b.nome] = 0;
+    for (const b of buscasFiltradas) grupos[b.nome] = 0;
+    for (const l of novasFiltradas) {
+      const origem = (l.busca_origem || "").trim().toLowerCase();
+      const buscaOrigem = buscasFiltradas.find((b) => b.nome?.trim().toLowerCase() === origem);
+      if (buscaOrigem) {
+        grupos[buscaOrigem.nome] += 1;
+        continue;
+      }
+      // Origem não bate com nenhum alerta atual (renomeada/editada): conta no
+      // primeiro alerta cujos critérios a licitação atende.
+      const alertaCriterio = buscasFiltradas.find((b) => combinaComFiltros(l, filtrosDaBusca(b)));
+      if (alertaCriterio) grupos[alertaCriterio.nome] += 1;
     }
-    novas
-      .filter((l) => {
-        if (l.unidade_negocio_id && !pertenceAUnidade(l, filtroUnidade)) return false;
-        if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
-
-        if (todasBuscasSelecionadas) {
-          const origemBate = l.busca_origem && nomesBuscasAtivas.has(l.busca_origem.trim().toLowerCase());
-          const criterioBate = filtrosDasBuscasAtivas.some((f) => combinaComFiltros(l, f));
-          if (!origemBate && !criterioBate) return false;
-        } else {
-          const selecionada = buscasFiltradas.find((b) => buscasSelecionadas.includes(b.id));
-          if (!selecionada) return false;
-          const nomeBusca = selecionada.nome?.trim().toLowerCase();
-          if (!l.busca_origem || l.busca_origem.trim().toLowerCase() !== nomeBusca) return false;
-        }
-
-        if (busca) {
-          const q = busca.toLowerCase();
-          const txt = `${l.titulo} ${l.objeto} ${l.orgao} ${l.municipio} ${l.uf} ${l.id_licitacao} ${l.busca_origem || ""}`.toLowerCase();
-          if (!txt.includes(q)) return false;
-        }
-        return true;
-      })
-      .forEach((l) => {
-        // Conta a licitação no alerta cujo nome bate com busca_origem, mesmo
-        // que os critérios do alerta tenham sido editados depois da sincronização.
-        const origem = (l.busca_origem || "").trim().toLowerCase();
-        const buscaOrigem = buscasFiltradas.find((b) => b.nome?.trim().toLowerCase() === origem);
-        let contada = false;
-        if (buscaOrigem) {
-          grupos[buscaOrigem.nome] = (grupos[buscaOrigem.nome] || 0) + 1;
-          contada = true;
-        }
-        // Também conta nos alertas cujos critérios a licitação atende — uma
-        // licitação pode aparecer em mais de um alerta se casar com vários.
-        for (const b of buscasFiltradas) {
-          if (b === buscaOrigem) continue;
-          const f = filtrosDaBusca(b);
-          if (combinaComFiltros(l, f)) {
-            grupos[b.nome] = (grupos[b.nome] || 0) + 1;
-            contada = true;
-          }
-        }
-      });
     return grupos;
-  }, [novas, filtroUnidade, filtroStatus, busca, filtrosDasBuscasAtivas, nomesBuscasAtivas, buscasFiltradas, buscasSelecionadas, todasBuscasSelecionadas]);
+  }, [novasFiltradas, buscasFiltradas]);
 
   const sincronizarAgora = async () => {
     setSincronizando(true);
