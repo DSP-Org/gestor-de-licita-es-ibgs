@@ -825,8 +825,9 @@ export default function BancoLicitacoes() {
     ? listaNavegacao.findIndex((l) => l.id_licitacao === selecionada.id_licitacao)
     : -1;
 
-  // Total geral: quantos itens estão visíveis no Acervo respeitando os filtros.
-  const totalGeralFiltrado = acervoFiltrado.length;
+  // Total geral: soma das abas do funil (Novas + Triagem + Descartadas + Selecionadas),
+  // para que o badge "Total Aberta" seja consistente com a soma das demais abas.
+  const totalGeralFiltrado = novasFiltradas.length + triagemFiltradas.length + descartadasFiltradas.length + selecionadasFiltradas.length;
 
   const countAbaAtual =
     aba === "novas"
