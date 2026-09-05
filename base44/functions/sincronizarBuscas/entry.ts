@@ -75,6 +75,7 @@ export default async function(req) {
         for (const data_insercao of datasParaSincronizar(busca.ultima_sincronizacao)) {
           for (let pagina = 1; pagina <= 5; pagina++) {
             const data = await consultarComCache(base44, {
+              fonte: busca.fonte === "pncp" ? "pncp" : "alerta_licitacao",
               uf: busca.uf,
               palavra_chave: busca.palavra_chave,
               modalidade: busca.modalidade,

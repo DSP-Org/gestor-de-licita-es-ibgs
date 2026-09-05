@@ -7,6 +7,7 @@ import UfMultiSelect from "./UfMultiSelect";
 export default function BuscaForm({ initial, onSave, onCancel }) {
   const [form, setForm] = useState({
     nome: "",
+    fonte: "alerta_licitacao",
     uf: "",
     palavra_chave: "",
     modo_palavras: "qualquer",
@@ -89,6 +90,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
     try {
       const payload = {
         nome: form.nome.trim(),
+        fonte: form.fonte === "pncp" ? "pncp" : "alerta_licitacao",
         uf: (form.uf || "").trim(),
         palavra_chave: form.palavra_chave?.trim() || "",
         modo_palavras: form.modo_palavras === "todas" ? "todas" : "qualquer",
@@ -124,6 +126,20 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
       <p className="text-xs text-muted-foreground">
         Estado é obrigatório e é preciso preencher pelo menos mais 1 critério (palavra-chave, modalidade ou município) — evita sincronizar o país inteiro por acidente.
       </p>
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Fonte de dados</label>
+        <select
+          value={form.fonte || "alerta_licitacao"}
+          onChange={(e) => set("fonte", e.target.value)}
+          className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="alerta_licitacao">Alerta Licitação</option>
+          <option value="pncp">PNCP — Portal Nacional de Contratações Públicas</option>
+        </select>
+        {form.fonte === "pncp" && (
+          <p className="mt-1 text-xs text-muted-foreground">No PNCP, selecione ao menos uma modalidade compatível para a sincronização.</p>
+        )}
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Estado (UF) *</label>

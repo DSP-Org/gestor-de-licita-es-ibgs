@@ -135,12 +135,20 @@ export async function consultarPNCP(filtros: any = {}) {
     );
   }
 
+  const ufs = String(filtros.uf || "").split(",").map((uf) => uf.trim()).filter(Boolean);
+  const municipios = String(filtros.municipio_ibge || "").split(",").map((ibge) => ibge.trim()).filter(Boolean);
+  const escopos = municipios.length > 0
+    ? municipios.map((municipio_ibge) => ({ ...filtros, municipio_ibge }))
+    : (ufs.length > 0 ? ufs.map((uf) => ({ ...filtros, uf })) : [filtros]);
+
   const respostas = await Promise.all(
-    codigos.map((codigo) =>
-      consultarPNCPModalidade(filtros, codigo).catch((e) => ({
-        erro: e instanceof Error ? e.message : String(e),
-        data: [],
-      }))
+    escopos.flatMap((escopo) =>
+      codigos.map((codigo) =>
+        consultarPNCPModalidade(escopo, codigo).catch((e) => ({
+          erro: e instanceof Error ? e.message : String(e),
+          data: [],
+        }))
+      )
     )
   );
 
