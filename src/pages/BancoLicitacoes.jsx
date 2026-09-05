@@ -817,7 +817,7 @@ export default function BancoLicitacoes() {
       ? descartadasFiltradas.length
       : aba === "selecionadas"
       ? selecionadasFiltradas.length
-      : totalGeral;
+      : acervoFiltrado.length;
 
   const labelAbaAtual =
     aba === "novas"
@@ -949,11 +949,11 @@ export default function BancoLicitacoes() {
             }`}
           >
             <Database className="w-4 h-4" /> Acervo Geral
-            {totalGeral > 0 && (
+            {acervoFiltrado.length > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 aba === "acervo" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"
               }`}>
-                {totalGeral}
+                {acervoFiltrado.length}
               </span>
             )}
           </button>
