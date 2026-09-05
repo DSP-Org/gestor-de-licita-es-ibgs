@@ -48,6 +48,7 @@ export const filtrosDaBusca = (b) => ({
   ufs: (b.uf || "").split(",").map((s) => s.trim()).filter(Boolean),
   modalidades: (b.modalidade || "").split(",").map((s) => s.trim()).filter(Boolean),
   municipioIbge: b.municipio_ibge || "",
+  municipioNome: b.municipio_nome || "",
   palavraChave: b.palavra_chave || "",
   modoPalavras: b.modo_palavras || "qualquer",
 });
@@ -55,7 +56,13 @@ export const filtrosDaBusca = (b) => ({
 export const combinaComFiltros = (l, f) => {
   if (f.ufs.length && !f.ufs.includes(l.uf)) return false;
   if (f.modalidades.length && !f.modalidades.includes(String(l.id_tipo))) return false;
-  if (f.municipioIbge && l.municipio_IBGE !== f.municipioIbge && l.municipio_ibge !== f.municipioIbge) return false;
+  if (f.municipioIbge) {
+    const ibgeLic = l.municipio_IBGE || l.municipio_ibge;
+    if (ibgeLic !== f.municipioIbge) return false;
+  } else if (f.municipioNome) {
+    const nomeLic = (l.municipio || "").trim().toLowerCase();
+    if (nomeLic !== f.municipioNome.trim().toLowerCase()) return false;
+  }
   return combinaComPalavraChave(l, f.palavraChave, f.modoPalavras);
 };
 
