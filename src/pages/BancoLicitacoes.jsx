@@ -381,20 +381,9 @@ export default function BancoLicitacoes() {
   const porBuscaOrigem = useMemo(() => {
     if (buscasFiltradas.length === 0) return {};
 
-    // Mapeia nomes de origem antigos (gravados nas licitações) para o nome
-    // atual do alerta, para que as pílulas reflitam exatamente os alertas da
-    // Configuração mesmo se a busca foi renomeada após a sincronização.
-    const origemParaNomeBusca = new Map();
-    for (const b of buscasFiltradas) {
-      const nomeAtual = b.nome?.trim();
-      if (!nomeAtual) continue;
-      const chave = nomeAtual.toLowerCase();
-      origemParaNomeBusca.set(chave, nomeAtual);
-      // Compatibiliza com variações antigas do nome no campo busca_origem
-      if (b.nome && !origemParaNomeBusca.has(b.nome.toLowerCase())) {
-        origemParaNomeBusca.set(b.nome.toLowerCase(), nomeAtual);
-      }
-    }
+    // Só mostra pílulas para origens que correspondem a alertas ativos —
+    // origens órfãs (ex: busca renomeada/excluída) não aparecem.
+    const nomesValidos = new Set(buscasFiltradas.map((b) => b.nome?.trim().toLowerCase()).filter(Boolean));
 
     const grupos = {};
     novas
@@ -421,8 +410,9 @@ export default function BancoLicitacoes() {
         return true;
       })
       .forEach((l) => {
-        const chave = (l.busca_origem || "Sem origem").trim().toLowerCase();
-        const key = origemParaNomeBusca.get(chave) || l.busca_origem || "Sem origem";
+        const origem = (l.busca_origem || "").trim().toLowerCase();
+        if (!origem || !nomesValidos.has(origem)) return;
+        const key = l.busca_origem.trim();
         grupos[key] = (grupos[key] || 0) + 1;
       });
     return grupos;
