@@ -341,11 +341,11 @@ export default function BancoLicitacoes() {
 
   const municipiosDisponiveis = useMemo(() => {
     const set = new Set();
-    [...novas, ...triagem, ...descartadas, ...selecionadas].forEach((l) => {
+    [...novas, ...triagem, ...descartadas, ...selecionadas, ...acervo].forEach((l) => {
       if (l.municipio && (!filtroUF || filtroUF === "todos" || l.uf === filtroUF)) set.add(l.municipio);
     });
     return Array.from(set).sort();
-  }, [novas, triagem, descartadas, selecionadas, filtroUF]);
+  }, [novas, triagem, descartadas, selecionadas, acervo, filtroUF]);
 
   const modalidadesDisponiveis = useMemo(() => {
     const set = new Set();
