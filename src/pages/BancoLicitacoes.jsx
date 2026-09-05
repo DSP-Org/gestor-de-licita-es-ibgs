@@ -1041,6 +1041,11 @@ export default function BancoLicitacoes() {
             onToggleSelecao={toggleSelecaoNova}
             renderActions={(lic) => renderActionsFunil(lic, "novas")}
             mostrarStatus={false}
+            tagEstado={() => ({
+              label: "Nova",
+              icone: "✨",
+              className: "bg-primary text-primary-foreground ring-primary/30",
+            })}
           />
         </>
       ) : aba === "triagem" ? (
@@ -1129,6 +1134,11 @@ export default function BancoLicitacoes() {
             onToggleSelecao={toggleSelecaoTriagem}
             renderActions={(lic) => renderActionsFunil(lic, "triagem")}
             renderGestao={renderGestaoFunil}
+            tagEstado={() => ({
+              label: "Em Triagem",
+              icone: "⏱️",
+              className: "bg-status-blue text-status-blue-foreground ring-status-blue/30",
+            })}
           />
         </>
       ) : aba === "descartadas" ? (
