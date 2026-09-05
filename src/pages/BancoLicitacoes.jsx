@@ -55,7 +55,7 @@ export const filtrosDaBusca = (b) => ({
 export const combinaComFiltros = (l, f) => {
   if (f.ufs.length && !f.ufs.includes(l.uf)) return false;
   if (f.modalidades.length && !f.modalidades.includes(String(l.id_tipo))) return false;
-  if (f.municipioIbge && l.municipio_IBGE !== f.municipioIbge) return false;
+  if (f.municipioIbge && l.municipio_IBGE !== f.municipioIbge && l.municipio_ibge !== f.municipioIbge) return false;
   return combinaComPalavraChave(l, f.palavraChave, f.modoPalavras);
 };
 
