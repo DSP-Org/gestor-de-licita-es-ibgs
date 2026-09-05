@@ -1,0 +1,83 @@
+{
+  "name": "LicitacaoUnidade",
+  "type": "object",
+  "properties": {
+    "licitacao_id": {
+      "type": "string",
+      "description": "ID do registro Licitacao vinculado a esta unidade"
+    },
+    "unidade_negocio_id": {
+      "type": "string",
+      "description": "ID da unidade de neg\u00f3cio dona deste v\u00ednculo. Controla o acesso: qualquer usu\u00e1rio da unidade enxerga o registro."
+    },
+    "favorito": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marcada como favorita por esta unidade"
+    },
+    "oculto": {
+      "type": "boolean",
+      "default": false,
+      "description": "Descartada por esta unidade: some das listagens dela mas a licita\u00e7\u00e3o continua compartilhada no banco"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "interessado",
+        "acompanhando",
+        "participando",
+        "vencida",
+        "ganha",
+        "perdida",
+        "descartada"
+      ],
+      "default": "interessado",
+      "description": "Status de gest\u00e3o da licita\u00e7\u00e3o para esta unidade"
+    },
+    "status_leitura": {
+      "type": "string",
+      "enum": [
+        "nova",
+        "vista",
+        "lida"
+      ],
+      "default": "nova",
+      "description": "Status de leitura desta unidade (nova, vista ou lida)"
+    },
+    "notas": {
+      "type": "string",
+      "description": "Anota\u00e7\u00f5es internas desta unidade sobre a licita\u00e7\u00e3o"
+    },
+    "valor_proposta": {
+      "type": "number",
+      "description": "Valor da proposta apresentada por esta unidade"
+    },
+    "lista_favorita_id": {
+      "type": "string",
+      "description": "ID da lista de favoritos em que esta licita\u00e7\u00e3o est\u00e1 organizada para esta unidade"
+    },
+    "salva_manualmente": {
+      "type": "boolean",
+      "default": false,
+      "description": "True se foi salva manualmente pelo usu\u00e1rio desta unidade"
+    }
+  },
+  "required": [
+    "licitacao_id",
+    "unidade_negocio_id"
+  ],
+  "rls": {
+    "create": {
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+    },
+    "read": {
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+    },
+    "update": {
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+    },
+    "delete": {
+      "data.unidade_negocio_id": "{{user.data.unidade_negocio_id}}"
+    }
+  }
+}
