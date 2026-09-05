@@ -228,85 +228,13 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
             <Info label="Código IBGE" value={licitacao.municipio_ibge} />
           </div>
 
-          <div className="space-y-3 border-t pt-4">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
+          {(licitacao.data_sincronizacao || licitacao.created_date) && (
+            <div className="border-t pt-4">
+              <p className="text-xs text-muted-foreground">
+                Sincronizado em: {formatDataBr(licitacao.data_sincronizacao || licitacao.created_date)}
+              </p>
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Status de leitura</label>
-              <div className="mt-1 flex gap-2">
-                {["nova", "vista", "lida"].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setStatusLeitura(s);
-                      if (onMarcarLeitura) onMarcarLeitura(licitacao.id, s);
-                    }}
-                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border transition-colors ${
-                      statusLeitura === s
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border hover:bg-muted"
-                    }`}
-                  >
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </button>
-                ))}
-              </div>
-              {(licitacao.data_sincronizacao || licitacao.created_date) && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Sincronizado em: {formatDataBr(licitacao.data_sincronizacao || licitacao.created_date)}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Adicionar à lista</label>
-              <select
-                value={listaVinculada}
-                onChange={(e) => setListaVinculada(e.target.value)}
-                disabled={carregandoListas}
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-              >
-                <option value="">Sem lista (favoritado solto)</option>
-                {listas.map((lista) => (
-                  <option key={lista.id} value={lista.id}>
-                    {lista.nome}
-                  </option>
-                ))}
-              </select>
-              {listas.length === 0 && !carregandoListas && (
-                <p className="text-xs text-muted-foreground mt-1">Nenhuma lista disponível. Crie uma na seção de favoritos.</p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Valor da proposta (R$)</label>
-              <input
-                type="number"
-                value={valorProposta}
-                onChange={(e) => setValorProposta(e.target.value)}
-                placeholder="0,00"
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Anotações</label>
-              <textarea
-                value={notas}
-                onChange={(e) => setNotas(e.target.value)}
-                rows={4}
-                placeholder="Adicione observações sobre esta licitação..."
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-y"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-t pt-4">
             {licitacao.link_externo && (
@@ -325,12 +253,6 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onSave, onPr
               className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border rounded-md hover:bg-muted"
             >
               <FileDown className="w-4 h-4" /> PDF
-            </button>
-            <button
-              onClick={handleSave}
-              className="col-span-2 sm:col-span-1 sm:ml-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
-            >
-              <Save className="w-4 h-4" /> Salvar
             </button>
           </div>
         </div>
