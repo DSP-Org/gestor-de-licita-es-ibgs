@@ -404,7 +404,7 @@ export default function BancoLicitacoes() {
     }
     novas
       .filter((l) => {
-        if (!pertenceAUnidade(l, filtroUnidade)) return false;
+        if (l.unidade_negocio_id && !pertenceAUnidade(l, filtroUnidade)) return false;
         if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
 
         if (todasBuscasSelecionadas) {
