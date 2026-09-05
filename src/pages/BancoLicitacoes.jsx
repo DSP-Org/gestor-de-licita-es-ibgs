@@ -823,10 +823,10 @@ export default function BancoLicitacoes() {
 
       {/* Abas do Funil de Triagem */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className="inline-flex items-center border rounded-xl overflow-hidden bg-card shadow-xs p-1 gap-1">
+        <div className="flex max-w-full items-center border rounded-xl overflow-x-auto no-scrollbar bg-card shadow-xs p-1 gap-1">
           <button
             onClick={() => setAba("novas")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+            className={`inline-flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
               aba === "novas"
                 ? "bg-primary text-primary-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
@@ -844,7 +844,7 @@ export default function BancoLicitacoes() {
 
           <button
             onClick={() => setAba("triagem")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+            className={`inline-flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
               aba === "triagem"
                 ? "bg-status-blue text-status-blue-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
@@ -862,7 +862,7 @@ export default function BancoLicitacoes() {
 
           <button
             onClick={() => setAba("descartadas")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+            className={`inline-flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
               aba === "descartadas"
                 ? "bg-muted-foreground/80 text-background shadow-xs"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
@@ -880,7 +880,7 @@ export default function BancoLicitacoes() {
 
           <button
             onClick={() => setAba("selecionadas")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${
+            className={`inline-flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
               aba === "selecionadas"
                 ? "bg-status-amber text-status-amber-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"

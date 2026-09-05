@@ -50,14 +50,14 @@ export default function SeletorListaDialog({
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto"
+        className="bg-card w-full min-h-[70vh] sm:min-h-0 sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-card border-b px-5 py-3 flex items-center justify-between">
           <h2 className="font-heading font-semibold flex items-center gap-2">
             <Star className="w-4 h-4" /> Favoritar
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted">
+          <button onClick={onClose} className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-md hover:bg-muted">
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -1,5 +1,6 @@
 import { Download, X, Share, PlusSquare } from "lucide-react";
 import { useInstalarApp } from "@/hooks/useInstalarApp";
+import { Image } from "@/components/ui/image";
 
 export default function InstalarAppPrompt() {
   const { podeMostrar, ios, instalar, dispensar, temPromptNativo } = useInstalarApp();
@@ -11,14 +12,14 @@ export default function InstalarAppPrompt() {
       <div className="bg-card w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 animate-in slide-in-from-bottom duration-300">
         <button
           onClick={dispensar}
-          className="absolute right-5 top-5 sm:hidden p-1.5 rounded-lg text-muted-foreground hover:bg-muted"
+          className="absolute right-5 top-5 sm:hidden min-w-11 min-h-11 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
           aria-label="Fechar"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div className="flex flex-col items-center text-center gap-3">
-          <img
+          <Image
             src="https://media.base44.com/images/public/6a720719f600bb866f6561f7/90a393f87_generated_image.png"
             alt="Licitalerta360"
             className="w-16 h-16 rounded-2xl shadow-md"
@@ -45,7 +46,7 @@ export default function InstalarAppPrompt() {
         ) : (
           <button
             onClick={instalar}
-            className="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
+            className="mt-5 min-h-12 w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-primary-foreground bg-primary rounded-xl hover:opacity-90 active:scale-[0.98] transition-all"
           >
             <Download className="w-4 h-4" /> Instalar aplicativo
           </button>

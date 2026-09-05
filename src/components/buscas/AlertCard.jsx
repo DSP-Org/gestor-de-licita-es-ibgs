@@ -15,7 +15,7 @@ export default function AlertCard({ busca, onEdit, onDelete, onToggleAtiva, sinc
   else tags.push({ label: "Diária", highlight: true });
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
       {/* Header: ícone + nome + toggle */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -35,12 +35,12 @@ export default function AlertCard({ busca, onEdit, onDelete, onToggleAtiva, sinc
         </div>
         <button
           onClick={() => onToggleAtiva(busca)}
-          className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
+          className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
             busca.ativa ? "bg-emerald-700" : "bg-slate-300"
           }`}
         >
           <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-            busca.ativa ? "translate-x-4" : "translate-x-0.5"
+            busca.ativa ? "translate-x-6" : "translate-x-0.5"
           }`} />
         </button>
       </div>
@@ -88,14 +88,14 @@ export default function AlertCard({ busca, onEdit, onDelete, onToggleAtiva, sinc
           <button
             onClick={() => onEdit(busca)}
             title="Editar"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(busca)}
             title="Excluir"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

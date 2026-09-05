@@ -105,7 +105,7 @@ export default function LicitacaoCard({
       )}
 
       <div
-        className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-xs hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col gap-4 active:scale-[0.998] w-full relative overflow-hidden"
+        className="bg-card border border-border/80 rounded-2xl p-4 sm:p-6 shadow-xs hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col gap-3 sm:gap-4 active:scale-[0.998] w-full relative overflow-hidden"
         onClick={onClick}
       >
         {/* Linha Superior: Checkbox, Título/Órgão, Localização e Badges à Direita */}
@@ -117,7 +117,7 @@ export default function LicitacaoCard({
                 checked={!!selecionado}
                 onChange={(e) => onToggleSelecao(licitacao.id_licitacao, e.target.checked)}
                 onClick={(e) => e.stopPropagation()}
-                className="w-4 h-4 mt-1 rounded cursor-pointer shrink-0 accent-primary"
+                className="w-5 h-5 mt-0.5 rounded cursor-pointer shrink-0 accent-primary"
               />
             )}
             <div className="space-y-1 min-w-0 flex-1">
@@ -160,7 +160,7 @@ export default function LicitacaoCard({
         </div>
 
         {/* Grade Linear de Metadados: Edital, Publicação, Abertura e Valor */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 px-4 rounded-xl bg-muted/40 border border-border/50 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-4 py-3 px-3 sm:px-4 rounded-xl bg-muted/40 border border-border/50 text-xs">
           <div>
             <span className="text-muted-foreground block text-[11px] font-medium">Edital / Processo</span>
             <span className="font-bold text-foreground text-sm">
@@ -221,7 +221,7 @@ export default function LicitacaoCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Acessar edital no portal oficial"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-xs transition-colors"
+                className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-xs transition-colors"
               >
                 <Globe className="w-3.5 h-3.5" />
                 <span>Portal / Edital</span>
@@ -231,7 +231,7 @@ export default function LicitacaoCard({
             <button
               onClick={() => setMostrarResumo(true)}
               title="Gerar relatório executivo com IA"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors"
+              className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Resumo</span>

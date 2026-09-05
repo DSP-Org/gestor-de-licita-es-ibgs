@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, Star, Save, FileDown, Loader2, Search, Share2 
 import { jsPDF } from "jspdf";
 import { STATUS_OPTIONS } from "@/shared/alertaApi";
 import { StatusBadge, formatValor } from "@/components/licitacoes/LicitacaoCard";
+import ObjetoExpandivel from "@/components/licitacoes/ObjetoExpandivel";
 import ShareDialog from "@/components/licitacoes/ShareDialog";
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { unidadeEfetiva } from "@/lib/escopoUnidade";
@@ -186,7 +187,7 @@ export default function LicitacaoDetalhe() {
     <div className="max-w-2xl mx-auto p-4 sm:p-0 space-y-4">
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4" /> Voltar
       </button>
@@ -199,7 +200,7 @@ export default function LicitacaoDetalhe() {
           </div>
           <button
             onClick={() => setFavorito(!favorito)}
-            className={`p-2 rounded-md border ${favorito ? "bg-amber-50 border-amber-300" : "hover:bg-muted"}`}
+            className={`min-w-11 min-h-11 inline-flex items-center justify-center rounded-md border ${favorito ? "bg-amber-50 border-amber-300" : "hover:bg-muted"}`}
           >
             <Star className={`w-4 h-4 ${favorito ? "fill-amber-400 text-amber-400" : ""}`} />
           </button>
@@ -210,10 +211,10 @@ export default function LicitacaoDetalhe() {
 
           <div>
             <h4 className="text-xs font-medium text-muted-foreground mb-1">Objeto</h4>
-            <p className="text-sm leading-relaxed">{licitacao.objeto || "—"}</p>
+            <ObjetoExpandivel texto={licitacao.objeto} textClassName="text-sm leading-relaxed" linhas="line-clamp-4" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <Info label="Órgão" value={licitacao.orgao} />
             <Info label="Município" value={`${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`} />
             <Info label="Modalidade" value={licitacao.tipo} />
@@ -228,7 +229,7 @@ export default function LicitacaoDetalhe() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -242,7 +243,7 @@ export default function LicitacaoDetalhe() {
                 value={valorProposta}
                 onChange={(e) => setValorProposta(e.target.value)}
                 placeholder="0,00"
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div>
@@ -259,19 +260,19 @@ export default function LicitacaoDetalhe() {
 
           <div className="flex flex-wrap gap-2 border-t pt-4">
             {licitacao.link_externo && (
-              <a href={licitacao.link_externo} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted">
+              <a href={licitacao.link_externo} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted">
                 <ExternalLink className="w-4 h-4" /> Portal oficial
               </a>
             )}
             <button
               onClick={() => setCompartilhar(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+              className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
             >
               <Share2 className="w-4 h-4" /> Compartilhar
             </button>
             <button
               onClick={gerarPDF}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
+              className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm border rounded-md hover:bg-muted"
             >
               <FileDown className="w-4 h-4" /> Gerar PDF
             </button>

@@ -182,7 +182,7 @@ export default function LicitacaoTable({
                     checked={selecionados?.has(l.id_licitacao) || false}
                     onChange={(e) => onToggleSelecao(l.id_licitacao, e.target.checked)}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 rounded cursor-pointer shrink-0"
+                    className="w-5 h-5 rounded cursor-pointer shrink-0"
                   />
                 )}
               </div>
@@ -215,7 +215,7 @@ export default function LicitacaoTable({
               <div className="pt-2 mt-2 border-t">{renderGestao(l)}</div>
             )}
             {(onDelete || renderActions) && (
-              <div className="flex items-center gap-2 pt-2 mt-2 border-t" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-wrap items-center gap-2 pt-2 mt-2 border-t" onClick={(e) => e.stopPropagation()}>
                 {renderActions?.(l)}
                 {onDelete && (
                   <button onClick={() => onDelete(l)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-600">

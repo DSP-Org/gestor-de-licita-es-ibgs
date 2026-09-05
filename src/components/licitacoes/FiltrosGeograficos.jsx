@@ -34,7 +34,7 @@ function FiltroBuscavel({ value, onChange, placeholder, options, disabled }) {
           setBusca("");
           setAberto((v) => !v);
         }}
-        className={`${selectClass} text-left flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        className={`${selectClass} min-h-11 text-left flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <span className={selecionado ? "" : "text-muted-foreground"}>
           {selecionado || placeholder}
@@ -43,7 +43,7 @@ function FiltroBuscavel({ value, onChange, placeholder, options, disabled }) {
       </button>
 
       {aberto && (
-        <div className="absolute z-50 mt-1 w-full min-w-48 bg-popover border rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+        <div className="fixed inset-x-0 bottom-0 z-50 w-full bg-popover border-t rounded-t-2xl shadow-2xl max-h-[75vh] overflow-hidden flex flex-col sm:absolute sm:inset-auto sm:mt-1 sm:w-full sm:min-w-48 sm:rounded-lg sm:border sm:shadow-lg sm:max-h-64">
           <div className="p-2 border-b sticky top-0 bg-popover">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />

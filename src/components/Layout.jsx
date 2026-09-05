@@ -225,7 +225,7 @@ export default function Layout() {
               <button
                 onClick={solicitarPermissao}
                 title="Ativar notificações"
-                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground"
               >
                 <Bell className="w-5 h-5" />
               </button>
@@ -233,7 +233,7 @@ export default function Layout() {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 pb-20 md:pb-0">
+          <main className="flex-1 pb-24 md:pb-0">
             <Outlet />
           </main>
 

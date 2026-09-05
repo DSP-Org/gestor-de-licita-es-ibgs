@@ -120,7 +120,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           value={form.nome}
           onChange={(e) => set("nome", e.target.value)}
           placeholder="Ex: Engenharia civil - PR"
-          className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       <p className="text-xs text-muted-foreground">
@@ -131,7 +131,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
         <select
           value={form.fonte || "alerta_licitacao"}
           onChange={(e) => set("fonte", e.target.value)}
-          className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
           <option value="alerta_licitacao">Alerta Licitação</option>
           <option value="pncp">PNCP — Portal Nacional de Contratações Públicas</option>
@@ -165,7 +165,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
                 value=""
                 onChange={(e) => { if (e.target.value) toggleMunicipio(e.target.value); }}
                 disabled={carregandoMun}
-                className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
                 <option value="">{carregandoMun ? "Carregando..." : "Selecionar município..."}</option>
                 {municipios.map((m) => (
@@ -187,7 +187,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
             value={form.municipio_ibge || ""}
             onChange={(e) => set("municipio_ibge", e.target.value)}
             placeholder="7 dígitos"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="sm:col-span-2">
@@ -204,7 +204,7 @@ export default function BuscaForm({ initial, onSave, onCancel }) {
           <select
             value={form.modalidade || ""}
             onChange={(e) => set("modalidade", e.target.value)}
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Todas</option>
             {MODALIDADES.map((m) => (

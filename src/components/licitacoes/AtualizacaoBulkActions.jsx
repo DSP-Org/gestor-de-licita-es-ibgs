@@ -10,7 +10,7 @@ export default function AtualizacaoBulkActions({
   modo = "novas",
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+    <div className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border bg-card/95 p-2 shadow-xl backdrop-blur sm:static sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none sm:gap-2">
       {onSend && (
         <button
           onClick={onSend}

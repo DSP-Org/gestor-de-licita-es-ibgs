@@ -66,10 +66,10 @@ export default function ShareDialog({ licitacoes, origem, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-card w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card w-full min-h-[70vh] sm:min-h-0 sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-card border-b px-5 py-3 flex items-center justify-between">
           <h2 className="font-heading font-semibold flex items-center gap-2"><Share2 className="w-4 h-4" /> Compartilhar</h2>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-5 space-y-4">

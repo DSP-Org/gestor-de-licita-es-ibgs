@@ -35,7 +35,7 @@ export default function DestinatarioForm({ onSave }) {
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Ex: João Silva"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div>
@@ -46,7 +46,7 @@ export default function DestinatarioForm({ onSave }) {
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
             placeholder="email@empresa.com"
-            className="mt-1 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="mt-1 min-h-11 w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>

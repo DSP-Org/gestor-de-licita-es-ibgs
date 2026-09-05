@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export default function ObjetoExpandivel({
   texto,
@@ -8,15 +9,19 @@ export default function ObjetoExpandivel({
 }) {
   const [expandido, setExpandido] = useState(false);
   if (!texto) return null;
+  const podeExpandir = texto.length > 90;
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <p className={`${textClassName} ${expandido ? "" : linhas} ${className}`}>{texto}</p>
-      {texto.length > 90 && (
+      {podeExpandir && (
         <button
+          type="button"
           onClick={() => setExpandido((v) => !v)}
-          className="text-[11px] text-primary font-medium mt-0.5 hover:underline"
+          className="inline-flex min-h-8 items-center gap-1 text-xs text-primary font-semibold mt-1 active:opacity-70"
+          aria-expanded={expandido}
         >
-          {expandido ? "Ver menos" : "Ver objeto completo"}
+          {expandido ? "Ver menos" : "Ver mais"}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandido ? "rotate-180" : ""}`} />
         </button>
       )}
     </div>

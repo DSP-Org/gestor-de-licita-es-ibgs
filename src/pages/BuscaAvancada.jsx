@@ -4,6 +4,7 @@ import { MODALIDADES as MODALIDADES_API, buscarLicitacoes } from "@/shared/alert
 import { useUnidadeFilter } from "@/lib/UnidadeFilterContext";
 import { escopoUnidade, unidadeEfetiva } from "@/lib/escopoUnidade";
 import LicitacoesVisualizacao from "@/components/licitacoes/LicitacoesVisualizacao";
+import LicitacaoDetailDialog from "@/components/licitacoes/LicitacaoDetailDialog";
 import AtualizacaoActions from "@/components/licitacoes/AtualizacaoActions";
 import SeletorListaDialog from "@/components/licitacoes/SeletorListaDialog";
 import { toArray } from "@/lib/toArray";
@@ -84,6 +85,7 @@ export default function BuscaAvancada() {
   const [favoritando, setFavoritando] = useState(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [mostrarAvancados, setMostrarAvancados] = useState(false);
+  const [selecionada, setSelecionada] = useState(null);
   const { isAdmin, filtroUnidade, usuarioLogado } = useUnidadeFilter();
   const unidadeAtual = unidadeEfetiva(isAdmin, filtroUnidade, usuarioLogado);
 
@@ -152,7 +154,7 @@ export default function BuscaAvancada() {
           : [],
       ]);
 
-      const resultado = combinarLicitacoesVinculos(toArray(licitacoesDb), toArray(vinculos));
+      let resultado = combinarLicitacoesVinculos(toArray(licitacoesDb), toArray(vinculos));
 
       const licitacoesDbMap = new Map();
       for (const l of resultado) {
@@ -509,7 +511,7 @@ export default function BuscaAvancada() {
           )}
 
           {/* Linha 2: filtros rápidos em dropdowns */}
-          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/60">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/60">
             {/* Estados */}
             <DropdownFilter
               label="Estados"
@@ -599,7 +601,7 @@ export default function BuscaAvancada() {
             {/* Botão filtros avançados */}
             <button
               onClick={() => setMostrarAvancados(!mostrarAvancados)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors shrink-0 ${
+              className={`inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors shrink-0 ${
                 mostrarAvancados || filtrosAvancadosAtivos > 0
                   ? "border-primary text-primary bg-primary/5"
                   : "border-border text-muted-foreground hover:bg-muted"
@@ -612,13 +614,13 @@ export default function BuscaAvancada() {
               )}
             </button>
 
-            <div className="flex-1" />
+            <div className="hidden sm:block sm:flex-1" />
 
             {/* Limpar */}
             {totalFiltrosAtivos > 0 && (
               <button
                 onClick={limparFiltros}
-                className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground shrink-0"
+                className="inline-flex min-h-11 items-center justify-center gap-1 px-2.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground shrink-0"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Limpar
               </button>
@@ -628,7 +630,7 @@ export default function BuscaAvancada() {
             <button
               onClick={executarBusca}
               disabled={carregando}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50 shrink-0"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg disabled:opacity-50 shrink-0"
             >
               {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               <span className="hidden sm:inline">{carregando ? "Buscando..." : "Buscar"}</span>
@@ -671,7 +673,7 @@ export default function BuscaAvancada() {
               </div>
 
               {/* Datas de abertura */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Abertura - Início</label>
                   <input type="date" value={filtros.dataAberturaInicio} onChange={(e) => handleMudarFiltro("dataAberturaInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
@@ -683,7 +685,7 @@ export default function BuscaAvancada() {
               </div>
 
               {/* Datas de publicação */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1">Publicação - Início</label>
                   <input type="date" value={filtros.dataPublicacaoInicio} onChange={(e) => handleMudarFiltro("dataPublicacaoInicio", e.target.value)} className="w-full px-2.5 py-2 text-sm border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40" />
@@ -737,7 +739,7 @@ export default function BuscaAvancada() {
             licitacoes={licitacoes}
             loading={carregando}
             vazio={licitacoes.length === 0}
-            onRowClick={(lic) => {}}
+            onRowClick={setSelecionada}
             selecionados={selecionados}
             onToggleSelecao={handleToggleSelecao}
             tagEstado={(lic) => {
@@ -776,6 +778,14 @@ export default function BuscaAvancada() {
         )}
       </div>
 
+      {selecionada && (
+        <LicitacaoDetailDialog
+          licitacao={selecionada}
+          onClose={() => setSelecionada(null)}
+          onFavoritar={handleFavoritarLicitacao}
+        />
+      )}
+
       {favoritando && (
         <SeletorListaDialog
           quantidade={favoritando.length}
@@ -802,10 +812,10 @@ function DropdownFilter({ label, badge, summary, children }) {
   }, [aberto]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative min-w-0" ref={ref}>
       <button
         onClick={() => setAberto(!aberto)}
-        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+        className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
           badge > 0
             ? "border-primary text-primary bg-primary/5"
             : "border-border text-muted-foreground hover:bg-muted"
@@ -818,7 +828,7 @@ function DropdownFilter({ label, badge, summary, children }) {
         <ChevronDown className={`w-3 h-3 transition-transform ${aberto ? "rotate-180" : ""}`} />
       </button>
       {aberto && (
-        <div className="absolute z-30 mt-1 left-0 bg-white dark:bg-card border border-border rounded-lg shadow-lg p-1 min-w-56">
+        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[75vh] overflow-auto bg-white dark:bg-card border-t border-border rounded-t-2xl shadow-2xl p-3 sm:absolute sm:inset-auto sm:mt-1 sm:max-h-none sm:overflow-visible sm:left-0 sm:rounded-lg sm:border sm:p-1 sm:min-w-56">
           {children}
         </div>
       )}

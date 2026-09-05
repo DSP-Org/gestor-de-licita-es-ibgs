@@ -122,7 +122,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onFavoritar,
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-card w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto"
+        className="bg-card w-full min-h-[82vh] sm:min-h-0 sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-card border-b px-5 py-3 flex items-center justify-between">
@@ -141,7 +141,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onFavoritar,
                 </button>
               </>
             )}
-            <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted">
+            <button onClick={onClose} className="min-w-11 min-h-11 inline-flex items-center justify-center rounded-md hover:bg-muted">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -166,7 +166,7 @@ export default function LicitacaoDetailDialog({ licitacao, onClose, onFavoritar,
             <p className="text-sm leading-relaxed">{licitacao.objeto || "—"}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <Info label="Órgão" value={licitacao.orgao} />
             <Info label="Município" value={`${licitacao.municipio || "—"} / ${licitacao.uf || "—"}`} />
             <Info label="Modalidade" value={licitacao.tipo} />

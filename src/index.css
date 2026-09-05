@@ -99,6 +99,8 @@
 
   body {
     @apply bg-background text-foreground font-body;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

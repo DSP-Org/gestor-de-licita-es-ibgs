@@ -179,18 +179,18 @@ export default function Configuracao() {
         </div>
 
         {/* ===== AÇÕES ===== */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => { setEditando(null); setMostrarForm(true); }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-700 rounded-xl hover:bg-emerald-800 transition-colors shadow-sm"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-700 rounded-xl hover:bg-emerald-800 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" /> Novo alerta
             </button>
             <button
               onClick={sincronizarTodas}
               disabled={sincronizando === "todas" || buscas.filter((b) => b.ativa).length === 0}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
             >
               {sincronizando === "todas" ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Sincronizando...</>
@@ -202,7 +202,7 @@ export default function Configuracao() {
 
           <button
             onClick={() => setAbaDestinatarios(!abaDestinatarios)}
-            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors ${
+            className={`inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors ${
               abaDestinatarios
                 ? "text-emerald-700 border-emerald-200 bg-emerald-50"
                 : "text-slate-600 border-slate-200 bg-white hover:bg-slate-50"
@@ -321,7 +321,7 @@ export default function Configuracao() {
       {/* Dialog de destinatários da busca */}
       {buscaDestinatarios && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={() => setBuscaDestinatarios(null)}>
-          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[80vh] overflow-auto p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full min-h-[70vh] sm:min-h-0 sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-auto p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-800">Notificações — {buscaDestinatarios.nome}</h3>
               <button onClick={() => setBuscaDestinatarios(null)} className="text-slate-400 hover:text-slate-700 text-lg">✕</button>
