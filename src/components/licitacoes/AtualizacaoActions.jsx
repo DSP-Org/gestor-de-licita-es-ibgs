@@ -9,7 +9,7 @@ export default function AtualizacaoActions({
   modo = "novas",
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
       {onSend && (
         <button
           onClick={onSend}

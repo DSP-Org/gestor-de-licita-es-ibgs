@@ -206,8 +206,8 @@ export default function LicitacaoCard({
         )}
 
         {/* Barra de Ações Rápidas em Pílulas (Estilo Licite Consulta) */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5" onClick={(e) => e.stopPropagation()}>
+          <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             {linkEdital && (
               <a
                 href={linkEdital}
@@ -233,7 +233,7 @@ export default function LicitacaoCard({
 
           {/* Botões do fluxo (Em Triagem, Minhas Licitações / Favoritas, Descartar) */}
           {action && (
-            <div className="flex items-center gap-2">
+            <div className="contents sm:flex sm:items-center sm:gap-2">
               {action}
             </div>
           )}
