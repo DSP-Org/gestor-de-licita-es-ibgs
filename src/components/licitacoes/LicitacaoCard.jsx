@@ -131,12 +131,6 @@ export default function LicitacaoCard({
                   {licitacao.municipio ? `${licitacao.municipio} - ` : ""}
                   <strong className="text-foreground">{licitacao.uf || "UF"}</strong>
                 </span>
-                {licitacao.id_licitacao && (
-                  <>
-                    <span className="text-border mx-1">•</span>
-                    <span className="text-[11px] text-muted-foreground">ID: #{licitacao.id_licitacao}</span>
-                  </>
-                )}
               </div>
             </div>
           </div>
