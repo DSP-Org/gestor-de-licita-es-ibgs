@@ -558,7 +558,7 @@ export default function BancoLicitacoes() {
   const enviarSelecionadasTriagem = () => setCompartilhar(itensSelecionadosTriagem());
 
   const renderActionsFunil = (licitacao, modoTab = "novas") => (
-    <div className="flex flex-wrap items-center gap-3 w-full">
+    <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:w-full">
       <AtualizacaoActions
         modo={modoTab}
         onSend={() => setCompartilhar([licitacao])}
@@ -571,9 +571,9 @@ export default function BancoLicitacoes() {
         <button
           onClick={() => excluirDefinitivamente(licitacao)}
           title="Excluir do banco definitivamente (somente administrador)"
-          className="inline-flex items-center text-muted-foreground hover:text-red-600 sm:gap-1.5 sm:text-xs ml-auto pt-1"
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-destructive hover:bg-destructive/5 sm:ml-auto sm:pt-1"
         >
-          <Trash2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Excluir do banco</span>
+          <Trash2 className="h-3.5 w-3.5" /> <span>Excluir</span>
         </button>
       )}
     </div>

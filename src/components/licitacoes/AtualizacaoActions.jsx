@@ -1,4 +1,4 @@
-import { Send, Star, Trash2, Clock, Undo2 } from "lucide-react";
+import { Send, Star, ArchiveX, Clock, Undo2 } from "lucide-react";
 
 export default function AtualizacaoActions({
   onSend,
@@ -58,7 +58,7 @@ export default function AtualizacaoActions({
               title="Descartar licitação"
               className="inline-flex min-h-11 items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
             >
-              <Trash2 className="h-3.5 w-3.5" /> <span>Descartar</span>
+              <ArchiveX className="h-3.5 w-3.5" /> <span>Descartar</span>
             </button>
           )}
         </>
