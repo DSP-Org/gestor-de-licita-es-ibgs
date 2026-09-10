@@ -64,6 +64,7 @@ export default function MinhasLicitacoes() {
   const [editandoLista, setEditandoLista] = useState(null);
   const [compartilharLista, setCompartilharLista] = useState(false);
   const [filtroUF, setFiltroUF] = useState("todos");
+  const [filtroCidade, setFiltroCidade] = useState("todos");
   const [filtroPessoa, setFiltroPessoa] = useState("todos");
   const [filtroRapido, setFiltroRapido] = useState("todos");
   const [usuarios, setUsuarios] = useState([]);
@@ -128,6 +129,7 @@ export default function MinhasLicitacoes() {
     return resultado.filter((l) => {
       if (filtroStatus !== "todos" && l.status !== filtroStatus) return false;
       if (filtroUF !== "todos" && l.uf !== filtroUF) return false;
+      if (filtroCidade !== "todos" && l.municipio !== filtroCidade) return false;
       if (filtroPessoa !== "todos" && l.usuario_id !== filtroPessoa && l.created_by_id !== filtroPessoa) return false;
       if (ocultarPassadas && (l.abertura_datetime || l.abertura)) {
         const dt = parseDataAbertura(l.abertura_datetime, l.abertura);
@@ -164,13 +166,13 @@ export default function MinhasLicitacoes() {
       }
       return true;
     });
-  }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas, filtroUF, filtroPessoa, filtroRapido]);
+  }, [licitacoes, listaSelecionada, filtroStatus, busca, dataAberturaIni, dataAberturaFim, ocultarPassadas, filtroUF, filtroCidade, filtroPessoa, filtroRapido]);
 
   // Seleção em lote não faz sentido sobreviver a uma troca de filtro/pasta/modo
   // (os itens visíveis mudam por baixo do usuário) — limpa nesses casos.
   useEffect(() => {
     setSelecionados(new Set());
-  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo, filtroUF, filtroPessoa, filtroRapido]);
+  }, [listaSelecionada, filtroStatus, busca, ocultarPassadas, dataAberturaIni, dataAberturaFim, modo, filtroUF, filtroCidade, filtroPessoa, filtroRapido]);
 
   const toggleSelecao = (idLicitacao, marcado) => {
     setSelecionados((prev) => {
@@ -303,6 +305,16 @@ export default function MinhasLicitacoes() {
     const set = new Set(licitacoes.map((l) => l.uf).filter(Boolean));
     return Array.from(set).sort();
   }, [licitacoes]);
+
+  const cidadesDisponiveis = useMemo(() => {
+    const set = new Set(
+      licitacoes
+        .filter((l) => filtroUF === "todos" || l.uf === filtroUF)
+        .map((l) => l.municipio)
+        .filter(Boolean)
+    );
+    return Array.from(set).sort();
+  }, [licitacoes, filtroUF]);
 
   const usuariosComLicitacoes = useMemo(() => {
     const ids = new Set(licitacoes.map((l) => l.usuario_id || l.created_by_id).filter(Boolean));
@@ -656,19 +668,23 @@ export default function MinhasLicitacoes() {
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
+              value={listaSelecionada || "todos"}
+              onChange={(e) => setListaSelecionada(e.target.value === "todos" ? null : e.target.value)}
               className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="todos">Todos os status</option>
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
+              <option value="todos">Todas as listas</option>
+              <option value="sem-lista">Sem lista</option>
+              {listas.map((lista) => (
+                <option key={lista.id} value={lista.id}>{lista.nome}</option>
               ))}
             </select>
 
             <select
               value={filtroUF}
-              onChange={(e) => setFiltroUF(e.target.value)}
+              onChange={(e) => {
+                setFiltroUF(e.target.value);
+                setFiltroCidade("todos");
+              }}
               className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="todos">Todos os estados</option>
@@ -678,13 +694,13 @@ export default function MinhasLicitacoes() {
             </select>
 
             <select
-              value={filtroPessoa}
-              onChange={(e) => setFiltroPessoa(e.target.value)}
+              value={filtroCidade}
+              onChange={(e) => setFiltroCidade(e.target.value)}
               className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="todos">Todas as pessoas</option>
-              {usuariosComLicitacoes.map((u) => (
-                <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+              <option value="todos">Todas as cidades</option>
+              {cidadesDisponiveis.map((cidade) => (
+                <option key={cidade} value={cidade}>{cidade}</option>
               ))}
             </select>
 
@@ -824,12 +840,12 @@ export default function MinhasLicitacoes() {
           <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
           <h3 className="font-semibold text-lg">Nenhuma licitação encontrada</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            {busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos" || filtroRapido !== "todos"
+            {busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroCidade !== "todos" || filtroPessoa !== "todos" || filtroRapido !== "todos"
               ? "Tente ajustar os filtros ou a pasta selecionada."
               : "Favorite licitações no banco inicial para acompanhá-las em seu funil de disputas."}
           </p>
           <div className="flex items-center justify-center gap-2 pt-2">
-            {(busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroPessoa !== "todos" || filtroRapido !== "todos") ? (
+            {(busca || filtroStatus !== "todos" || listaSelecionada || ocultarPassadas || dataAberturaIni || dataAberturaFim || filtroUF !== "todos" || filtroCidade !== "todos" || filtroPessoa !== "todos" || filtroRapido !== "todos") ? (
               <button
                 onClick={() => {
                   setBusca("");
