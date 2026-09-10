@@ -110,7 +110,7 @@ export default function FiltrosGeograficos({
           setFiltroUF(v);
           setFiltroMunicipio("todos");
         }}
-        placeholder="Todos os estados"
+        placeholder="Estados"
         options={ufs}
         className="col-span-1 sm:flex-1"
       />
@@ -118,7 +118,7 @@ export default function FiltrosGeograficos({
       <FiltroBuscavel
         value={filtroMunicipio}
         onChange={setFiltroMunicipio}
-        placeholder="Todas as cidades"
+        placeholder="Cidades"
         options={municipios}
         className="col-span-1 sm:flex-1"
       />
@@ -126,7 +126,7 @@ export default function FiltrosGeograficos({
       <FiltroBuscavel
         value={filtroModalidade}
         onChange={setFiltroModalidade}
-        placeholder="Todas as modalidades"
+        placeholder="Modalidades"
         options={modalidades}
         className="col-span-2 sm:flex-1"
       />
