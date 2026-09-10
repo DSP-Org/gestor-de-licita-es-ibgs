@@ -48,7 +48,7 @@ export default function AtualizacaoActions({
               title="Aprovar e enviar para Minhas Licitações (Favoritas)"
               className="inline-flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-status-amber-foreground bg-status-amber hover:bg-status-amber/90 shadow-xs transition-colors"
             >
-              <Star className="h-3.5 w-3.5 fill-white text-white" /> <span>Minhas Licitações</span>
+              <Star className="h-3.5 w-3.5 fill-white text-white" /> <span className="sm:hidden">Salvar</span><span className="hidden sm:inline">Minhas Licitações</span>
             </button>
           )}
 
@@ -58,7 +58,7 @@ export default function AtualizacaoActions({
               title="Descartar licitação"
               className="inline-flex min-h-11 items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
             >
-              <Trash2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Descartar</span>
+              <Trash2 className="h-3.5 w-3.5" /> <span>Descartar</span>
             </button>
           )}
         </>

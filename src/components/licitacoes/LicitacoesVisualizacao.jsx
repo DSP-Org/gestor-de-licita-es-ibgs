@@ -100,12 +100,12 @@ export default function LicitacoesVisualizacao({
               tagEstado={typeof tagEstado === "function" ? tagEstado(l) : (tagEstado || l.tagEstado)}
               action={
                 (renderActions || onDelete) && (
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                     {renderActions?.(l)}
-                    {onDelete && (
+                    {!renderActions && onDelete && (
                       <button
                         onClick={() => onDelete(l)}
-                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
+                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Descartar
                       </button>

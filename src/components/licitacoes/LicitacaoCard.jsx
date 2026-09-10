@@ -217,7 +217,8 @@ export default function LicitacaoCard({
                 className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 shadow-xs transition-colors"
               >
                 <Globe className="w-3.5 h-3.5" />
-                <span>Portal / Edital</span>
+                <span className="sm:hidden">Edital</span>
+                <span className="hidden sm:inline">Portal / Edital</span>
                 <ExternalLink className="w-3 h-3 opacity-80" />
               </a>
             )}
