@@ -850,7 +850,7 @@ export default function BancoLicitacoes() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
             }`}
           >
-            <Clock className="w-4 h-4" /> Em Triagem / Analisar
+            <Clock className="w-4 h-4" /> <span className="sm:hidden">Triagem</span><span className="hidden sm:inline">Em Triagem / Analisar</span>
             {triagemFiltradas.length > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 aba === "triagem" ? "bg-white/20 text-white" : "bg-status-blue/10 text-status-blue"
@@ -898,7 +898,7 @@ export default function BancoLicitacoes() {
 
           <button
             onClick={() => setAba("acervo")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all border-l ml-1 pl-3 ${
+            className={`inline-flex shrink-0 items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-lg transition-all sm:border-l sm:ml-1 sm:pl-3 ${
               aba === "acervo"
                 ? "bg-primary text-primary-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
