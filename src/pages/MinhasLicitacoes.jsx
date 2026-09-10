@@ -673,7 +673,7 @@ export default function MinhasLicitacoes() {
               }}
               className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="todos">Todos os estados</option>
+              <option value="todos">Estados</option>
               {ufsDisponiveis.map((uf) => (
                 <option key={uf} value={uf}>{uf}</option>
               ))}
@@ -684,7 +684,7 @@ export default function MinhasLicitacoes() {
               onChange={(e) => setFiltroCidade(e.target.value)}
               className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="todos">Todas as cidades</option>
+              <option value="todos">Cidades</option>
               {cidadesDisponiveis.map((cidade) => (
                 <option key={cidade} value={cidade}>{cidade}</option>
               ))}
