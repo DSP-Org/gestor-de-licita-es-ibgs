@@ -228,7 +228,7 @@ export default function LicitacaoCard({
               className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 border border-primary/20 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Resumo</span>
+              <span>Relatório</span>
             </button>
           </div>
 
