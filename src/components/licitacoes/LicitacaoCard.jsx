@@ -105,7 +105,7 @@ export default function LicitacaoCard({
       )}
 
       <div
-        className="bg-card border border-border/80 rounded-2xl p-4 sm:p-6 shadow-xs hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col gap-3 sm:gap-4 active:scale-[0.998] w-full relative overflow-hidden"
+        className="bg-card border-2 border-primary/15 rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col gap-3 sm:gap-4 active:scale-[0.998] w-full relative overflow-hidden"
         onClick={onClick}
       >
         {/* Linha Superior: Checkbox, Título/Órgão, Localização e Badges à Direita */}
@@ -200,7 +200,7 @@ export default function LicitacaoCard({
         )}
 
         {/* Barra de Ações Rápidas em Pílulas (Estilo Licite Consulta) */}
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5" onClick={(e) => e.stopPropagation()}>
+        <div className="grid grid-cols-2 gap-2 -mx-4 -mb-4 mt-1 px-4 py-4 bg-muted/35 border-t border-primary/10 sm:-mx-6 sm:-mb-6 sm:px-6 sm:py-5 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5" onClick={(e) => e.stopPropagation()}>
           <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
             {linkEdital && (
               <a
