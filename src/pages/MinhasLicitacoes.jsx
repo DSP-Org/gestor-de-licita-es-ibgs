@@ -478,11 +478,9 @@ export default function MinhasLicitacoes() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard
           icon={Bookmark}
-          label="Total em Aberto"
-          value={painelStats.totalEmAberto}
+          label="Total Selecionado"
+          value={filtradas.length}
           color="bg-primary/10 text-primary"
-          active={filtroRapido === "abertas"}
-          onClick={() => setFiltroRapido(filtroRapido === "abertas" ? "todos" : "abertas")}
         />
         <StatCard
           icon={Calendar}
