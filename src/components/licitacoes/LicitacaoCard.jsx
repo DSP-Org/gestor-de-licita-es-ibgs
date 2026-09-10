@@ -186,8 +186,8 @@ export default function LicitacaoCard({
             <strong className="text-foreground font-bold mr-1">Objeto:</strong>
             <ObjetoExpandivel
               texto={licitacao.objeto}
-              textClassName="text-xs text-foreground/90 leading-relaxed font-normal inline"
-              linhas="line-clamp-3"
+              textClassName="text-xs text-foreground/90 leading-relaxed font-normal block"
+              linhas="line-clamp-2"
             />
           </div>
         )}
