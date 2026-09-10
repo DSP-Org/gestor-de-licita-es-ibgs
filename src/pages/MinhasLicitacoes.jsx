@@ -668,18 +668,6 @@ export default function MinhasLicitacoes() {
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <select
-              value={listaSelecionada || "todos"}
-              onChange={(e) => setListaSelecionada(e.target.value === "todos" ? null : e.target.value)}
-              className="flex-1 sm:flex-none min-w-0 px-3 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="todos">Todas as listas</option>
-              <option value="sem-lista">Sem lista</option>
-              {listas.map((lista) => (
-                <option key={lista.id} value={lista.id}>{lista.nome}</option>
-              ))}
-            </select>
-
-            <select
               value={filtroUF}
               onChange={(e) => {
                 setFiltroUF(e.target.value);
