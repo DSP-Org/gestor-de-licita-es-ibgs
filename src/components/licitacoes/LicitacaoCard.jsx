@@ -162,13 +162,6 @@ export default function LicitacaoCard({
         {/* Grade Linear de Metadados: Edital, Publicação, Abertura e Valor */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-4 py-3 px-3 sm:px-4 rounded-xl bg-muted/40 border border-border/50 text-xs">
           <div>
-            <span className="text-muted-foreground block text-[11px] font-medium">Edital / Processo</span>
-            <span className="font-bold text-foreground text-sm">
-              {licitacao.id_licitacao ? `${licitacao.id_licitacao}` : "—"}
-            </span>
-          </div>
-
-          <div>
             <span className="text-muted-foreground block text-[11px] font-medium">Publicação</span>
             <span className="font-semibold text-foreground text-sm">
               {formatDataBr(licitacao.data_publicacao)}
