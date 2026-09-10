@@ -32,7 +32,7 @@ export default function AtualizacaoActions({
 
       {modo !== "descartadas" && (
         <>
-          {onTriagem && (
+          {modo !== "novas" && onTriagem && (
             <button
               onClick={onTriagem}
               title="Mover para Em Triagem / Análise"
