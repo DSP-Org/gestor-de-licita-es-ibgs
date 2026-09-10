@@ -4,7 +4,7 @@ import { ChevronDown, Search } from "lucide-react";
 const selectClass =
   "flex-1 sm:flex-none min-w-0 px-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring";
 
-function FiltroBuscavel({ value, onChange, placeholder, options, disabled }) {
+function FiltroBuscavel({ value, onChange, placeholder, options, disabled, className = "" }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
   const ref = useRef(null);
@@ -26,7 +26,7 @@ function FiltroBuscavel({ value, onChange, placeholder, options, disabled }) {
   const selecionado = value !== "todos" ? value : "";
 
   return (
-    <div className="relative flex-1 sm:flex-none min-w-0" ref={ref}>
+    <div className={`relative min-w-0 ${className}`} ref={ref}>
       <button
         type="button"
         disabled={disabled}
@@ -34,7 +34,7 @@ function FiltroBuscavel({ value, onChange, placeholder, options, disabled }) {
           setBusca("");
           setAberto((v) => !v);
         }}
-        className={`${selectClass} min-h-11 text-left flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        className={`${selectClass} min-h-11 w-full sm:w-auto text-left flex items-center justify-between gap-2 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <span className={selecionado ? "" : "text-muted-foreground"}>
           {selecionado || placeholder}
@@ -112,6 +112,7 @@ export default function FiltrosGeograficos({
         }}
         placeholder="Todos os estados"
         options={ufs}
+        className="col-span-1 sm:flex-1"
       />
 
       <FiltroBuscavel
@@ -119,6 +120,7 @@ export default function FiltrosGeograficos({
         onChange={setFiltroMunicipio}
         placeholder="Todas as cidades"
         options={municipios}
+        className="col-span-1 sm:flex-1"
       />
 
       <FiltroBuscavel
@@ -126,6 +128,7 @@ export default function FiltrosGeograficos({
         onChange={setFiltroModalidade}
         placeholder="Todas as modalidades"
         options={modalidades}
+        className="col-span-2 sm:flex-1"
       />
     </>
   );

@@ -919,14 +919,14 @@ export default function BancoLicitacoes() {
       {aba === "novas" ? (
         <>
           {/* Filtros */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 bg-card border rounded-xl p-2 shadow-sm">
-            <div className="relative flex-1 min-w-0">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center bg-card border rounded-xl p-2 shadow-sm">
+            <div className="relative col-span-2 min-w-0 sm:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar por título, órgão, busca de origem..."
-                className="w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="min-h-11 w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <FiltroAlertas

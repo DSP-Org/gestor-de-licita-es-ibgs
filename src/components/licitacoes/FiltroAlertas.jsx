@@ -26,14 +26,14 @@ export default function FiltroAlertas({ alertas, filtroOrigem, setFiltroOrigem }
   const selecionado = filtroOrigem || "";
 
   return (
-    <div className="relative flex-1 sm:flex-none min-w-0" ref={ref}>
+    <div className="relative col-span-2 min-w-0 sm:flex-1 sm:col-auto sm:flex-none" ref={ref}>
       <button
         type="button"
         onClick={() => {
           setBusca("");
           setAberto((v) => !v);
         }}
-        className={`${selectClass} min-h-11 text-left flex items-center justify-between gap-2 cursor-pointer`}
+        className={`${selectClass} min-h-11 w-full sm:w-auto text-left flex items-center justify-between gap-2 cursor-pointer`}
       >
         <span className={`flex items-center gap-1.5 ${selecionado ? "" : "text-muted-foreground"}`}>
           <Bell className="w-3.5 h-3.5 shrink-0" />
